@@ -14,12 +14,10 @@ import type {
   AgentClient,
   AgentMode,
   AgentModelDefinition,
-  AgentTimelineItem,
   ListModesOptions,
   ListModelsOptions,
   PersistedAgentDescriptor,
 } from "./agent/agent-sdk-types.js";
-import type { ManagedAgent } from "./agent/agent-manager.js";
 import type { ProviderDefinition } from "./agent/provider-registry.js";
 import { ProviderSnapshotManager } from "./agent/provider-snapshot-manager.js";
 import type { SessionOptions } from "./session.js";
@@ -122,10 +120,6 @@ const checkoutGitMocks = vi.hoisted(() => ({
 
 const agentResponseMocks = vi.hoisted(() => ({
   generateStructuredAgentResponseWithFallback: vi.fn(),
-}));
-
-const agentMetadataMocks = vi.hoisted(() => ({
-  scheduleAgentMetadataGeneration: vi.fn(),
 }));
 
 const spawnMocks = vi.hoisted(() => ({
@@ -235,14 +229,6 @@ vi.mock("./agent/agent-response-loop.js", async (importOriginal) => {
     ...actual,
     generateStructuredAgentResponseWithFallback:
       agentResponseMocks.generateStructuredAgentResponseWithFallback,
-  };
-});
-
-vi.mock("./agent/agent-metadata-generator.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("./agent/agent-metadata-generator.js")>();
-  return {
-    ...actual,
-    scheduleAgentMetadataGeneration: agentMetadataMocks.scheduleAgentMetadataGeneration,
   };
 });
 
@@ -2559,7 +2545,7 @@ describe("session checkout rename branch handling", () => {
     };
     const session = createSessionForTest({ workspaceGitService, messages });
 
-    await (session as any).handleCheckoutRenameBranchRequest({
+    await session.handleMessage({
       type: "checkout_rename_branch_request",
       cwd: "/tmp/repo",
       branch: "Feature Name",
@@ -2593,7 +2579,7 @@ describe("session checkout rename branch handling", () => {
     const session = createSessionForTest({ workspaceGitService, messages });
     checkoutGitMocks.renameCurrentBranch.mockRejectedValue(new Error("branch already exists"));
 
-    await (session as any).handleCheckoutRenameBranchRequest({
+    await session.handleMessage({
       type: "checkout_rename_branch_request",
       cwd: "/tmp/repo",
       branch: "feature/new-name",
@@ -2645,7 +2631,7 @@ describe("session checkout rename branch handling", () => {
       currentBranch: "feature/new-name",
     });
 
-    await (session as any).handleCheckoutRenameBranchRequest({
+    await session.handleMessage({
       type: "checkout_rename_branch_request",
       cwd: "/tmp/repo",
       branch: "feature/new-name",
@@ -2680,7 +2666,7 @@ describe("session terminal rename handling", () => {
     const terminalManager = createTerminalManagerStub();
     const session = createSessionForTest({ terminalManager, messages });
 
-    await (session as any).terminalController.dispatch({
+    await session.handleMessage({
       type: "rename_terminal_request",
       terminalId: "terminal-1",
       title: "   ",
@@ -2703,7 +2689,7 @@ describe("session terminal rename handling", () => {
     const terminalManager = createTerminalManagerStub();
     const session = createSessionForTest({ terminalManager, messages });
 
-    await (session as any).terminalController.dispatch({
+    await session.handleMessage({
       type: "rename_terminal_request",
       terminalId: "terminal-1",
       title: "x".repeat(201),
@@ -2728,7 +2714,7 @@ describe("session terminal rename handling", () => {
     });
     const session = createSessionForTest({ terminalManager, messages });
 
-    await (session as any).terminalController.dispatch({
+    await session.handleMessage({
       type: "rename_terminal_request",
       terminalId: "missing-terminal",
       title: "Renamed terminal",
@@ -2756,7 +2742,7 @@ describe("session terminal rename handling", () => {
     });
     const session = createSessionForTest({ terminalManager, messages });
 
-    await (session as any).terminalController.dispatch({
+    await session.handleMessage({
       type: "rename_terminal_request",
       terminalId: "terminal-1",
       title: "  Renamed terminal  ",
