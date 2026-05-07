@@ -7195,7 +7195,6 @@ export class Session {
         },
         emit: (message) => this.emit(message),
         sessionLogger: this.sessionLogger,
-        workspaceGitService: this.workspaceGitService,
         terminalManager: this.terminalManager,
         archiveWorkspaceRecord: (workspaceId) => this.archiveWorkspaceRecord(workspaceId),
         scriptRouteStore: this.scriptRouteStore,
