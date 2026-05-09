@@ -1,20 +1,29 @@
-import { describe, expect, it, vi } from "vitest";
+import type { ToolCallDetail } from "@server/server/agent/agent-sdk-types";
+import { describe, expect, it } from "vitest";
 
-const iconMocks = vi.hoisted(() => ({
-  Bot: () => null,
-  Brain: () => null,
-  Eye: () => null,
-  MicVocal: () => null,
-  Pencil: () => null,
-  Search: () => null,
-  Sparkles: () => null,
-  SquareTerminal: () => null,
-  Wrench: () => null,
-}));
+import { buildToolCallPresentation, type ToolCallPresentationIcon } from "./presentation";
 
-vi.mock("lucide-react-native", () => iconMocks);
+const fakeIcons = {
+  brain: (() => null) as ToolCallPresentationIcon,
+  eye: (() => null) as ToolCallPresentationIcon,
+  wrench: (() => null) as ToolCallPresentationIcon,
+};
 
-import { buildToolCallPresentation } from "./presentation";
+function fakeResolveIcon(
+  toolName: string,
+  detail: ToolCallDetail | undefined,
+): ToolCallPresentationIcon {
+  if (detail?.type === "plan") {
+    return fakeIcons.brain;
+  }
+  if (detail?.type === "read") {
+    return fakeIcons.eye;
+  }
+  if (toolName === "exec_command") {
+    return fakeIcons.wrench;
+  }
+  return fakeIcons.wrench;
+}
 
 describe("tool-call presentation", () => {
   it("builds badge, detail, icon, and file-open policy in one model", () => {
@@ -28,12 +37,13 @@ describe("tool-call presentation", () => {
         filePath: "/tmp/repo/src/index.ts",
         content: "console.log('hi');",
       },
+      resolveIcon: fakeResolveIcon,
     });
 
     expect(presentation).toMatchObject({
       displayName: "Read",
       summary: "src/index.ts",
-      icon: iconMocks.Eye,
+      icon: fakeIcons.eye,
       isLoadingDetails: false,
       hasDetails: true,
       canOpenDetails: true,
@@ -52,11 +62,12 @@ describe("tool-call presentation", () => {
         input: {},
         output: null,
       },
+      resolveIcon: fakeResolveIcon,
     });
 
     expect(presentation).toMatchObject({
       displayName: "Exec Command",
-      icon: iconMocks.Wrench,
+      icon: fakeIcons.wrench,
       isLoadingDetails: true,
       hasDetails: false,
       canOpenDetails: true,
@@ -74,9 +85,10 @@ describe("tool-call presentation", () => {
         type: "plan",
         text: "1. Do the thing",
       },
+      resolveIcon: fakeResolveIcon,
     });
 
     expect(presentation.isPlan).toBe(true);
-    expect(presentation.icon).toBe(iconMocks.Brain);
+    expect(presentation.icon).toBe(fakeIcons.brain);
   });
 });

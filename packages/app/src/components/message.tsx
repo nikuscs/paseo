@@ -67,6 +67,7 @@ import type { TodoEntry, UserMessageImageAttachment } from "@/types/stream";
 import type { AgentAttachment } from "@server/shared/messages";
 import type { ToolCallDetail } from "@server/server/agent/agent-sdk-types";
 import { buildToolCallPresentation } from "@/tool-calls/presentation";
+import { resolveToolCallIcon } from "@/utils/tool-call-icon";
 import {
   parseAssistantFileLink,
   parseInlinePathToken,
@@ -2877,6 +2878,7 @@ export const ToolCall = memo(function ToolCall({
         detail: effectiveDetail,
         metadata,
         cwd,
+        resolveIcon: resolveToolCallIcon,
       }),
     [toolName, status, error, effectiveDetail, metadata, cwd],
   );

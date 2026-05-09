@@ -1,3 +1,4 @@
+import type { ComponentType } from "react";
 import type { ToolCallDetail } from "@server/server/agent/agent-sdk-types";
 import type { ToolCallDisplayInput } from "@/utils/tool-call-display";
 import { buildToolCallDisplayModel } from "@/utils/tool-call-display";
@@ -6,9 +7,9 @@ import {
   hasMeaningfulToolCallDetail,
   isPendingToolCallDetail,
 } from "@/utils/tool-call-detail-state";
-import { resolveToolCallIcon, type ToolCallIconComponent } from "@/utils/tool-call-icon";
 
 type ToolCallStatus = "executing" | "running" | "completed" | "failed" | "canceled";
+export type ToolCallPresentationIcon = ComponentType<{ size?: number; color?: string }>;
 
 interface BuildToolCallPresentationInput {
   toolName: string;
@@ -17,19 +18,25 @@ interface BuildToolCallPresentationInput {
   detail?: ToolCallDetail;
   cwd?: string;
   metadata?: Record<string, unknown>;
+  resolveIcon: ToolCallIconResolver;
 }
 
 export interface ToolCallPresentation {
   displayName: string;
   summary?: string;
   errorText?: string;
-  icon: ToolCallIconComponent;
+  icon: ToolCallPresentationIcon;
   isLoadingDetails: boolean;
   hasDetails: boolean;
   canOpenDetails: boolean;
   openFilePath: string | null;
   isPlan: boolean;
 }
+
+export type ToolCallIconResolver = (
+  toolName: string,
+  detail: ToolCallDetail | undefined,
+) => ToolCallPresentationIcon;
 
 function displayStatus(status: ToolCallStatus): ToolCallDisplayInput["status"] {
   return status === "executing" ? "running" : status;
@@ -62,7 +69,7 @@ export function buildToolCallPresentation(
     displayName: displayModel.displayName,
     summary: displayModel.summary,
     errorText: displayModel.errorText,
-    icon: resolveToolCallIcon(input.toolName, input.detail),
+    icon: input.resolveIcon(input.toolName, input.detail),
     isLoadingDetails,
     hasDetails,
     canOpenDetails: hasDetails || isLoadingDetails,
