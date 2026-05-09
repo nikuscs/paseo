@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Alert, Pressable, Text, View } from "react-native";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { AdaptiveModalSheet } from "@/components/adaptive-modal-sheet";
-import { RenameModal } from "@/components/rename-modal";
+import { AdaptiveRenameModal } from "@/components/rename-modal";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { LocalDaemonSection } from "@/desktop/components/desktop-updates-section";
@@ -201,7 +201,7 @@ export function HostRenameButton({ host }: { host: HostProfile }) {
         <Pencil size={theme.iconSize.sm} color={theme.colors.foregroundMuted} />
       </Pressable>
 
-      <RenameModal
+      <AdaptiveRenameModal
         visible={isEditing}
         title="Rename host"
         initialValue={host.label}
