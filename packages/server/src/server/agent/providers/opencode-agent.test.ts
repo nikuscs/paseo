@@ -566,6 +566,321 @@ describe("OpenCode adapter context-window normalization", () => {
 });
 
 describe("OpenCode adapter startTurn error handling", () => {
+  test("recovers SSE EOF into turn_completed when persisted assistant completion exists", async () => {
+    const storageRoot = mkdtempSync(path.join(os.tmpdir(), "opencode-storage-"));
+    const cwd = "/tmp/test";
+    const dateNowSpy = vi.spyOn(Date, "now").mockReturnValue(2000);
+
+    writeOpenCodeJson(storageRoot, "session/project-1/ses_unit_test.json", {
+      id: "ses_unit_test",
+      directory: cwd,
+      time: { created: 1000, updated: 3000 },
+    });
+    let releaseStream!: () => void;
+    const streamMayEnd = new Promise<void>((resolve) => {
+      releaseStream = resolve;
+    });
+
+    const fakeClient = {
+      event: {
+        subscribe: vi.fn().mockResolvedValue({
+          stream: {
+            [Symbol.asyncIterator]: () => {
+              let index = 0;
+              const events: OpenCodeEvent[] = [
+                {
+                  type: "message.updated",
+                  properties: {
+                    info: {
+                      id: "msg_assistant",
+                      sessionID: "ses_unit_test",
+                      role: "assistant",
+                    },
+                  },
+                } as OpenCodeEvent,
+                {
+                  type: "message.part.delta",
+                  properties: {
+                    sessionID: "ses_unit_test",
+                    messageID: "msg_assistant",
+                    partID: "prt_text",
+                    field: "text",
+                    delta: "Recovered ",
+                  },
+                } as OpenCodeEvent,
+              ];
+
+              return {
+                next: async () => {
+                  if (index < events.length) {
+                    return { done: false, value: events[index++] };
+                  }
+                  await streamMayEnd;
+                  return { done: true, value: undefined };
+                },
+              };
+            },
+          },
+        }),
+      },
+      provider: {
+        list: vi.fn().mockResolvedValue({ data: { connected: [], all: [] }, error: undefined }),
+      },
+      session: {
+        create: vi.fn().mockResolvedValue({ data: { id: "ses_unit_test" }, error: undefined }),
+        promptAsync: vi.fn().mockImplementation(async () => {
+          writeOpenCodeJson(storageRoot, "message/ses_unit_test/msg_assistant.json", {
+            id: "msg_assistant",
+            sessionID: "ses_unit_test",
+            role: "assistant",
+            finish: "stop",
+            time: { created: 2000, completed: 2500 },
+          });
+          writeOpenCodeJson(storageRoot, "part/msg_assistant/prt_text.json", {
+            id: "prt_text",
+            sessionID: "ses_unit_test",
+            messageID: "msg_assistant",
+            type: "text",
+            text: "Recovered assistant reply",
+            time: { start: 2100, end: 2400 },
+          });
+          writeOpenCodeJson(storageRoot, "part/msg_assistant/prt_finish.json", {
+            id: "prt_finish",
+            sessionID: "ses_unit_test",
+            messageID: "msg_assistant",
+            type: "step-finish",
+            time: { start: 2400, end: 2500 },
+            tokens: { input: 10, output: 5, reasoning: 0, cache: { read: 0, write: 0 } },
+          });
+          releaseStream();
+          return { data: {}, error: undefined };
+        }),
+        abort: vi.fn().mockResolvedValue({ data: true, error: undefined }),
+        update: vi.fn().mockResolvedValue({ data: true, error: undefined }),
+        delete: vi.fn().mockResolvedValue({ data: true, error: undefined }),
+      },
+    } as never;
+
+    const client = new OpenCodeAgentClient(createTestLogger(), undefined, storageRoot, {
+      runtime: {
+        acquireServer: vi.fn().mockResolvedValue({
+          server: { port: 0, url: "http://localhost" },
+          release: () => {},
+        }),
+        ensureServerRunning: vi.fn().mockResolvedValue({ port: 0, url: "http://localhost" }),
+        createClient: vi.fn().mockReturnValue(fakeClient),
+        shutdown: vi.fn().mockResolvedValue(undefined),
+      },
+    });
+
+    const session = await client.createSession({ provider: "opencode", cwd });
+    const turn = await collectTurnEvents(streamSession(session, "hello"));
+
+    expect(turn.turnCompleted).toBe(true);
+    expect(turn.turnFailed).toBe(false);
+    expect(turn.assistantMessages.map((message) => message.text).join("")).toBe(
+      "Recovered assistant reply",
+    );
+    expect(turn.events).toContainEqual(
+      expect.objectContaining({
+        type: "turn_completed",
+        usage: expect.objectContaining({
+          contextWindowUsedTokens: 15,
+          inputTokens: 10,
+          outputTokens: 5,
+        }),
+      }),
+    );
+
+    dateNowSpy.mockRestore();
+    rmSync(storageRoot, { recursive: true, force: true });
+  });
+
+  test("keeps SSE EOF as turn_failed without persisted completion evidence", async () => {
+    const storageRoot = mkdtempSync(path.join(os.tmpdir(), "opencode-storage-"));
+    const cwd = "/tmp/test";
+    const dateNowSpy = vi.spyOn(Date, "now").mockReturnValue(2000);
+
+    writeOpenCodeJson(storageRoot, "session/project-1/ses_unit_test.json", {
+      id: "ses_unit_test",
+      directory: cwd,
+      time: { created: 1000, updated: 3000 },
+    });
+    let releaseStream!: () => void;
+    const streamMayEnd = new Promise<void>((resolve) => {
+      releaseStream = resolve;
+    });
+
+    const fakeClient = {
+      event: {
+        subscribe: vi.fn().mockResolvedValue({
+          stream: {
+            [Symbol.asyncIterator]: () => ({
+              next: async () => {
+                await streamMayEnd;
+                return { done: true, value: undefined };
+              },
+            }),
+          },
+        }),
+      },
+      provider: {
+        list: vi.fn().mockResolvedValue({ data: { connected: [], all: [] }, error: undefined }),
+      },
+      session: {
+        create: vi.fn().mockResolvedValue({ data: { id: "ses_unit_test" }, error: undefined }),
+        promptAsync: vi.fn().mockImplementation(async () => {
+          writeOpenCodeJson(storageRoot, "message/ses_unit_test/msg_assistant.json", {
+            id: "msg_assistant",
+            sessionID: "ses_unit_test",
+            role: "assistant",
+            time: { created: 2000 },
+          });
+          writeOpenCodeJson(storageRoot, "part/msg_assistant/prt_text.json", {
+            id: "prt_text",
+            sessionID: "ses_unit_test",
+            messageID: "msg_assistant",
+            type: "text",
+            text: "Incomplete assistant reply",
+            time: { start: 2100 },
+          });
+          releaseStream();
+          return { data: {}, error: undefined };
+        }),
+        abort: vi.fn().mockResolvedValue({ data: true, error: undefined }),
+        update: vi.fn().mockResolvedValue({ data: true, error: undefined }),
+        delete: vi.fn().mockResolvedValue({ data: true, error: undefined }),
+      },
+    } as never;
+
+    const client = new OpenCodeAgentClient(createTestLogger(), undefined, storageRoot, {
+      runtime: {
+        acquireServer: vi.fn().mockResolvedValue({
+          server: { port: 0, url: "http://localhost" },
+          release: () => {},
+        }),
+        ensureServerRunning: vi.fn().mockResolvedValue({ port: 0, url: "http://localhost" }),
+        createClient: vi.fn().mockReturnValue(fakeClient),
+        shutdown: vi.fn().mockResolvedValue(undefined),
+      },
+    });
+
+    const session = await client.createSession({ provider: "opencode", cwd });
+    const turn = await collectTurnEvents(streamSession(session, "hello"));
+
+    expect(turn.turnCompleted).toBe(false);
+    expect(turn.turnFailed).toBe(true);
+    expect(turn.error).toBe("OpenCode event stream ended before the turn reached a terminal state");
+
+    dateNowSpy.mockRestore();
+    rmSync(storageRoot, { recursive: true, force: true });
+  });
+
+  test("does not recover a previous turn's completed assistant reply when the current turn only persists incomplete output", async () => {
+    const storageRoot = mkdtempSync(path.join(os.tmpdir(), "opencode-storage-"));
+    const cwd = "/tmp/test";
+    const dateNowSpy = vi.spyOn(Date, "now").mockReturnValue(2000);
+
+    writeOpenCodeJson(storageRoot, "session/project-1/ses_unit_test.json", {
+      id: "ses_unit_test",
+      directory: cwd,
+      time: { created: 1000, updated: 3000 },
+    });
+
+    let releaseStream!: () => void;
+    const streamMayEnd = new Promise<void>((resolve) => {
+      releaseStream = resolve;
+    });
+
+    const fakeClient = {
+      event: {
+        subscribe: vi.fn().mockResolvedValue({
+          stream: {
+            [Symbol.asyncIterator]: () => ({
+              next: async () => {
+                await streamMayEnd;
+                return { done: true, value: undefined };
+              },
+            }),
+          },
+        }),
+      },
+      provider: {
+        list: vi.fn().mockResolvedValue({ data: { connected: [], all: [] }, error: undefined }),
+      },
+      session: {
+        create: vi.fn().mockResolvedValue({ data: { id: "ses_unit_test" }, error: undefined }),
+        promptAsync: vi.fn().mockImplementation(async () => {
+          writeOpenCodeJson(storageRoot, "message/ses_unit_test/msg_assistant_old.json", {
+            id: "msg_assistant_old",
+            sessionID: "ses_unit_test",
+            role: "assistant",
+            finish: "stop",
+            time: { created: 1500, completed: 1600 },
+          });
+          writeOpenCodeJson(storageRoot, "part/msg_assistant_old/prt_text.json", {
+            id: "prt_text_old",
+            sessionID: "ses_unit_test",
+            messageID: "msg_assistant_old",
+            type: "text",
+            text: "Old assistant reply",
+            time: { start: 1500, end: 1550 },
+          });
+          writeOpenCodeJson(storageRoot, "part/msg_assistant_old/prt_finish.json", {
+            id: "prt_finish_old",
+            sessionID: "ses_unit_test",
+            messageID: "msg_assistant_old",
+            type: "step-finish",
+            time: { start: 1550, end: 1600 },
+            tokens: { input: 10, output: 5, reasoning: 0, cache: { read: 0, write: 0 } },
+          });
+          writeOpenCodeJson(storageRoot, "message/ses_unit_test/msg_assistant_current.json", {
+            id: "msg_assistant_current",
+            sessionID: "ses_unit_test",
+            role: "assistant",
+            time: { created: 2100 },
+          });
+          writeOpenCodeJson(storageRoot, "part/msg_assistant_current/prt_text.json", {
+            id: "prt_text_current",
+            sessionID: "ses_unit_test",
+            messageID: "msg_assistant_current",
+            type: "text",
+            text: "Incomplete assistant reply",
+            time: { start: 2100 },
+          });
+          releaseStream();
+          return { data: {}, error: undefined };
+        }),
+        abort: vi.fn().mockResolvedValue({ data: true, error: undefined }),
+        update: vi.fn().mockResolvedValue({ data: true, error: undefined }),
+        delete: vi.fn().mockResolvedValue({ data: true, error: undefined }),
+      },
+    } as never;
+
+    const client = new OpenCodeAgentClient(createTestLogger(), undefined, storageRoot, {
+      runtime: {
+        acquireServer: vi.fn().mockResolvedValue({
+          server: { port: 0, url: "http://localhost" },
+          release: () => {},
+        }),
+        ensureServerRunning: vi.fn().mockResolvedValue({ port: 0, url: "http://localhost" }),
+        createClient: vi.fn().mockReturnValue(fakeClient),
+        shutdown: vi.fn().mockResolvedValue(undefined),
+      },
+    });
+
+    const session = await client.createSession({ provider: "opencode", cwd });
+    const turn = await collectTurnEvents(streamSession(session, "hello"));
+
+    expect(turn.turnCompleted).toBe(false);
+    expect(turn.turnFailed).toBe(true);
+    expect(turn.assistantMessages).toHaveLength(0);
+    expect(turn.error).toBe("OpenCode event stream ended before the turn reached a terminal state");
+
+    dateNowSpy.mockRestore();
+    rmSync(storageRoot, { recursive: true, force: true });
+  });
+
   test("deletes provider session on close when persistence is disabled", async () => {
     const fakeClient = {
       session: {
@@ -580,6 +895,7 @@ describe("OpenCode adapter startTurn error handling", () => {
       fakeClient,
       "ses_unit_test",
       createTestLogger(),
+      "/tmp/opencode-storage",
       new Map(),
       undefined,
       false,
@@ -607,6 +923,7 @@ describe("OpenCode adapter startTurn error handling", () => {
       fakeClient,
       "ses_unit_test",
       createTestLogger(),
+      "/tmp/opencode-storage",
     );
 
     await session.close();
@@ -641,6 +958,7 @@ describe("OpenCode adapter startTurn error handling", () => {
       fakeClient,
       "ses_unit_test",
       createTestLogger(),
+      "/tmp/opencode-storage",
     );
 
     const events: AgentStreamEvent[] = [];
