@@ -5,6 +5,7 @@ import {
   useRef,
   useState,
   type ReactElement,
+  type ReactNode,
   type RefObject,
 } from "react";
 import {
@@ -23,12 +24,14 @@ import {
   Brain,
   ChevronDown,
   ListTodo,
+  MoreVertical,
   Settings2,
   ShieldAlert,
   ShieldCheck,
   ShieldOff,
   Zap,
 } from "lucide-react-native";
+import { useIsCompactFormFactor } from "@/constants/layout";
 import { getProviderIcon } from "@/components/provider-icons";
 import { CombinedModelSelector } from "@/components/combined-model-selector";
 import { useSessionStore } from "@/stores/session-store";
@@ -73,6 +76,7 @@ interface StatusOption {
 }
 
 type StatusSelector = "provider" | "mode" | "model" | "thinking" | `feature-${string}`;
+type CompactStatusControlGroup = "all" | "primary" | "overflow";
 
 interface ControlledAgentStatusBarProps {
   provider: string;
@@ -98,6 +102,8 @@ interface ControlledAgentStatusBarProps {
   onToggleFavoriteModel?: (provider: string, modelId: string) => void;
   features?: AgentFeature[];
   onSetFeature?: (featureId: string, value: unknown) => void;
+  compactSheetFooter?: ReactNode;
+  compactControlGroup?: CompactStatusControlGroup;
   onDropdownClose?: () => void;
   onModelSelectorOpen?: () => void;
 }
@@ -121,6 +127,8 @@ export interface DraftAgentStatusBarProps {
   onSelectThinkingOption: (thinkingOptionId: string) => void;
   features?: AgentFeature[];
   onSetFeature?: (featureId: string, value: unknown) => void;
+  compactSheetFooter?: ReactNode;
+  compactControlGroup?: CompactStatusControlGroup;
   onDropdownClose?: () => void;
   onModelSelectorOpen?: () => void;
   disabled?: boolean;
@@ -129,6 +137,8 @@ export interface DraftAgentStatusBarProps {
 interface AgentStatusBarProps {
   agentId: string;
   serverId: string;
+  compactSheetFooter?: ReactNode;
+  compactControlGroup?: CompactStatusControlGroup;
   onDropdownClose?: () => void;
 }
 
@@ -418,27 +428,6 @@ function buildOpenChangeHandler(
   };
 }
 
-function SheetModelTriggerView({
-  selectedModelLabel,
-  style,
-  ProviderIcon,
-}: {
-  selectedModelLabel: string;
-  style: StyleProp<ViewStyle>;
-  ProviderIcon: ReturnType<typeof getProviderIcon> | null;
-}) {
-  const { theme } = useUnistyles();
-  return (
-    <View style={style} pointerEvents="none" testID="agent-preferences-model">
-      {ProviderIcon ? (
-        <ProviderIcon size={theme.iconSize.md} color={theme.colors.foregroundMuted} />
-      ) : null}
-      <Text style={styles.sheetSelectText}>{selectedModelLabel}</Text>
-      <ChevronDown size={theme.iconSize.md} color={theme.colors.foregroundMuted} />
-    </View>
-  );
-}
-
 function getModeIconColor(
   colorTier: AgentModeColorTier | undefined,
   palette: {
@@ -486,10 +475,13 @@ function ControlledStatusBar({
   onToggleFavoriteModel,
   features,
   onSetFeature,
+  compactSheetFooter,
+  compactControlGroup = "all",
   onDropdownClose,
   onModelSelectorOpen,
 }: ControlledAgentStatusBarProps) {
   const { theme } = useUnistyles();
+  const isCompact = useIsCompactFormFactor();
   const [prefsOpen, setPrefsOpen] = useState(false);
   const [openSelector, setOpenSelector] = useState<StatusSelector | null>(null);
 
@@ -522,8 +514,6 @@ function ControlledStatusBar({
     providerDefinitions,
     theme.colors.palette,
   );
-  const ProviderIcon = resolveProviderIcon(provider);
-
   const hasAnyControl = resolveHasAnyControl({
     providerOptions,
     modeOptions,
@@ -548,6 +538,17 @@ function ControlledStatusBar({
   );
   const effectiveProviderDefinitions = providerDefinitions;
   const effectiveAllProviderModels = allProviderModels ?? fallbackAllProviderModels;
+  const CompactModelIcon = useMemo(() => {
+    const selectedIcon = resolveProviderIcon(provider);
+    if (selectedIcon) {
+      return selectedIcon;
+    }
+    if (effectiveAllProviderModels.size !== 1) {
+      return null;
+    }
+    const onlyProvider = Array.from(effectiveAllProviderModels.keys())[0];
+    return onlyProvider ? getProviderIcon(onlyProvider) : null;
+  }, [effectiveAllProviderModels, provider]);
   const canSelectProviderInModelMenu = canSelectModelProvider ?? alwaysTrue;
   const comboboxThinkingOptions = useMemo<ComboboxOption[]>(
     () => toComboboxOptions(thinkingOptions),
@@ -651,6 +652,7 @@ function ControlledStatusBar({
   }, []);
 
   const prefsButtonStyle = makePrefsButtonStyle;
+  const shouldUseDesktopControls = platformIsWeb && !isCompact;
 
   const handleSheetModelSelect = useCallback(
     (nextProviderId: string, modelId: string) => {
@@ -667,8 +669,14 @@ function ControlledStatusBar({
   );
 
   const sheetThinkingPressableStyle = useMemo(
-    () => makeSheetPressableStyle(disabled || !canSelectThinking),
-    [canSelectThinking, disabled],
+    () =>
+      makeBadgePressableStyle(
+        styles.modeIconBadge,
+        styles.disabledBadge,
+        disabled || !canSelectThinking,
+        openSelector === "thinking",
+      ),
+    [canSelectThinking, disabled, openSelector],
   );
 
   const sheetModePressableStyle = useMemo(
@@ -677,19 +685,17 @@ function ControlledStatusBar({
   );
 
   const sheetSelectStyle = useMemo(
-    () => [styles.sheetSelect, modelDisabled && styles.disabledSheetSelect],
+    () => [styles.modeIconBadge, modelDisabled && styles.disabledBadge],
     [modelDisabled],
   );
-  const renderSheetModelTrigger = useCallback(
-    ({ selectedModelLabel }: { selectedModelLabel: string }) => (
-      <SheetModelTriggerView
-        selectedModelLabel={selectedModelLabel}
-        style={sheetSelectStyle}
-        ProviderIcon={ProviderIcon}
-      />
-    ),
-    [ProviderIcon, sheetSelectStyle],
-  );
+  const renderCompactModelTrigger = useCallback(() => {
+    const Icon = CompactModelIcon ?? Settings2;
+    return (
+      <View style={sheetSelectStyle} pointerEvents="none" testID="agent-model-selector-icon">
+        <Icon size={theme.iconSize.md} color={theme.colors.foregroundMuted} />
+      </View>
+    );
+  }, [CompactModelIcon, sheetSelectStyle, theme.colors.foregroundMuted, theme.iconSize.md]);
 
   if (!hasAnyControl) {
     return null;
@@ -697,7 +703,7 @@ function ControlledStatusBar({
 
   return (
     <View style={styles.container}>
-      {platformIsWeb ? (
+      {shouldUseDesktopControls ? (
         <DesktopStatusBarContent
           provider={provider}
           providerOptions={providerOptions}
@@ -763,6 +769,8 @@ function ControlledStatusBar({
           selectedThinkingOptionId={selectedThinkingOptionId}
           features={features}
           onSetFeature={onSetFeature}
+          compactSheetFooter={compactSheetFooter}
+          compactControlGroup={compactControlGroup}
           onSelectMode={onSelectMode}
           onSelectThinkingOption={onSelectThinkingOption}
           onToggleFavoriteModel={onToggleFavoriteModel}
@@ -780,12 +788,10 @@ function ControlledStatusBar({
           effectiveProviderDefinitions={effectiveProviderDefinitions}
           effectiveAllProviderModels={effectiveAllProviderModels}
           displayMode={displayMode}
-          displayModel={displayModel}
           displayThinking={displayThinking}
           ModeIconComponent={ModeIconComponent}
           modeIconColor={modeIconColor}
           openSelector={openSelector}
-          ProviderIcon={ProviderIcon}
           prefsOpen={prefsOpen}
           handleOpenPrefs={handleOpenPrefs}
           handleClosePrefs={handleClosePrefs}
@@ -796,7 +802,7 @@ function ControlledStatusBar({
           handleThinkingOpenChange={handleThinkingOpenChange}
           handleModeOpenChange={handleModeOpenChange}
           handleOpenChange={handleOpenChange}
-          renderSheetModelTrigger={renderSheetModelTrigger}
+          renderCompactModelTrigger={renderCompactModelTrigger}
         />
       )}
     </View>
@@ -1081,6 +1087,8 @@ interface SheetStatusBarContentProps {
   selectedThinkingOptionId?: string;
   features?: AgentFeature[];
   onSetFeature?: (featureId: string, value: unknown) => void;
+  compactSheetFooter?: ReactNode;
+  compactControlGroup: CompactStatusControlGroup;
   onSelectMode?: (modeId: string) => void;
   onSelectThinkingOption?: (thinkingOptionId: string) => void;
   onToggleFavoriteModel?: (provider: string, modelId: string) => void;
@@ -1098,12 +1106,10 @@ interface SheetStatusBarContentProps {
   effectiveProviderDefinitions: AgentProviderDefinition[];
   effectiveAllProviderModels: Map<string, AgentModelDefinition[]>;
   displayMode: string;
-  displayModel: string;
   displayThinking: string;
   ModeIconComponent: (typeof MODE_ICONS)[keyof typeof MODE_ICONS] | null;
   modeIconColor: string;
   openSelector: StatusSelector | null;
-  ProviderIcon: ReturnType<typeof getProviderIcon> | null;
   prefsOpen: boolean;
   handleOpenPrefs: () => void;
   handleClosePrefs: () => void;
@@ -1114,56 +1120,135 @@ interface SheetStatusBarContentProps {
   handleThinkingOpenChange: (open: boolean) => void;
   handleModeOpenChange: (open: boolean) => void;
   handleOpenChange: (selector: StatusSelector) => (nextOpen: boolean) => void;
-  renderSheetModelTrigger: (args: { selectedModelLabel: string }) => ReactElement;
+  renderCompactModelTrigger: (args: { selectedModelLabel: string }) => ReactElement;
 }
 
 function SheetStatusBarContent(props: SheetStatusBarContentProps) {
+  const showPrimaryControls =
+    props.compactControlGroup === "all" || props.compactControlGroup === "primary";
+  const showOverflowControls =
+    hasCompactOverflowControls(props) &&
+    (props.compactControlGroup === "all" || props.compactControlGroup === "overflow");
+
+  if (!showPrimaryControls && !showOverflowControls) {
+    return null;
+  }
+
+  return (
+    <>
+      {showPrimaryControls ? <CompactPrimaryStatusControls {...props} /> : null}
+      {showOverflowControls ? <CompactOverflowStatusControls {...props} /> : null}
+    </>
+  );
+}
+
+function hasCompactOverflowControls(props: SheetStatusBarContentProps) {
+  return (
+    Boolean(props.modeOptions?.length) ||
+    Boolean(props.features?.length) ||
+    Boolean(props.compactSheetFooter)
+  );
+}
+
+function CompactPrimaryStatusControls(props: SheetStatusBarContentProps) {
   const { theme } = useUnistyles();
   const {
     provider,
-    modeOptions,
-    selectedModeId,
     selectedModelId,
     thinkingOptions,
     selectedThinkingOptionId,
-    features,
-    onSetFeature,
-    onSelectMode,
     onSelectThinkingOption,
     onToggleFavoriteModel,
     onDropdownClose,
     onModelSelectorOpen,
-    providerDefinitions,
     favoriteKeys,
     disabled,
     isModelLoading,
-    canSelectMode,
     canSelectModel,
     canSelectThinking,
     canSelectProviderInModelMenu,
     modelDisabled,
     effectiveProviderDefinitions,
     effectiveAllProviderModels,
-    displayMode,
-    displayModel,
     displayThinking,
+    openSelector,
+    sheetThinkingPressableStyle,
+    handleSheetModelSelect,
+    handleThinkingOpenChange,
+    renderCompactModelTrigger,
+  } = props;
+  return (
+    <>
+      {canSelectModel ? (
+        <CombinedModelSelector
+          providerDefinitions={effectiveProviderDefinitions}
+          allProviderModels={effectiveAllProviderModels}
+          selectedProvider={provider}
+          selectedModel={selectedModelId ?? ""}
+          canSelectProvider={canSelectProviderInModelMenu}
+          onSelect={handleSheetModelSelect}
+          favoriteKeys={favoriteKeys}
+          onToggleFavorite={onToggleFavoriteModel}
+          isLoading={isModelLoading}
+          disabled={modelDisabled}
+          onOpen={onModelSelectorOpen}
+          onClose={onDropdownClose}
+          renderTrigger={renderCompactModelTrigger}
+        />
+      ) : null}
+
+      {thinkingOptions && thinkingOptions.length > 0 ? (
+        <DropdownMenu open={openSelector === "thinking"} onOpenChange={handleThinkingOpenChange}>
+          <DropdownMenuTrigger
+            disabled={disabled || !canSelectThinking}
+            style={sheetThinkingPressableStyle}
+            accessibilityRole="button"
+            accessibilityLabel={`Select thinking option (${displayThinking})`}
+            testID="agent-thinking-selector"
+          >
+            <Brain size={theme.iconSize.md} color={theme.colors.foregroundMuted} />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent side="top" align="start">
+            {thinkingOptions.map((thinking) => (
+              <ThinkingMenuItem
+                key={thinking.id}
+                thinking={thinking}
+                selected={thinking.id === selectedThinkingOptionId}
+                onSelectThinkingOption={onSelectThinkingOption}
+              />
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ) : null}
+    </>
+  );
+}
+
+function CompactOverflowStatusControls(props: SheetStatusBarContentProps) {
+  const { theme } = useUnistyles();
+  const {
+    provider,
+    modeOptions,
+    selectedModeId,
+    features,
+    onSetFeature,
+    compactSheetFooter,
+    onSelectMode,
+    providerDefinitions,
+    disabled,
+    canSelectMode,
+    displayMode,
     ModeIconComponent,
     modeIconColor,
     openSelector,
-    ProviderIcon,
     prefsOpen,
     handleOpenPrefs,
     handleClosePrefs,
     prefsButtonStyle,
-    sheetThinkingPressableStyle,
     sheetModePressableStyle,
-    handleSheetModelSelect,
-    handleThinkingOpenChange,
     handleModeOpenChange,
     handleOpenChange,
-    renderSheetModelTrigger,
   } = props;
-
   return (
     <>
       <Pressable
@@ -1173,12 +1258,7 @@ function SheetStatusBarContent(props: SheetStatusBarContentProps) {
         accessibilityLabel="Agent preferences"
         testID="agent-preferences-button"
       >
-        {ProviderIcon ? (
-          <ProviderIcon size={theme.iconSize.lg} color={theme.colors.foregroundMuted} />
-        ) : null}
-        <Text style={styles.prefsButtonText} numberOfLines={1}>
-          {displayModel}
-        </Text>
+        <MoreVertical size={theme.iconSize.lg} color={theme.colors.foregroundMuted} />
       </Pressable>
 
       <AdaptiveModalSheet
@@ -1187,57 +1267,6 @@ function SheetStatusBarContent(props: SheetStatusBarContentProps) {
         onClose={handleClosePrefs}
         testID="agent-preferences-sheet"
       >
-        {canSelectModel ? (
-          <View style={styles.sheetSection}>
-            <CombinedModelSelector
-              providerDefinitions={effectiveProviderDefinitions}
-              allProviderModels={effectiveAllProviderModels}
-              selectedProvider={provider}
-              selectedModel={selectedModelId ?? ""}
-              canSelectProvider={canSelectProviderInModelMenu}
-              onSelect={handleSheetModelSelect}
-              favoriteKeys={favoriteKeys}
-              onToggleFavorite={onToggleFavoriteModel}
-              isLoading={isModelLoading}
-              disabled={modelDisabled}
-              onOpen={onModelSelectorOpen}
-              onClose={onDropdownClose}
-              renderTrigger={renderSheetModelTrigger}
-            />
-          </View>
-        ) : null}
-
-        {thinkingOptions && thinkingOptions.length > 0 ? (
-          <View style={styles.sheetSection}>
-            <DropdownMenu
-              open={openSelector === "thinking"}
-              onOpenChange={handleThinkingOpenChange}
-            >
-              <DropdownMenuTrigger
-                disabled={disabled || !canSelectThinking}
-                style={sheetThinkingPressableStyle}
-                accessibilityRole="button"
-                accessibilityLabel="Select thinking option"
-                testID="agent-preferences-thinking"
-              >
-                <Brain size={theme.iconSize.md} color={theme.colors.foregroundMuted} />
-                <Text style={styles.sheetSelectText}>{displayThinking}</Text>
-                <ChevronDown size={theme.iconSize.md} color={theme.colors.foregroundMuted} />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent side="top" align="start">
-                {thinkingOptions.map((thinking) => (
-                  <ThinkingMenuItem
-                    key={thinking.id}
-                    thinking={thinking}
-                    selected={thinking.id === selectedThinkingOptionId}
-                    onSelectThinkingOption={onSelectThinkingOption}
-                  />
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </View>
-        ) : null}
-
         {modeOptions && modeOptions.length > 0 ? (
           <View style={styles.sheetSection}>
             <DropdownMenu open={openSelector === "mode"} onOpenChange={handleModeOpenChange}>
@@ -1280,6 +1309,8 @@ function SheetStatusBarContent(props: SheetStatusBarContentProps) {
             onSetFeature={onSetFeature}
           />
         ))}
+
+        {compactSheetFooter}
       </AdaptiveModalSheet>
     </>
   );
@@ -1630,6 +1661,8 @@ export const AgentStatusBar = memo(function AgentStatusBar({
   agentId,
   serverId,
   onDropdownClose,
+  compactSheetFooter,
+  compactControlGroup,
 }: AgentStatusBarProps) {
   const { preferences, updatePreferences } = useFormPreferences();
   const agent = useSessionStore(
@@ -1841,6 +1874,8 @@ export const AgentStatusBar = memo(function AgentStatusBar({
       onSelectThinkingOption={handleSelectThinkingOption}
       features={agent.features}
       onSetFeature={handleSetFeature}
+      compactSheetFooter={compactSheetFooter}
+      compactControlGroup={compactControlGroup}
       isModelLoading={snapshotIsLoading || selectedProviderIsLoading}
       onModelSelectorOpen={handleModelSelectorOpen}
       onDropdownClose={onDropdownClose}
@@ -1868,11 +1903,14 @@ export function DraftAgentStatusBar({
   onSelectThinkingOption,
   features,
   onSetFeature,
+  compactSheetFooter,
+  compactControlGroup,
   onDropdownClose,
   onModelSelectorOpen,
   disabled = false,
 }: DraftAgentStatusBarProps) {
   const { preferences, updatePreferences } = useFormPreferences();
+  const isCompact = useIsCompactFormFactor();
 
   const mappedModeOptions = useMemo<StatusOption[]>(() => {
     if (modeOptions.length === 0) {
@@ -1920,7 +1958,7 @@ export function DraftAgentStatusBar({
     [updatePreferences],
   );
 
-  if (platformIsWeb) {
+  if (platformIsWeb && !isCompact) {
     return (
       <View style={styles.container}>
         <CombinedModelSelector
@@ -1948,6 +1986,8 @@ export function DraftAgentStatusBar({
             onSelectThinkingOption={onSelectThinkingOption}
             features={features}
             onSetFeature={onSetFeature}
+            compactSheetFooter={compactSheetFooter}
+            compactControlGroup={compactControlGroup}
             onDropdownClose={onDropdownClose}
             disabled={disabled}
           />
@@ -1976,6 +2016,8 @@ export function DraftAgentStatusBar({
       onSelectThinkingOption={onSelectThinkingOption}
       features={features}
       onSetFeature={onSetFeature}
+      compactSheetFooter={compactSheetFooter}
+      compactControlGroup={compactControlGroup}
       onModelSelectorOpen={onModelSelectorOpen}
       disabled={disabled}
     />
@@ -2026,22 +2068,15 @@ const styles = StyleSheet.create((theme) => ({
   },
   prefsButton: {
     height: 28,
-    minWidth: 0,
-    flexShrink: 1,
+    width: 28,
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
     gap: theme.spacing[1],
-    paddingHorizontal: theme.spacing[2],
     borderRadius: theme.borderRadius["2xl"],
   },
   prefsButtonPressed: {
     backgroundColor: theme.colors.surface0,
-  },
-  prefsButtonText: {
-    color: theme.colors.foregroundMuted,
-    fontSize: theme.fontSize.sm,
-    fontWeight: theme.fontWeight.normal,
-    flexShrink: 1,
   },
   sheetSection: {
     gap: theme.spacing[2],

@@ -3,11 +3,14 @@ import { Gesture } from "react-native-gesture-handler";
 import { Extrapolation, interpolate, runOnJS, useSharedValue } from "react-native-reanimated";
 import { useExplorerSidebarAnimation } from "@/contexts/explorer-sidebar-animation-context";
 import { useSidebarAnimation } from "@/contexts/sidebar-animation-context";
+import { isWeb } from "@/constants/platform";
 
 interface UseExplorerOpenGestureParams {
   enabled: boolean;
   onOpen: () => void;
 }
+
+const MOBILE_WEB_EDGE_SWIPE_WIDTH = 32;
 
 export function useExplorerOpenGesture({ enabled, onOpen }: UseExplorerOpenGestureParams) {
   const {
@@ -55,6 +58,11 @@ export function useExplorerOpenGesture({ enabled, onOpen }: UseExplorerOpenGestu
           const deltaY = touch.absoluteY - touchStartY.value;
           const absDeltaX = Math.abs(deltaX);
           const absDeltaY = Math.abs(deltaY);
+
+          if (isWeb && touchStartX.value < windowWidth - MOBILE_WEB_EDGE_SWIPE_WIDTH) {
+            stateManager.fail();
+            return;
+          }
 
           // Fail quickly on rightward or clearly vertical intent.
           if (deltaX >= 10) {

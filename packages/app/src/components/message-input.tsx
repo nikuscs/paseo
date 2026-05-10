@@ -52,6 +52,7 @@ import { getShortcutOs } from "@/utils/shortcut-platform";
 import type { MessageInputKeyboardActionKind } from "@/keyboard/actions";
 import { isImeComposingKeyboardEvent } from "@/utils/keyboard-ime";
 import { isWeb } from "@/constants/platform";
+import { useIsCompactFormFactor } from "@/constants/layout";
 import { useComposerHeightMirror } from "./composer-height-mirror";
 import { computeCanStartDictation } from "./message-input-state";
 
@@ -364,6 +365,7 @@ function resolveSendTooltipLabel(input: {
 
 interface DesktopKeyPressContext {
   onKeyPressCallback: ((event: { key: string; preventDefault: () => void }) => boolean) | undefined;
+  submitOnEnter: boolean;
   isAgentRunning: boolean;
   onQueue: ((payload: MessagePayload) => void) | undefined;
   isSubmitDisabled: boolean;
@@ -390,6 +392,7 @@ function handleDesktopKeyPressImpl(
   const { shiftKey, metaKey, ctrlKey } = event.nativeEvent;
 
   if (event.nativeEvent.key !== "Enter") return;
+  if (!ctx.submitOnEnter) return;
   if (shiftKey) return;
 
   if ((metaKey || ctrlKey) && ctx.isAgentRunning && ctx.onQueue) {
@@ -1186,6 +1189,7 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
       inputWrapperStyle,
       attachmentSlot,
     } = resolveMessageInputProps(props);
+    const isCompact = useIsCompactFormFactor();
     const buttonIconSize = isWeb ? ICON_SIZE.md : ICON_SIZE.lg;
     const toast = useToast();
     const voice = useVoiceOptional();
@@ -1566,12 +1570,14 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
       [onSelectionChangeCallback],
     );
 
-    const shouldHandleDesktopSubmit = isWeb;
+    const shouldHandleWebKeyPress = isWeb;
+    const shouldSubmitOnEnter = isWeb && !isCompact;
 
     function handleDesktopKeyPress(event: WebTextInputKeyPressEvent) {
-      if (!shouldHandleDesktopSubmit) return;
+      if (!shouldHandleWebKeyPress) return;
       handleDesktopKeyPressImpl(event, {
         onKeyPressCallback,
+        submitOnEnter: shouldSubmitOnEnter,
         isAgentRunning,
         onQueue,
         isSubmitDisabled,
@@ -1719,7 +1725,7 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
               scrollEnabled={isWeb ? inputHeight >= MAX_INPUT_HEIGHT : true}
               onContentSizeChange={handleContentSizeChange}
               editable={!isDictating && !isRealtimeVoiceForCurrentAgent && !disabled}
-              onKeyPress={shouldHandleDesktopSubmit ? handleDesktopKeyPress : undefined}
+              onKeyPress={shouldHandleWebKeyPress ? handleDesktopKeyPress : undefined}
               onSelectionChange={handleSelectionChange}
               autoFocus={isWeb && autoFocus}
             />

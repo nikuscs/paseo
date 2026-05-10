@@ -6,7 +6,16 @@ import {
   Image,
   type PressableStateCallbackType,
 } from "react-native";
-import { useState, useEffect, useRef, useCallback, useMemo, memo, type ReactElement } from "react";
+import {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  useMemo,
+  memo,
+  type ReactElement,
+  type ReactNode,
+} from "react";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { useIsCompactFormFactor } from "@/constants/layout";
 import { useShallow } from "zustand/shallow";
@@ -205,14 +214,31 @@ interface RenderLeftContentArgs {
   agentId: string;
   serverId: string;
   focusInput: () => void;
+  compactSheetFooter: ReactNode;
+  compactControlGroup?: "all" | "primary" | "overflow";
 }
 
 function renderLeftContent(args: RenderLeftContentArgs): ReactElement {
-  const { statusControls, agentId, serverId, focusInput } = args;
+  const { statusControls, agentId, serverId, focusInput, compactSheetFooter, compactControlGroup } =
+    args;
   if (resolveStatusControlMode(statusControls) === "draft" && statusControls) {
-    return <DraftAgentStatusBar {...statusControls} />;
+    return (
+      <DraftAgentStatusBar
+        {...statusControls}
+        compactSheetFooter={compactSheetFooter}
+        compactControlGroup={compactControlGroup}
+      />
+    );
   }
-  return <AgentStatusBar agentId={agentId} serverId={serverId} onDropdownClose={focusInput} />;
+  return (
+    <AgentStatusBar
+      agentId={agentId}
+      serverId={serverId}
+      compactSheetFooter={compactSheetFooter}
+      compactControlGroup={compactControlGroup}
+      onDropdownClose={focusInput}
+    />
+  );
 }
 
 interface RenderAttachmentPreviewListArgs {
@@ -744,29 +770,112 @@ interface ComposerVoiceModeButtonProps {
 
 interface ComposerRightControlsSlotProps extends ComposerVoiceModeButtonProps {
   isVoiceModeForAgent: boolean;
+  showVoiceModeButton: boolean;
   hasAgent: boolean;
   isAgentRunning: boolean;
   hasSendableContent: boolean;
   isProcessing: boolean;
   cancelButton: ReactElement;
+  compactOverflowControls: ReactNode;
 }
 
 function ComposerRightControlsSlot({
   isVoiceModeForAgent,
+  showVoiceModeButton,
   hasAgent,
   isAgentRunning,
   hasSendableContent,
   isProcessing,
   cancelButton,
+  compactOverflowControls,
   ...voiceProps
 }: ComposerRightControlsSlotProps) {
-  const showVoiceModeButton = !isVoiceModeForAgent && hasAgent;
+  const shouldShowVoiceModeButton = showVoiceModeButton && !isVoiceModeForAgent && hasAgent;
   const shouldShowCancelButton = isAgentRunning && !hasSendableContent && !isProcessing;
-  if (!showVoiceModeButton && !shouldShowCancelButton) return null;
+  if (!compactOverflowControls && !shouldShowVoiceModeButton && !shouldShowCancelButton) {
+    return null;
+  }
   return (
     <View style={styles.rightControls}>
-      {showVoiceModeButton ? <ComposerVoiceModeButton {...voiceProps} /> : null}
+      {compactOverflowControls}
+      {shouldShowVoiceModeButton ? <ComposerVoiceModeButton {...voiceProps} /> : null}
       {cancelButton}
+    </View>
+  );
+}
+
+function formatCompactTokenCount(value: number): string {
+  if (value >= 1_000_000) return `${Math.round(value / 1_000_000)}m`;
+  if (value >= 1_000) return `${Math.round(value / 1_000)}k`;
+  return Math.round(value).toString();
+}
+
+function formatContextWindowDetail(maxTokens: number | null, usedTokens: number | null): string {
+  if (maxTokens === null || usedTokens === null || maxTokens <= 0) {
+    return "Not available";
+  }
+  const percentage = Math.round((usedTokens / maxTokens) * 100);
+  return `${percentage}% used, ${formatCompactTokenCount(usedTokens)} / ${formatCompactTokenCount(maxTokens)} tokens`;
+}
+
+interface ComposerCompactPreferencesExtrasProps {
+  contextWindowMaxTokens: number | null;
+  contextWindowUsedTokens: number | null;
+  isVoiceModeForAgent: boolean;
+  hasAgent: boolean;
+  isConnected: boolean;
+  isVoiceSwitching: boolean;
+  handleToggleRealtimeVoice: () => void;
+}
+
+function ComposerCompactPreferencesExtras({
+  contextWindowMaxTokens,
+  contextWindowUsedTokens,
+  isVoiceModeForAgent,
+  hasAgent,
+  isConnected,
+  isVoiceSwitching,
+  handleToggleRealtimeVoice,
+}: ComposerCompactPreferencesExtrasProps): ReactElement {
+  const voiceDisabled = !hasAgent || !isConnected || isVoiceSwitching || isVoiceModeForAgent;
+  const voiceRowStyle = useCallback(
+    ({ pressed }: PressableStateCallbackType) => [
+      styles.compactSheetRow,
+      pressed && styles.compactSheetRowPressed,
+      voiceDisabled && styles.compactSheetRowDisabled,
+    ],
+    [voiceDisabled],
+  );
+  const contextMeter =
+    contextWindowMaxTokens !== null && contextWindowUsedTokens !== null ? (
+      <ContextWindowMeter maxTokens={contextWindowMaxTokens} usedTokens={contextWindowUsedTokens} />
+    ) : (
+      <View style={styles.compactSheetIconSlot} />
+    );
+  return (
+    <View style={styles.compactSheetExtraSection}>
+      <View style={styles.compactSheetRow}>
+        {contextMeter}
+        <View style={styles.compactSheetTextGroup}>
+          <Text style={styles.compactSheetTitle}>Context window</Text>
+          <Text style={styles.compactSheetDetail}>
+            {formatContextWindowDetail(contextWindowMaxTokens, contextWindowUsedTokens)}
+          </Text>
+        </View>
+      </View>
+      <Pressable
+        disabled={voiceDisabled}
+        onPress={handleToggleRealtimeVoice}
+        style={voiceRowStyle}
+        accessibilityRole="button"
+        accessibilityLabel={isVoiceModeForAgent ? "Voice mode active" : "Enable Voice mode"}
+      >
+        <ThemedAudioLines size={ICON_SIZE.md} uniProps={iconForegroundMutedMapping} />
+        <View style={styles.compactSheetTextGroup}>
+          <Text style={styles.compactSheetTitle}>Voice mode</Text>
+          <Text style={styles.compactSheetDetail}>{isVoiceModeForAgent ? "On" : "Off"}</Text>
+        </View>
+      </Pressable>
     </View>
   );
 }
@@ -1332,10 +1441,64 @@ export function Composer({
     ],
   );
 
+  const { contextWindowMaxTokens, contextWindowUsedTokens } = resolveContextWindowValues(
+    agentState.contextWindowMaxTokens,
+    agentState.contextWindowUsedTokens,
+  );
+
+  const beforeVoiceContent = useMemo(
+    () =>
+      isMobile
+        ? null
+        : renderContextWindowMeterSlot(contextWindowMaxTokens, contextWindowUsedTokens),
+    [contextWindowMaxTokens, contextWindowUsedTokens, isMobile],
+  );
+
+  const compactSheetFooter = useMemo(
+    () =>
+      isMobile ? (
+        <ComposerCompactPreferencesExtras
+          contextWindowMaxTokens={contextWindowMaxTokens}
+          contextWindowUsedTokens={contextWindowUsedTokens}
+          isVoiceModeForAgent={isVoiceModeForAgent}
+          hasAgent={hasAgent}
+          isConnected={isConnected}
+          isVoiceSwitching={isVoiceSwitching}
+          handleToggleRealtimeVoice={handleToggleRealtimeVoice}
+        />
+      ) : null,
+    [
+      contextWindowMaxTokens,
+      contextWindowUsedTokens,
+      handleToggleRealtimeVoice,
+      hasAgent,
+      isConnected,
+      isMobile,
+      isVoiceModeForAgent,
+      isVoiceSwitching,
+    ],
+  );
+
+  const compactOverflowControls = useMemo(
+    () =>
+      isMobile
+        ? renderLeftContent({
+            statusControls,
+            agentId,
+            serverId,
+            focusInput,
+            compactSheetFooter,
+            compactControlGroup: "overflow",
+          })
+        : null,
+    [agentId, compactSheetFooter, focusInput, isMobile, serverId, statusControls],
+  );
+
   const rightContent = useMemo(
     () => (
       <ComposerRightControlsSlot
         isVoiceModeForAgent={isVoiceModeForAgent}
+        showVoiceModeButton={!isMobile}
         hasAgent={hasAgent}
         isAgentRunning={isAgentRunning}
         hasSendableContent={hasSendableContent}
@@ -1347,14 +1510,17 @@ export function Composer({
         realtimeVoiceButtonStyle={realtimeVoiceButtonStyle}
         voiceToggleKeys={voiceToggleKeys}
         cancelButton={cancelButton}
+        compactOverflowControls={compactOverflowControls}
       />
     ),
     [
       buttonIconSize,
       cancelButton,
+      compactOverflowControls,
       handleToggleRealtimeVoice,
       hasAgent,
       hasSendableContent,
+      isMobile,
       isAgentRunning,
       isConnected,
       isProcessing,
@@ -1363,16 +1529,6 @@ export function Composer({
       realtimeVoiceButtonStyle,
       voiceToggleKeys,
     ],
-  );
-
-  const { contextWindowMaxTokens, contextWindowUsedTokens } = resolveContextWindowValues(
-    agentState.contextWindowMaxTokens,
-    agentState.contextWindowUsedTokens,
-  );
-
-  const beforeVoiceContent = useMemo(
-    () => renderContextWindowMeterSlot(contextWindowMaxTokens, contextWindowUsedTokens),
-    [contextWindowMaxTokens, contextWindowUsedTokens],
   );
 
   const githubSearchQueryTrimmed = githubSearchQuery.trim();
@@ -1431,8 +1587,16 @@ export function Composer({
   );
 
   const leftContent = useMemo(
-    () => renderLeftContent({ statusControls, agentId, serverId, focusInput }),
-    [agentId, focusInput, serverId, statusControls],
+    () =>
+      renderLeftContent({
+        statusControls,
+        agentId,
+        serverId,
+        focusInput,
+        compactSheetFooter,
+        compactControlGroup: isMobile ? "primary" : "all",
+      }),
+    [agentId, compactSheetFooter, focusInput, isMobile, serverId, statusControls],
   );
 
   const handleAttachButtonRef = useCallback((node: View | null) => {
@@ -1675,6 +1839,45 @@ const styles = StyleSheet.create((theme: Theme) => ({
   realtimeVoiceButtonActive: {
     backgroundColor: theme.colors.palette.green[600],
     borderColor: theme.colors.palette.green[800],
+  },
+  compactSheetRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.spacing[3],
+    paddingHorizontal: theme.spacing[4],
+    paddingVertical: theme.spacing[3],
+    borderRadius: theme.borderRadius.lg,
+    borderWidth: 1,
+    borderColor: theme.colors.surface2,
+    backgroundColor: theme.colors.surface0,
+  },
+  compactSheetExtraSection: {
+    gap: theme.spacing[2],
+  },
+  compactSheetRowPressed: {
+    backgroundColor: theme.colors.surface2,
+  },
+  compactSheetRowDisabled: {
+    opacity: 0.5,
+  },
+  compactSheetIconSlot: {
+    width: 28,
+    height: 28,
+  },
+  compactSheetTextGroup: {
+    flex: 1,
+    minWidth: 0,
+    gap: theme.spacing[1],
+  },
+  compactSheetTitle: {
+    color: theme.colors.foreground,
+    fontSize: theme.fontSize.base,
+    fontWeight: theme.fontWeight.semibold,
+  },
+  compactSheetDetail: {
+    color: theme.colors.foregroundMuted,
+    fontSize: theme.fontSize.sm,
+    fontWeight: theme.fontWeight.normal,
   },
   iconButtonHovered: {
     backgroundColor: theme.colors.surface2,
