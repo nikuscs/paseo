@@ -5,6 +5,7 @@ import { connectTerminalClient, type TerminalPerfDaemonClient } from "./terminal
 import { connectWorkspaceSetupClient, openHomeWithProject } from "./workspace-setup";
 import { selectWorkspaceInSidebar } from "./sidebar";
 import { waitForTabBar } from "./launcher";
+import { buildCodexCreateAgentPreferences } from "./daemon-registry";
 
 function composerInput(page: Page) {
   return page.getByRole("textbox", { name: "Message agent..." }).first();
@@ -33,6 +34,24 @@ export async function expectComposerDraft(page: Page, text: string): Promise<voi
 
 export async function expectComposerEditable(page: Page): Promise<void> {
   await expect(composerInput(page)).toBeEditable({ timeout: 15_000 });
+}
+
+export async function seedCodexDraftComposerPreferences(page: Page): Promise<void> {
+  const serverId = process.env.E2E_SERVER_ID;
+  if (!serverId) {
+    throw new Error("E2E_SERVER_ID is not set (expected from Playwright globalSetup).");
+  }
+
+  await page.evaluate((preferences) => {
+    const seedNonce = localStorage.getItem("@paseo:e2e-seed-nonce");
+    if (seedNonce) {
+      localStorage.setItem("@paseo:e2e-disable-default-seed-once", seedNonce);
+    }
+    localStorage.setItem("@paseo:create-agent-preferences", JSON.stringify(preferences));
+  }, buildCodexCreateAgentPreferences(serverId));
+
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await waitForTabBar(page);
 }
 
 export async function submitMessage(page: Page, text: string): Promise<void> {

@@ -42,3 +42,11 @@ export function buildCreateAgentPreferences(serverId: string) {
     providerPreferences: TEST_MOCK_PROVIDER_PREFERENCES,
   };
 }
+
+export function buildCodexCreateAgentPreferences(serverId: string) {
+  return {
+    serverId,
+    provider: "codex" as const,
+    providerPreferences: TEST_PROVIDER_PREFERENCES,
+  };
+}

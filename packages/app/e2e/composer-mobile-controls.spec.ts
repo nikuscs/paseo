@@ -1,41 +1,10 @@
-import { test, expect, type Page } from "./fixtures";
-import { composerLocator, expectComposerVisible } from "./helpers/composer";
-import { clickNewChat, waitForTabBar } from "./helpers/launcher";
-
-function getServerId(): string {
-  const serverId = process.env.E2E_SERVER_ID;
-  if (!serverId) {
-    throw new Error("E2E_SERVER_ID is not set (expected from Playwright globalSetup).");
-  }
-  return serverId;
-}
-
-async function preferCodexForDraftComposer(page: Page): Promise<void> {
-  await page.evaluate((serverId) => {
-    const seedNonce = localStorage.getItem("@paseo:e2e-seed-nonce");
-    if (seedNonce) {
-      localStorage.setItem("@paseo:e2e-disable-default-seed-once", seedNonce);
-    }
-    localStorage.setItem(
-      "@paseo:create-agent-preferences",
-      JSON.stringify({
-        serverId,
-        provider: "codex",
-        providerPreferences: {
-          codex: {
-            model: "gpt-5.4-mini",
-            thinkingByModel: {
-              "gpt-5.4-mini": "low",
-            },
-          },
-        },
-      }),
-    );
-  }, getServerId());
-
-  await page.reload({ waitUntil: "domcontentloaded" });
-  await waitForTabBar(page);
-}
+import { test, expect } from "./fixtures";
+import {
+  composerLocator,
+  expectComposerVisible,
+  seedCodexDraftComposerPreferences,
+} from "./helpers/composer";
+import { clickNewChat } from "./helpers/launcher";
 
 test.describe("Mobile composer controls", () => {
   test.use({ viewport: { width: 390, height: 844 } });
@@ -48,7 +17,7 @@ test.describe("Mobile composer controls", () => {
 
     const workspace = await withWorkspace({ prefix: "mobile-composer-controls-" });
     await workspace.navigateTo();
-    await preferCodexForDraftComposer(page);
+    await seedCodexDraftComposerPreferences(page);
     await clickNewChat(page);
     await expectComposerVisible(page);
     await expect(page.locator('meta[name="viewport"]')).toHaveAttribute(

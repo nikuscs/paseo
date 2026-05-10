@@ -56,6 +56,7 @@ import { useActiveWorktreeNewAction } from "@/hooks/use-active-worktree-new-acti
 import { useFaviconStatus } from "@/hooks/use-favicon-status";
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
 import { useLatchedBoolean } from "@/hooks/use-latched-boolean";
+import { useCompactWebViewportZoomLock } from "@/hooks/use-compact-web-viewport-zoom-lock";
 import { useOpenProject } from "@/hooks/use-open-project";
 import { useAppSettings } from "@/hooks/use-settings";
 import { useStableEvent } from "@/hooks/use-stable-event";
@@ -375,9 +376,6 @@ function QueryProvider({ children }: { children: ReactNode }) {
 
 const rowStyle = { flex: 1, flexDirection: "row" } as const;
 const flexStyle = { flex: 1 } as const;
-const COMPACT_WEB_VIEWPORT_CONTENT =
-  "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover";
-const DEFAULT_WEB_VIEWPORT_CONTENT = "width=device-width, initial-scale=1, viewport-fit=cover";
 const MOBILE_WEB_EDGE_SWIPE_WIDTH = 32;
 const MOBILE_WEB_GESTURE_TOUCH_ACTION = isWeb ? "auto" : "pan-y";
 
@@ -481,40 +479,6 @@ function AppContainer({
   }
 
   return <MobileGestureWrapper chromeEnabled={chromeEnabled}>{content}</MobileGestureWrapper>;
-}
-
-function useCompactWebViewportZoomLock(isCompactLayout: boolean) {
-  useEffect(() => {
-    if (!isWeb) {
-      return;
-    }
-
-    const viewportMeta =
-      document.querySelector<HTMLMetaElement>('meta[name="viewport"]') ??
-      document.createElement("meta");
-    const hadViewportMeta = viewportMeta.parentElement !== null;
-    const previousContent = viewportMeta.getAttribute("content");
-
-    if (!hadViewportMeta) {
-      viewportMeta.name = "viewport";
-      document.head.appendChild(viewportMeta);
-    }
-
-    viewportMeta.setAttribute(
-      "content",
-      isCompactLayout ? COMPACT_WEB_VIEWPORT_CONTENT : DEFAULT_WEB_VIEWPORT_CONTENT,
-    );
-
-    return () => {
-      if (!hadViewportMeta) {
-        viewportMeta.remove();
-        return;
-      }
-      if (previousContent !== null) {
-        viewportMeta.setAttribute("content", previousContent);
-      }
-    };
-  }, [isCompactLayout]);
 }
 
 function MobileGestureWrapper({

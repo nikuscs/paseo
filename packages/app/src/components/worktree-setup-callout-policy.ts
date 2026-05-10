@@ -23,6 +23,8 @@ interface ReadProjectConfigResult {
   config?: PaseoConfigRaw | null;
 }
 
+type ProjectSettingsRoute = ReturnType<typeof buildProjectSettingsRoute>;
+
 export interface WorktreeSetupCalloutPolicy {
   id: string;
   dismissalKey: string;
@@ -30,7 +32,7 @@ export interface WorktreeSetupCalloutPolicy {
   title: string;
   description: string;
   actionLabel: string;
-  projectSettingsRoute: ReturnType<typeof buildProjectSettingsRoute>;
+  projectSettingsRoute: ProjectSettingsRoute;
   testID: string;
 }
 

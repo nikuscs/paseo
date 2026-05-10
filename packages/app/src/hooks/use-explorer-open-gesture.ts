@@ -59,6 +59,7 @@ export function useExplorerOpenGesture({ enabled, onOpen }: UseExplorerOpenGestu
           const absDeltaX = Math.abs(deltaX);
           const absDeltaY = Math.abs(deltaY);
 
+          // Browser back-swipe owns most of the viewport; keep this gesture on the right edge.
           if (isWeb && touchStartX.value < windowWidth - MOBILE_WEB_EDGE_SWIPE_WIDTH) {
             stateManager.fail();
             return;
