@@ -716,6 +716,7 @@ test("createAgent passes daemon launch env through the provider launch context",
     modeId: "auto",
   });
   expect(client.lastLaunchContext).toEqual({
+    agentId: snapshot.id,
     env: {
       PASEO_AGENT_ID: snapshot.id,
     },
@@ -1179,6 +1180,7 @@ test("resumeAgentFromPersistence keeps metadata config, applies overrides, and p
     },
   });
   expect(client.lastResumeLaunchContext).toEqual({
+    agentId: resumed.id,
     env: {
       PASEO_AGENT_ID: resumed.id,
     },
@@ -1283,6 +1285,7 @@ test("reloadAgentSession passes daemon launch env through the provider launch co
   });
 
   expect(client.lastCreateLaunchContext).toEqual({
+    agentId: snapshot.id,
     env: {
       PASEO_AGENT_ID: snapshot.id,
     },
@@ -1293,6 +1296,7 @@ test("reloadAgentSession passes daemon launch env through the provider launch co
   });
 
   expect(client.lastResumeLaunchContext).toEqual({
+    agentId: snapshot.id,
     env: {
       PASEO_AGENT_ID: snapshot.id,
     },
@@ -4190,6 +4194,8 @@ test("turn_failed surfaces provider code and diagnostic in system error message"
   });
 
   await expect(manager.runAgent(agent.id, "hello")).rejects.toThrow("Provider execution failed");
+
+  expect(manager.getAgent(agent.id)?.lastError).toBe("Provider execution failed");
 
   const systemError = manager
     .getTimeline(agent.id)

@@ -29,6 +29,7 @@ import {
   ShieldAlert,
   ShieldCheck,
   ShieldOff,
+  ShieldQuestionMark,
   Zap,
 } from "lucide-react-native";
 import { useIsCompactFormFactor } from "@/constants/layout";
@@ -190,6 +191,7 @@ const MODE_ICONS = {
   ShieldCheck,
   ShieldAlert,
   ShieldOff,
+  ShieldQuestionMark,
 } as const;
 
 function alwaysTrue() {

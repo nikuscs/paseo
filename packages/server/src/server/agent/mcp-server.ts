@@ -8,6 +8,7 @@ import type { ServerNotification, ServerRequest } from "@modelcontextprotocol/sd
 import type { AgentProvider } from "./agent-sdk-types.js";
 import type { AgentManager, WaitForAgentResult } from "./agent-manager.js";
 import {
+  AgentFeatureSchema,
   AgentPermissionRequestPayloadSchema,
   AgentListItemPayloadSchema,
   AgentPermissionResponseSchema,
@@ -489,6 +490,10 @@ export async function createAgentMcpServer(options: AgentMcpServerOptions): Prom
       "Required provider/model pair, for example codex/gpt-5.4.",
     ),
     thinking: z.string().optional().describe("Thinking option ID"),
+    features: z
+      .record(z.unknown())
+      .optional()
+      .describe("Provider-specific feature values, for example { fast_mode: true } for Codex."),
     labels: z.record(z.string(), z.string()).optional().describe("Labels to set on the agent"),
     initialPrompt: z
       .string()
@@ -531,6 +536,10 @@ export async function createAgentMcpServer(options: AgentMcpServerOptions): Prom
       "Required provider/model pair, for example codex/gpt-5.4.",
     ),
     thinking: z.string().optional().describe("Thinking option ID"),
+    features: z
+      .record(z.unknown())
+      .optional()
+      .describe("Provider-specific feature values, for example { fast_mode: true } for Codex."),
     labels: z.record(z.string(), z.string()).optional().describe("Labels to set on the agent"),
     initialPrompt: z
       .string()
@@ -579,6 +588,14 @@ export async function createAgentMcpServer(options: AgentMcpServerOptions): Prom
   const createAgentInputSchema = callerAgentId ? agentToAgentInputSchema : topLevelInputSchema;
   const agentToAgentCreateAgentArgsSchema = z.object(agentToAgentInputSchema).strict();
   const topLevelCreateAgentArgsSchema = z.object(topLevelInputSchema).strict();
+  const listProviderFeaturesInputSchema = {
+    provider: AgentProviderEnum,
+    cwd: z.string().describe("Working directory used to resolve provider feature availability."),
+    modeId: z.string().optional(),
+    model: z.string().optional(),
+    thinkingOptionId: z.string().optional(),
+    featureValues: z.record(z.unknown()).optional(),
+  };
 
   if (options.voiceOnly || options.enableVoiceTools || callerContext?.enableVoiceTools) {
     server.registerTool(
@@ -630,6 +647,7 @@ export async function createAgentMcpServer(options: AgentMcpServerOptions): Prom
     normalizedTitle: string | null;
     model: string | undefined;
     thinking: string | undefined;
+    features: Record<string, unknown> | undefined;
     labels: Record<string, string> | undefined;
     notifyOnFinish: boolean;
     resolvedCwd: string;
@@ -699,6 +717,7 @@ export async function createAgentMcpServer(options: AgentMcpServerOptions): Prom
       normalizedTitle: callerArgs.title.trim(),
       model: resolvedProviderModel.model,
       thinking: callerArgs.thinking,
+      features: callerArgs.features,
       labels: callerArgs.labels,
       notifyOnFinish: callerArgs.notifyOnFinish ?? false,
       resolvedCwd,
@@ -772,6 +791,7 @@ export async function createAgentMcpServer(options: AgentMcpServerOptions): Prom
       normalizedTitle: topLevelArgs.title.trim(),
       model: resolvedProviderModel.model,
       thinking: topLevelArgs.thinking,
+      features: topLevelArgs.features,
       labels: topLevelArgs.labels,
       notifyOnFinish: topLevelArgs.notifyOnFinish ?? false,
       resolvedCwd,
@@ -815,6 +835,7 @@ export async function createAgentMcpServer(options: AgentMcpServerOptions): Prom
         normalizedTitle,
         model,
         thinking,
+        features,
         labels,
         notifyOnFinish,
         resolvedCwd,
@@ -836,6 +857,7 @@ export async function createAgentMcpServer(options: AgentMcpServerOptions): Prom
           title: normalizedTitle ?? undefined,
           model,
           thinkingOptionId: thinking,
+          featureValues: features,
         },
         undefined,
         Object.keys(mergedLabels).length > 0 ? { labels: mergedLabels } : undefined,
@@ -920,6 +942,29 @@ export async function createAgentMcpServer(options: AgentMcpServerOptions): Prom
         }),
       };
       return response;
+    },
+  );
+
+  server.registerTool(
+    "set_agent_feature",
+    {
+      title: "Set agent feature",
+      description: "Set a provider-specific feature on an existing agent, such as Codex fast_mode.",
+      inputSchema: {
+        agentId: z.string(),
+        featureId: z.string().trim().min(1),
+        value: z.unknown(),
+      },
+      outputSchema: {
+        success: z.boolean(),
+      },
+    },
+    async ({ agentId, featureId, value }) => {
+      await agentManager.setAgentFeature(agentId, featureId, value);
+      return {
+        content: [],
+        structuredContent: ensureValidJson({ success: true }),
+      };
     },
   );
 
@@ -1778,6 +1823,37 @@ export async function createAgentMcpServer(options: AgentMcpServerOptions): Prom
   );
 
   server.registerTool(
+    "list_provider_features",
+    {
+      title: "List provider features",
+      description:
+        "List provider-specific features available for a draft agent configuration, such as Codex fast_mode.",
+      inputSchema: listProviderFeaturesInputSchema,
+      outputSchema: {
+        provider: AgentProviderEnum,
+        features: z.array(AgentFeatureSchema),
+      },
+    },
+    async ({ provider, cwd, modeId, model, thinkingOptionId, featureValues }) => {
+      const features = await agentManager.listDraftFeatures({
+        provider,
+        cwd: expandUserPath(cwd),
+        ...(modeId ? { modeId } : {}),
+        ...(model ? { model } : {}),
+        ...(thinkingOptionId ? { thinkingOptionId } : {}),
+        ...(featureValues ? { featureValues } : {}),
+      });
+      return {
+        content: [],
+        structuredContent: ensureValidJson({
+          provider,
+          features,
+        }),
+      };
+    },
+  );
+
+  server.registerTool(
     "list_worktrees",
     {
       title: "List worktrees",
@@ -1858,6 +1934,10 @@ export async function createAgentMcpServer(options: AgentMcpServerOptions): Prom
         resolveDefaultBranch: mcpInput.resolveDefaultBranch,
       });
       const { worktree } = createdWorktree;
+      await options.workspaceGitService?.listWorktrees?.(repoRoot, {
+        force: true,
+        reason: "mcp:create-worktree",
+      });
 
       return {
         content: [],
@@ -1887,7 +1967,7 @@ export async function createAgentMcpServer(options: AgentMcpServerOptions): Prom
       },
     },
     async ({ cwd, worktreePath, worktreeSlug }) => {
-      const repoRoot = resolveScopedCwd(cwd, { required: true });
+      const resolvedCwd = resolveScopedCwd(cwd, { required: true });
       if (!worktreePath && !worktreeSlug) {
         throw new Error("worktreePath or worktreeSlug is required");
       }
@@ -1912,6 +1992,7 @@ export async function createAgentMcpServer(options: AgentMcpServerOptions): Prom
       if (!options.emitSessionMessage) {
         throw new Error("Session message emitter is required to archive worktrees");
       }
+      const repoRoot = await options.workspaceGitService.resolveRepoRoot(resolvedCwd);
 
       const targetPath =
         worktreePath ??
@@ -1948,6 +2029,10 @@ export async function createAgentMcpServer(options: AgentMcpServerOptions): Prom
           requestId: "mcp:archive_worktree",
         },
       );
+      await options.workspaceGitService.listWorktrees(repoRoot, {
+        force: true,
+        reason: "mcp:archive-worktree",
+      });
 
       return {
         content: [],
