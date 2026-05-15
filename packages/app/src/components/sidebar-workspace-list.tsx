@@ -1264,6 +1264,7 @@ function ProjectHeaderRow({
       >
         <ContextMenuTrigger
           enabledOnMobile={false}
+          accessibilityRole="button"
           style={projectRowStyle}
           onPressIn={interaction.handlePressIn}
           onTouchMove={interaction.handleTouchMove}
@@ -1286,6 +1287,7 @@ function ProjectHeaderRow({
       onPointerLeave={handlePointerLeave}
     >
       <Pressable
+        accessibilityRole="button"
         style={projectRowStyle}
         onPressIn={interaction.handlePressIn}
         onTouchMove={interaction.handleTouchMove}
