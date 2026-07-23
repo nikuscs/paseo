@@ -4,15 +4,24 @@ import { createJSONStorage, persist, type StateStorage } from "zustand/middlewar
 
 export type SidebarGroupMode = "project" | "status";
 
+// How workspaces (and their projects) are ordered in project grouping mode.
+// - "manual": the user's persisted drag order (sidebar-order-store). This is the default and
+//   preserves the historical behavior where the base order is alphabetical until dragged.
+// - "name": alphabetical by name (the base structure order), ignoring the manual drag order.
+// - "activity": most-recently-active first, by workspace status recency.
+export type SidebarSortMode = "manual" | "name" | "activity";
+
 const SIDEBAR_VIEW_STORAGE_KEY = "sidebar-view";
 const LEGACY_SIDEBAR_GROUP_MODE_STORAGE_KEY = "sidebar-group-mode";
-const SIDEBAR_VIEW_STORE_VERSION = 2;
+const SIDEBAR_VIEW_STORE_VERSION = 3;
 
 interface SidebarViewStoreState {
   groupMode: SidebarGroupMode;
+  sortMode: SidebarSortMode;
   // Empty means "all hosts". A non-empty list pins the sidebar to those hosts.
   hostFilters: string[];
   setGroupMode: (mode: SidebarGroupMode) => void;
+  setSortMode: (mode: SidebarSortMode) => void;
   toggleHostFilter: (serverId: string) => void;
   clearHostFilters: () => void;
   reconcileHostFilters: (serverIds: readonly string[]) => void;
@@ -20,11 +29,16 @@ interface SidebarViewStoreState {
 
 interface SidebarViewPersistedState {
   groupMode: SidebarGroupMode;
+  sortMode: SidebarSortMode;
   hostFilters: string[];
 }
 
 function isSidebarGroupMode(value: unknown): value is SidebarGroupMode {
   return value === "project" || value === "status";
+}
+
+function isSidebarSortMode(value: unknown): value is SidebarSortMode {
+  return value === "manual" || value === "name" || value === "activity";
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -57,16 +71,17 @@ function readHostFilters(persistedState: Record<string, unknown>): string[] {
 
 export function migrateSidebarViewState(persistedState: unknown): SidebarViewPersistedState {
   if (!isRecord(persistedState)) {
-    return { groupMode: "project", hostFilters: [] };
+    return { groupMode: "project", sortMode: "manual", hostFilters: [] };
   }
 
   const legacyGroupMode = readLegacyGroupMode(persistedState);
   if (legacyGroupMode) {
-    return { groupMode: legacyGroupMode, hostFilters: [] };
+    return { groupMode: legacyGroupMode, sortMode: "manual", hostFilters: [] };
   }
 
   return {
     groupMode: isSidebarGroupMode(persistedState.groupMode) ? persistedState.groupMode : "project",
+    sortMode: isSidebarSortMode(persistedState.sortMode) ? persistedState.sortMode : "manual",
     hostFilters: readHostFilters(persistedState),
   };
 }
@@ -91,8 +106,10 @@ export const useSidebarViewStore = create<SidebarViewStoreState>()(
   persist(
     (set) => ({
       groupMode: "project",
+      sortMode: "manual",
       hostFilters: [],
       setGroupMode: (mode) => set({ groupMode: mode }),
+      setSortMode: (mode) => set({ sortMode: mode }),
       toggleHostFilter: (serverId) =>
         set((state) => ({
           hostFilters: state.hostFilters.includes(serverId)
@@ -119,6 +136,7 @@ export const useSidebarViewStore = create<SidebarViewStoreState>()(
       storage: createJSONStorage(createSidebarViewStorage),
       partialize: (state) => ({
         groupMode: state.groupMode,
+        sortMode: state.sortMode,
         hostFilters: state.hostFilters,
       }),
       migrate: migrateSidebarViewState,
