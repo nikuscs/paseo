@@ -9,7 +9,6 @@ import {
   selectProjectOrder,
   selectRecommendedProjectPaths,
   selectWorkspace,
-  selectWorkspaceActivityByKey,
   selectWorkspaceDirectory,
   selectWorkspaceExists,
   selectWorkspaceFields,
@@ -18,7 +17,6 @@ import {
   selectWorkspaceStatusesForBadges,
   selectWorkspaceStructureProjects,
   workspaceEqualityFns,
-  type WorkspaceActivityByKey,
   type WorkspaceStructure,
 } from "./selectors";
 import { useSessionStore, type WorkspaceDescriptor } from "../session-store";
@@ -92,8 +90,6 @@ export function useWorkspaceDirectory(
   );
 }
 
-const EMPTY_WORKSPACE_ACTIVITY: WorkspaceActivityByKey = {};
-
 export function useWorkspaceStructure(serverIds: string[]): WorkspaceStructure {
   const projects = useStoreWithEqualityFn(
     useSessionStore,
@@ -119,21 +115,6 @@ export function useWorkspaceStructure(serverIds: string[]): WorkspaceStructure {
         workspaceOrderByScope,
       }),
     [projectOrder, projects, workspaceOrderByScope],
-  );
-}
-
-// Activity timestamps (epoch ms) per workspace key, for the sidebar's "recent activity" sort.
-// Pass `enabled: false` outside activity mode to get a stable empty map — this avoids
-// re-rendering consumers on every workspace status change when the sort isn't using activity.
-export function useWorkspaceActivityByKey(
-  serverIds: string[],
-  enabled: boolean,
-): WorkspaceActivityByKey {
-  return useStoreWithEqualityFn(
-    useSessionStore,
-    (state) =>
-      enabled ? selectWorkspaceActivityByKey(state, serverIds) : EMPTY_WORKSPACE_ACTIVITY,
-    workspaceEqualityFns.deep,
   );
 }
 

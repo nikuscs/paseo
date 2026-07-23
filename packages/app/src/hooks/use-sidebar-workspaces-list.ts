@@ -1,9 +1,6 @@
 import { useCallback, useEffect, useMemo } from "react";
 import { useSessionStore, type WorkspaceDescriptor } from "@/stores/session-store";
-import {
-  useHydratedWorkspaceServerIds,
-  useWorkspaceActivityByKey,
-} from "@/stores/session-store-hooks";
+import { useHydratedWorkspaceServerIds } from "@/stores/session-store-hooks";
 import { useHostProjects } from "@/projects/host-projects";
 import { fetchAllWorkspaceDescriptors } from "@/projects/workspace-fetching";
 import { getHostRuntimeStore, useHostRegistryLoaded, useHosts } from "@/runtime/host-runtime";
@@ -111,8 +108,9 @@ export function useSidebarWorkspacesList(options?: {
   const projectNamesByKey =
     sidebarModel.projectNamesByKey.size > 0 ? sidebarModel.projectNamesByKey : EMPTY_PROJECT_NAMES;
 
-  // Persisted-order reconciliation runs against the canonical (manual-ordered) `projects`, never
-  // the sorted view — so choosing Name/Activity never rewrites the saved manual drag order.
+  // Persisted-order reconciliation runs against the canonical (manual-ordered) `projects`. The
+  // sidebar-only "Sort by" preference is applied downstream in the sidebar model (where the
+  // workspace entries live), so it never rewrites the saved manual drag order.
   useEffect(() => {
     const orderStore = useSidebarOrderStore.getState();
     const updates = computeSidebarOrderUpdates({
@@ -129,14 +127,6 @@ export function useSidebarWorkspacesList(options?: {
       orderStore.setWorkspaceOrder(projectKey, order);
     }
   }, [persistedProjectOrder, projects]);
-
-  // Apply the sidebar-only "Sort by" preference on top of the canonical order for rendering.
-  const sortMode = useSidebarViewStore((state) => state.sortMode);
-  const activityByKey = useWorkspaceActivityByKey(hydratedServerIds, sortMode === "activity");
-  const sortedProjects = useMemo(
-    () => sortSidebarProjects({ projects, sortMode, activityByKey }),
-    [projects, sortMode, activityByKey],
-  );
 
   const refreshAll = useCallback(() => {
     if (!isActive) return;
@@ -184,7 +174,7 @@ export function useSidebarWorkspacesList(options?: {
 
   return {
     workspacePlacements,
-    projects: sortedProjects,
+    projects,
     projectNamesByKey,
     ...loadingState,
     refreshAll,
