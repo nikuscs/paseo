@@ -27,12 +27,7 @@ export interface SidebarOrderSnapshot {
   workspaceOrderByProject: Record<string, string[]>;
 }
 
-// Maps a workspace key (`${serverId}:${workspaceId}`) to an activity timestamp in epoch ms.
-// Absent/unknown activity sorts last (treated as 0). Consumed by the sidebar's activity sort.
-export type WorkspaceActivityByKey = Record<string, number>;
-
 const EMPTY_WORKSPACE_KEYS: string[] = [];
-const EMPTY_WORKSPACE_ACTIVITY: WorkspaceActivityByKey = {};
 const EMPTY_WORKSPACE_STRUCTURE: WorkspaceStructure = { projects: [] };
 
 export const workspaceEqualityFns = {
@@ -172,26 +167,6 @@ export function selectWorkspaceStructureProjects(
   }
 
   return buildWorkspaceStructureProjects({ sessions });
-}
-
-// Activity timestamp (epoch ms) per workspace key, used by the "activity" sort mode. Returns a
-// stable empty object when there are no workspaces so consumers can skip subscribing to this in
-// other sort modes without triggering re-renders.
-export function selectWorkspaceActivityByKey(
-  state: SessionsSnapshot,
-  serverIds: readonly string[],
-): WorkspaceActivityByKey {
-  const activityByKey: WorkspaceActivityByKey = {};
-  for (const serverId of serverIds) {
-    const workspaces = state.sessions[serverId]?.workspaces;
-    if (!workspaces) {
-      continue;
-    }
-    for (const workspace of workspaces.values()) {
-      activityByKey[`${serverId}:${workspace.id}`] = workspace.statusEnteredAt?.getTime() ?? 0;
-    }
-  }
-  return Object.keys(activityByKey).length === 0 ? EMPTY_WORKSPACE_ACTIVITY : activityByKey;
 }
 
 export function selectProjectOrder(state: SidebarOrderSnapshot): string[] {
