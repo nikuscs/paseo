@@ -602,55 +602,103 @@ describe("sortSidebarProjects", () => {
     };
   }
 
+  const NO_LABELS: ReadonlyMap<string, string> = new Map();
+  const NO_ACTIVITY: ReadonlyMap<string, number> = new Map();
+
   it("returns the input unchanged (same reference) in manual mode", () => {
     const projects = [projectEntry("bravo", ["b", "a"]), projectEntry("alpha", ["z"])];
-    expect(sortSidebarProjects({ projects, sortMode: "manual", activityByKey: {} })).toBe(projects);
+    expect(
+      sortSidebarProjects({
+        projects,
+        sortMode: "manual",
+        labelByKey: NO_LABELS,
+        activityByKey: NO_ACTIVITY,
+      }),
+    ).toBe(projects);
   });
 
-  it("sorts projects and their workspaces alphabetically in name mode", () => {
+  it("falls back to the workspace name when no label is provided in name mode", () => {
     const projects = [projectEntry("bravo", ["beta", "alpha"]), projectEntry("alpha", ["one"])];
 
-    const sorted = sortSidebarProjects({ projects, sortMode: "name", activityByKey: {} });
+    const sorted = sortSidebarProjects({
+      projects,
+      sortMode: "name",
+      labelByKey: NO_LABELS,
+      activityByKey: NO_ACTIVITY,
+    });
 
     expect(sorted.map((p) => p.projectName)).toEqual(["alpha", "bravo"]);
     expect(sorted[1]?.workspaces.map((w) => w.name)).toEqual(["alpha", "beta"]);
   });
 
+  it("orders workspaces by the displayed label, not the raw name, in name mode", () => {
+    // The rendered labels (e.g. branch names) sort opposite to the workspace names.
+    const projects = [projectEntry("proj", ["ws-a", "ws-b"])];
+    const labelByKey = new Map([
+      ["srv:ws-a", "zeta-branch"],
+      ["srv:ws-b", "alpha-branch"],
+    ]);
+
+    const sorted = sortSidebarProjects({
+      projects,
+      sortMode: "name",
+      labelByKey,
+      activityByKey: NO_ACTIVITY,
+    });
+
+    expect(sorted[0]?.workspaces.map((w) => w.workspaceKey)).toEqual(["srv:ws-b", "srv:ws-a"]);
+  });
+
   it("ranks projects and workspaces by activity, most recent first", () => {
     const projects = [projectEntry("old", ["old-ws"]), projectEntry("recent", ["stale", "fresh"])];
-    const activityByKey = {
-      "srv:old-ws": 100,
-      "srv:stale": 200,
-      "srv:fresh": 900,
-    };
+    const activityByKey = new Map([
+      ["srv:old-ws", 100],
+      ["srv:stale", 200],
+      ["srv:fresh", 900],
+    ]);
 
-    const sorted = sortSidebarProjects({ projects, sortMode: "activity", activityByKey });
+    const sorted = sortSidebarProjects({
+      projects,
+      sortMode: "activity",
+      labelByKey: NO_LABELS,
+      activityByKey,
+    });
 
     expect(sorted.map((p) => p.projectName)).toEqual(["recent", "old"]);
     expect(sorted[0]?.workspaces.map((w) => w.name)).toEqual(["fresh", "stale"]);
   });
 
   it("keeps the incoming order for equal activity (stable) and sorts missing activity last", () => {
-    const projects = [projectEntry("first", ["a"]), projectEntry("second", ["b"])];
-    // Equal project activity → keep incoming order; workspace with no entry (0) sorts last.
-    const sorted = sortSidebarProjects({
+    // Workspace with no activity entry (0) sorts last.
+    const withUnknown = sortSidebarProjects({
       projects: [projectEntry("p", ["active", "unknown"])],
       sortMode: "activity",
-      activityByKey: { "srv:active": 500 },
+      labelByKey: NO_LABELS,
+      activityByKey: new Map([["srv:active", 500]]),
     });
-    expect(sorted[0]?.workspaces.map((w) => w.name)).toEqual(["active", "unknown"]);
+    expect(withUnknown[0]?.workspaces.map((w) => w.name)).toEqual(["active", "unknown"]);
 
+    // Equal project activity keeps the incoming order.
     const tie = sortSidebarProjects({
-      projects,
+      projects: [projectEntry("first", ["a"]), projectEntry("second", ["b"])],
       sortMode: "activity",
-      activityByKey: { "srv:a": 42, "srv:b": 42 },
+      labelByKey: NO_LABELS,
+      activityByKey: new Map([
+        ["srv:a", 42],
+        ["srv:b", 42],
+      ]),
     });
     expect(tie.map((p) => p.projectName)).toEqual(["first", "second"]);
   });
 
   it("keeps the incoming order in activity mode when there is no activity data", () => {
     const projects = [projectEntry("first", ["a"]), projectEntry("second", ["b"])];
-    const sorted = sortSidebarProjects({ projects, sortMode: "activity", activityByKey: {} });
+    const sorted = sortSidebarProjects({
+      projects,
+      sortMode: "activity",
+      labelByKey: NO_LABELS,
+      activityByKey: NO_ACTIVITY,
+    });
     expect(sorted.map((p) => p.projectName)).toEqual(["first", "second"]);
   });
 });
