@@ -6,7 +6,7 @@ import {
 } from "@/projects/workspace-structure";
 import type { DesktopBadgeWorkspaceStatus } from "@/utils/desktop-badge-state";
 import { resolveWorkspaceMapKeyByIdentity } from "@/utils/workspace-identity";
-import type { ProjectDescriptor, WorkspaceDescriptor } from "../session-store";
+import type { EmptyProjectDescriptor, WorkspaceDescriptor } from "../session-store";
 
 export type { DesktopBadgeWorkspaceStatus } from "@/utils/desktop-badge-state";
 export type { WorkspaceStructure, WorkspaceStructureProject } from "@/projects/workspace-structure";
@@ -17,7 +17,7 @@ export interface SessionsSnapshot {
     {
       hasHydratedWorkspaces?: boolean;
       workspaces: Map<string, WorkspaceDescriptor>;
-      projects?: Map<string, ProjectDescriptor>;
+      emptyProjects?: Map<string, EmptyProjectDescriptor>;
     }
   >;
 }
@@ -27,7 +27,12 @@ export interface SidebarOrderSnapshot {
   workspaceOrderByProject: Record<string, string[]>;
 }
 
+// Maps a workspace key (`${serverId}:${workspaceId}`) to an activity timestamp in epoch ms.
+// Absent/unknown activity sorts last (treated as 0). Consumed by the sidebar's activity sort.
+export type WorkspaceActivityByKey = Record<string, number>;
+
 const EMPTY_WORKSPACE_KEYS: string[] = [];
+const EMPTY_WORKSPACE_ACTIVITY: WorkspaceActivityByKey = {};
 const EMPTY_WORKSPACE_STRUCTURE: WorkspaceStructure = { projects: [] };
 
 export const workspaceEqualityFns = {
@@ -145,20 +150,20 @@ export function selectWorkspaceStructureProjects(
   const sessions: Array<{
     serverId: string;
     workspaces: Iterable<WorkspaceDescriptor>;
-    projects: Iterable<ProjectDescriptor>;
+    emptyProjects: Iterable<EmptyProjectDescriptor>;
   }> = [];
 
   for (const serverId of serverIds) {
     const session = state.sessions[serverId];
     const workspaces = session?.workspaces;
-    const projects = session?.projects;
-    if (!projects || projects.size === 0) {
+    const emptyProjects = session?.emptyProjects;
+    if ((!workspaces || workspaces.size === 0) && (!emptyProjects || emptyProjects.size === 0)) {
       continue;
     }
     sessions.push({
       serverId,
       workspaces: workspaces?.values() ?? [],
-      projects: projects.values(),
+      emptyProjects: emptyProjects?.values() ?? [],
     });
   }
 
@@ -169,30 +174,24 @@ export function selectWorkspaceStructureProjects(
   return buildWorkspaceStructureProjects({ sessions });
 }
 
-export function selectProject(
+// Activity timestamp (epoch ms) per workspace key, used by the "activity" sort mode. Returns a
+// stable empty object when there are no workspaces so consumers can skip subscribing to this in
+// other sort modes without triggering re-renders.
+export function selectWorkspaceActivityByKey(
   state: SessionsSnapshot,
-  serverId: string | null,
-  projectId: string | null,
-): ProjectDescriptor | null {
-  if (!serverId || !projectId) return null;
-  return state.sessions[serverId]?.projects?.get(projectId) ?? null;
-}
-
-export function selectProjectIdForServer(
-  state: SessionsSnapshot,
-  input: {
-    sourceServerId: string;
-    projectId: string;
-    targetServerId: string;
-  },
-): string | null {
-  if (input.sourceServerId === input.targetServerId) return input.projectId;
-  const source = selectProject(state, input.sourceServerId, input.projectId);
-  if (!source?.projectKey) return null;
-  for (const project of state.sessions[input.targetServerId]?.projects?.values() ?? []) {
-    if (project.projectKey === source.projectKey) return project.projectId;
+  serverIds: readonly string[],
+): WorkspaceActivityByKey {
+  const activityByKey: WorkspaceActivityByKey = {};
+  for (const serverId of serverIds) {
+    const workspaces = state.sessions[serverId]?.workspaces;
+    if (!workspaces) {
+      continue;
+    }
+    for (const workspace of workspaces.values()) {
+      activityByKey[`${serverId}:${workspace.id}`] = workspace.statusEnteredAt?.getTime() ?? 0;
+    }
   }
-  return null;
+  return Object.keys(activityByKey).length === 0 ? EMPTY_WORKSPACE_ACTIVITY : activityByKey;
 }
 
 export function selectProjectOrder(state: SidebarOrderSnapshot): string[] {
@@ -214,7 +213,8 @@ export function composeWorkspaceStructure(input: {
 
   const orderedProjects = applyStoredOrdering({
     items: input.projects.map((project) => {
-      const workspaceOrder = input.workspaceOrderByScope[project.viewKey] ?? EMPTY_WORKSPACE_KEYS;
+      const workspaceOrder =
+        input.workspaceOrderByScope[project.projectKey] ?? EMPTY_WORKSPACE_KEYS;
       return {
         ...project,
         workspaceKeys: applyStoredOrdering({
@@ -225,7 +225,7 @@ export function composeWorkspaceStructure(input: {
       };
     }),
     storedOrder: input.projectOrder,
-    getKey: (project) => project.viewKey,
+    getKey: (project) => project.projectKey,
   });
 
   return { projects: orderedProjects };
