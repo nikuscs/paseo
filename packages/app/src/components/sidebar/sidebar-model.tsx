@@ -9,7 +9,7 @@ import {
 } from "@/hooks/use-sidebar-workspaces-list";
 import { useSidebarWorkspaceEntries } from "@/hooks/use-sidebar-workspace-entries";
 import { usePinnedSidebarKeys, type PinnedSidebarGroups } from "@/hooks/use-sidebar-pins";
-import { useAppSettings } from "@/hooks/use-settings";
+import type { WorkspaceTitleSource } from "@/hooks/use-settings/storage";
 import { useSidebarCollapsedSectionsStore } from "@/stores/sidebar-collapsed-sections-store";
 import {
   hasActiveSidebarLabelFilter,
@@ -55,9 +55,11 @@ const SidebarModelContext = createContext<SidebarModel | null>(null);
 
 export function SidebarModelProvider({
   active,
+  workspaceTitleSource = "title",
   children,
 }: {
   active?: boolean;
+  workspaceTitleSource?: WorkspaceTitleSource;
   children: ReactNode;
 }) {
   const { t } = useTranslation();
@@ -65,9 +67,6 @@ export function SidebarModelProvider({
   const showBackground = useSidebarViewStore((state) => state.showBackground);
   const groupMode = useSidebarViewStore((state) => state.groupMode);
   const sortMode = useSidebarViewStore((state) => state.sortMode);
-  const {
-    settings: { workspaceTitleSource },
-  } = useAppSettings();
   const labelFilter = useSidebarViewStore((state) => state.labelFilter);
   const projectFilters = useSidebarViewStore((state) => state.projectFilters);
   const reconcileLabelFilter = useSidebarViewStore((state) => state.reconcileLabelFilter);
