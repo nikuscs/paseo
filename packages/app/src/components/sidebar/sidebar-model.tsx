@@ -8,7 +8,7 @@ import {
 import { useSidebarWorkspaceEntries } from "@/hooks/use-sidebar-workspace-entries";
 import type { StatusGroup } from "@/hooks/sidebar-status-view-model";
 import { usePinnedSidebarKeys, type PinnedSidebarGroups } from "@/hooks/use-sidebar-pins";
-import { useAppSettings } from "@/hooks/use-settings";
+import type { WorkspaceTitleSource } from "@/hooks/use-settings/storage";
 import { useSidebarCollapsedSectionsStore } from "@/stores/sidebar-collapsed-sections-store";
 import { useSidebarViewStore, type SidebarGroupMode } from "@/stores/sidebar-view-store";
 import type { SidebarShortcutModel } from "@/utils/sidebar-shortcuts";
@@ -32,17 +32,16 @@ const EMPTY_SORT_ACTIVITY: ReadonlyMap<string, number> = new Map();
 
 export function SidebarModelProvider({
   active,
+  workspaceTitleSource = "title",
   children,
 }: {
   active?: boolean;
+  workspaceTitleSource?: WorkspaceTitleSource;
   children: ReactNode;
 }) {
   const list = useSidebarWorkspacesList();
   const groupMode = useSidebarViewStore((state) => state.groupMode);
   const sortMode = useSidebarViewStore((state) => state.sortMode);
-  const {
-    settings: { workspaceTitleSource },
-  } = useAppSettings();
   const collapsedProjectKeys = useSidebarCollapsedSectionsStore(
     (state) => state.collapsedProjectKeys,
   );
