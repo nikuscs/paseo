@@ -38,6 +38,7 @@ import { LeftSidebar } from "@/components/left-sidebar";
 import { WindowSidebarMenuToggle } from "@/components/headers/menu-header";
 import { DesktopWindowControls } from "@/components/desktop/window-controls";
 import { SidebarModelProvider } from "@/components/sidebar/sidebar-model";
+import { useRecentlyDoneRecency } from "@/components/sidebar/use-recently-done-recency";
 import { WorkspacePinShortcutHandler } from "@/components/workspace-pin-shortcut-handler";
 import { CompactExplorerSidebarHost } from "@/components/compact-explorer-sidebar-host";
 import { ProviderSettingsHost } from "@/components/provider-settings-host";
@@ -629,8 +630,9 @@ function SidebarChrome({
     selectIsAgentListOpen(state, { isCompact: isCompactLayout }),
   );
   const active = visible && isOpen;
+  const recency = useRecentlyDoneRecency();
   return (
-    <SidebarModelProvider active={active}>
+    <SidebarModelProvider active={active} recency={recency}>
       {mounted ? <LeftSidebar active={active} /> : null}
       <WorkspaceShortcutTargetsSubscriber enabled={keyboardShortcutsEnabled} />
     </SidebarModelProvider>
