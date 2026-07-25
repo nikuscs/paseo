@@ -62,6 +62,16 @@ export const MIN_CODE_FONT_SIZE = 9;
 export const MAX_CODE_FONT_SIZE = 22; // line-height 1.5×22=33 stays safe
 export const MAX_FONT_FAMILY_LENGTH = 200;
 
+// Device-local appearance toggles for decluttering the sidebar. All default to
+// their "current behavior" (nothing hidden, comfortable density), so an old
+// stored blob without the key loads with today's look.
+export interface AppearanceSettings {
+  hideWorkspaceDiffStats: boolean;
+  hideHostLabels: boolean;
+  compactSidebarRows: boolean;
+  hidePrStatus: boolean;
+}
+
 export interface AppSettings {
   theme: ThemePreference;
   /** Which contributed theme `theme: "plugin"` selects. */
@@ -87,6 +97,7 @@ export interface AppSettings {
   vimKeybindings: boolean;
   /** Desktop-only preferences for implicit opens into the ordinary side pane. */
   openInSidePane: OpenInSidePanePreferences;
+  appearance: AppearanceSettings;
 }
 
 export interface OpenInSidePanePreferences {
@@ -114,6 +125,13 @@ export interface Settings extends AppSettings {
   releaseChannel: ReleaseChannel;
 }
 
+export const DEFAULT_APPEARANCE_SETTINGS: AppearanceSettings = {
+  hideWorkspaceDiffStats: false,
+  hideHostLabels: false,
+  compactSidebarRows: false,
+  hidePrStatus: false,
+};
+
 export const DEFAULT_CLIENT_SETTINGS: AppSettings = {
   theme: DEFAULT_THEME_PREFERENCE,
   pluginThemeId: null,
@@ -137,6 +155,7 @@ export const DEFAULT_CLIENT_SETTINGS: AppSettings = {
   chatOutlineEnabled: true,
   vimKeybindings: false,
   openInSidePane: DEFAULT_OPEN_IN_SIDE_PANE_PREFERENCES,
+  appearance: DEFAULT_APPEARANCE_SETTINGS,
 };
 
 export const DEFAULT_APP_SETTINGS: Settings = {
@@ -240,6 +259,7 @@ const StoredAppSettingsSchema = z
         changesLinks: z.boolean().catch(false),
       })
       .catch(DEFAULT_OPEN_IN_SIDE_PANE_PREFERENCES),
+    appearance: z.unknown().optional().catch(undefined),
     // COMPAT(explorerSidebarRouting): replaced by source-specific side-pane preferences in v0.6.
     openSupportingTabsInSidePanel: z.boolean().optional().catch(undefined),
     // COMPAT(rendererDesktopSettings): these fields used to share this renderer-owned key.
@@ -274,6 +294,9 @@ const StoredAppSettingsSchema = z
           (stored.sidebarRowItems.scripts === false ? false : DEFAULT_SIDEBAR_ROW_ITEMS.services),
       },
       toolCallDetailLevel,
+      // Always produce a fresh, fully-defaulted appearance object so callers never
+      // see a shared default reference and never need a `??` fallback downstream.
+      appearance: parseAppearance(stored.appearance),
       needsWrite,
     };
   })
@@ -414,6 +437,29 @@ function pickAppSettingsFromLegacy(legacy: StoredAppSettings): AppSettings {
     // rendered value into the new independent preference during migration.
     contentFontSize: legacy.uiBaseFontSize,
   };
+}
+
+function parseAppearance(value: unknown): AppearanceSettings {
+  const stored =
+    typeof value === "object" && value !== null && !Array.isArray(value)
+      ? (value as Partial<Record<keyof AppearanceSettings, unknown>>)
+      : {};
+  return {
+    hideWorkspaceDiffStats: readBoolean(
+      stored.hideWorkspaceDiffStats,
+      DEFAULT_APPEARANCE_SETTINGS.hideWorkspaceDiffStats,
+    ),
+    hideHostLabels: readBoolean(stored.hideHostLabels, DEFAULT_APPEARANCE_SETTINGS.hideHostLabels),
+    compactSidebarRows: readBoolean(
+      stored.compactSidebarRows,
+      DEFAULT_APPEARANCE_SETTINGS.compactSidebarRows,
+    ),
+    hidePrStatus: readBoolean(stored.hidePrStatus, DEFAULT_APPEARANCE_SETTINGS.hidePrStatus),
+  };
+}
+
+function readBoolean(value: unknown, fallback: boolean): boolean {
+  return typeof value === "boolean" ? value : fallback;
 }
 
 export function parseTerminalScrollbackLines(value: unknown): number | null {

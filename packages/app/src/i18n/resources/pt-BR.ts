@@ -2090,6 +2090,26 @@ export const ptBR: TranslationResources = {
         title: "Estrutura do chat",
         description: "Mostrar uma estrutura para navegar entre prompts",
       },
+      sidebar: {
+        title: "Barra lateral",
+        compactRows: {
+          label: "Linhas compactas",
+          description: "Espaçamento mais compacto para linhas de projetos e espaços de trabalho",
+        },
+        hideDiffStats: {
+          label: "Ocultar estatísticas de diff",
+          description: "Oculta as contagens de alterações +/− nas linhas de espaços de trabalho",
+        },
+        hidePrStatus: {
+          label: "Ocultar status de PR",
+          description:
+            "Oculta o selo de pull request e as verificações nas linhas de espaços de trabalho",
+        },
+        hideHostNames: {
+          label: "Ocultar nomes de host",
+          description: "Oculta o nome da máquina ao agrupar por status",
+        },
+      },
       fonts: {
         title: "Fontes",
         systemDefault: "Sistema padrão",

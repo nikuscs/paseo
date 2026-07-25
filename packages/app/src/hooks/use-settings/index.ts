@@ -35,6 +35,7 @@ import {
   parseTerminalScrollbackLines,
   sanitizeFontFamily,
   saveAppSettings as saveAppSettingsPure,
+  type AppearanceSettings,
   type AppSettings,
   type OpenInSidePanePreferences,
   type DesktopSettingsBridge,
@@ -70,6 +71,7 @@ export {
   sanitizeFontFamily,
 };
 export type {
+  AppearanceSettings,
   AppSettings,
   AppLanguage,
   OpenInSidePanePreferences,
