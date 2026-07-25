@@ -2095,6 +2095,25 @@ export const ar: TranslationResources = {
         title: "مخطط المحادثة",
         description: "عرض مخطط للتنقل بين المطالبات",
       },
+      sidebar: {
+        title: "الشريط الجانبي",
+        compactRows: {
+          label: "صفوف مضغوطة",
+          description: "تباعد أضيق لصفوف المشاريع ومساحات العمل",
+        },
+        hideDiffStats: {
+          label: "إخفاء إحصائيات الفروق",
+          description: "إخفاء أعداد التغييرات +/− في صفوف مساحات العمل",
+        },
+        hidePrStatus: {
+          label: "إخفاء حالة طلب السحب",
+          description: "إخفاء شارة طلب السحب والفحوصات في صفوف مساحات العمل",
+        },
+        hideHostNames: {
+          label: "إخفاء أسماء المضيفين",
+          description: "إخفاء اسم الجهاز عند التجميع حسب الحالة",
+        },
+      },
       fonts: {
         title: "الخطوط",
         systemDefault: "الافتراضي للنظام",
