@@ -96,7 +96,7 @@ describe("buildSidebarProjection", () => {
   it("keeps pinned chats above status groups and removes them from those groups", () => {
     const projection = buildSidebarProjection(projectionInput({ groupMode: "status" }));
 
-    expect(projection.statusGroups.map((group) => group.bucket)).toEqual(["needs_input"]);
+    expect(projection.statusGroups.map((group) => group.key)).toEqual(["needs_input"]);
     expect(projection.statusGroups[0]?.rows.map((entry) => entry.workspaceId)).toEqual([
       "unpinned",
     ]);

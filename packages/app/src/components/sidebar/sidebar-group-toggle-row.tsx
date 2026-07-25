@@ -4,6 +4,11 @@ import { Pressable, Text, View, type PressableStateCallbackType } from "react-na
 import { ChevronDown, ChevronUp } from "lucide-react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { isWeb } from "@/constants/platform";
+import { useSidebarAppearance } from "@/components/sidebar/use-sidebar-appearance";
+import {
+  comfortableSidebarSecondaryRowDensity,
+  compactSidebarSecondaryRowDensity,
+} from "@/components/sidebar/sidebar-row-metrics";
 import type { Theme } from "@/styles/theme";
 
 const foregroundMutedColorMapping = (theme: Theme) => ({
@@ -25,15 +30,17 @@ export function SidebarGroupToggleRow({
   testID: string;
 }) {
   const { t } = useTranslation();
+  const { compactSidebarRows } = useSidebarAppearance();
   const label = t(
     expanded ? "sidebar.workspace.actions.showLess" : "sidebar.workspace.actions.showMore",
   );
   const rowStyle = useCallback(
     ({ hovered = false, pressed }: PressableStateCallbackType & { hovered?: boolean }) => [
       styles.row,
+      compactSidebarRows && styles.rowCompact,
       (Boolean(hovered) || pressed) && styles.rowHovered,
     ],
-    [],
+    [compactSidebarRows],
   );
 
   return (
@@ -70,10 +77,9 @@ export function SidebarGroupToggleRow({
 
 const styles = StyleSheet.create((theme) => ({
   row: {
-    minHeight: 32,
+    ...comfortableSidebarSecondaryRowDensity(theme),
     marginLeft: theme.spacing[6],
     marginRight: theme.spacing[1],
-    paddingVertical: theme.spacing[1],
     paddingHorizontal: theme.spacing[2],
     borderRadius: theme.borderRadius.md,
     flexDirection: "row",
@@ -81,6 +87,7 @@ const styles = StyleSheet.create((theme) => ({
     gap: theme.spacing[2],
     userSelect: "none",
   },
+  rowCompact: compactSidebarSecondaryRowDensity(theme),
   rowHovered: {
     backgroundColor: theme.colors.surfaceSidebarHover,
   },

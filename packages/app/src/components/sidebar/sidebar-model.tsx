@@ -10,6 +10,7 @@ import { usePinnedSidebarKeys, type PinnedSidebarGroups } from "@/hooks/use-side
 import { useSidebarCollapsedSectionsStore } from "@/stores/sidebar-collapsed-sections-store";
 import { useSidebarViewStore, type SidebarGroupMode } from "@/stores/sidebar-view-store";
 import type { SidebarShortcutModel } from "@/utils/sidebar-shortcuts";
+import { useRecentlyDoneRecency } from "@/components/sidebar/use-recently-done-recency";
 import { buildSidebarProjection } from "./sidebar-projection";
 
 interface SidebarModel extends SidebarWorkspacesListResult {
@@ -53,6 +54,7 @@ export function SidebarModelProvider({
     ? workspaceEntriesByKey
     : EMPTY_WORKSPACE_ENTRIES;
   const pinnedKeys = usePinnedSidebarKeys(list.projects);
+  const recency = useRecentlyDoneRecency(isStatusMode);
   const projection = useMemo(
     () =>
       buildSidebarProjection({
@@ -64,6 +66,7 @@ export function SidebarModelProvider({
         pinnedCollapsed,
         collapsedProjectKeys,
         collapsedStatusGroupKeys,
+        recency,
       }),
     [
       collapsedProjectKeys,
@@ -74,6 +77,7 @@ export function SidebarModelProvider({
       pinnedCollapsed,
       pinnedKeys,
       projectionWorkspaceEntriesByKey,
+      recency,
     ],
   );
   const value = useMemo(

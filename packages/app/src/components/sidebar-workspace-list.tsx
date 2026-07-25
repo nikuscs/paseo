@@ -1608,6 +1608,7 @@ function ProjectBlock({
     canToggle: canToggleWorkspaces,
     toggleExpanded: toggleWorkspacesExpanded,
   } = useLimitedSidebarGroup(project.workspaces);
+  const { hideNewWorkspaceRow } = useSidebarAppearance();
   const rowModel = useMemo(
     () =>
       buildSidebarProjectRowModel({
@@ -1786,7 +1787,7 @@ function ProjectBlock({
           ) : null}
         </>
       );
-    } else if (rowModel.trailingAction.kind === "new_workspace") {
+    } else if (rowModel.trailingAction.kind === "new_workspace" && !hideNewWorkspaceRow) {
       projectChildren = (
         <NewWorkspaceGhostRow
           project={project}
