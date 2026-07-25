@@ -2153,7 +2153,8 @@ export const fr: TranslationResources = {
         title: "Barre latérale",
         compactRows: {
           label: "Lignes compactes",
-          description: "Espacement plus serré pour les lignes de projets et d'espaces de travail",
+          description:
+            "Espacement plus serré pour les lignes, les en-têtes et les groupes de statut",
         },
         hideDiffStats: {
           label: "Masquer les statistiques de diff",
@@ -2165,9 +2166,28 @@ export const fr: TranslationResources = {
           description:
             "Masquer le badge de pull request et les vérifications sur les lignes d'espaces de travail",
         },
+        hideNewWorkspaceRow: {
+          label: "Masquer la ligne Nouvel espace de travail",
+          description: "Masquer la ligne + Nouvel espace de travail sous les projets vides",
+        },
+        hideScriptIndicators: {
+          label: "Masquer les indicateurs de scripts",
+          description: "Masquer les icônes globe et terminal des scripts en cours d'exécution",
+        },
         hideHostNames: {
           label: "Masquer les noms d'hôte",
           description: "Masquer le nom de la machine lors du regroupement par statut",
+        },
+        recentlyDone: {
+          label: "Terminé récemment",
+          description:
+            "Afficher les espaces de travail juste terminés dans leur propre groupe au-dessus de Terminé",
+          accessibilityLabel: "Fenêtre Terminé récemment, actuellement {{value}}",
+          options: {
+            off: "Désactivé",
+            minutes: "{{minutes}} min",
+            hour: "1 heure",
+          },
         },
       },
       fonts: {
