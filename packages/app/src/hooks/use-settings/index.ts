@@ -33,6 +33,7 @@ import {
   normalizeAppSettings,
   parseClampedFontSize,
   parseTerminalScrollbackLines,
+  RECENTLY_DONE_WINDOW_OPTIONS,
   sanitizeFontFamily,
   saveAppSettings as saveAppSettingsPure,
   type AppearanceSettings,
@@ -40,6 +41,7 @@ import {
   type OpenInSidePanePreferences,
   type DesktopSettingsBridge,
   type KeyValueStorage,
+  type RecentlyDoneWindowMinutes,
   type ReleaseChannel,
   type SendBehavior,
   type ServiceUrlBehavior,
@@ -68,6 +70,7 @@ export {
   MIN_UI_BASE_FONT_SIZE,
   parseClampedFontSize,
   parseTerminalScrollbackLines,
+  RECENTLY_DONE_WINDOW_OPTIONS,
   sanitizeFontFamily,
 };
 export type {
@@ -77,6 +80,7 @@ export type {
   OpenInSidePanePreferences,
   DesktopSettingsBridge,
   KeyValueStorage,
+  RecentlyDoneWindowMinutes,
   ReleaseChannel,
   SendBehavior,
   ServiceUrlBehavior,

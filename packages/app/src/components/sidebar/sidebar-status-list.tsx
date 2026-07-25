@@ -21,7 +21,6 @@ import type { GestureType } from "react-native-gesture-handler";
 import { navigateToWorkspace } from "@/stores/navigation-active-workspace-store";
 import { useActiveWorkspaceSelection } from "@/stores/navigation-active-workspace-store";
 import { type SidebarWorkspaceEntry } from "@/hooks/use-sidebar-workspaces-list";
-import type { StatusBucket } from "@/hooks/sidebar-status-view-model";
 import type { SidebarWorkspaceGroup } from "@/components/sidebar/sidebar-labels";
 import { SidebarFilterEmptyState } from "@/components/sidebar/empty-states";
 import type { HostBadgeModel } from "@/hosts/appearance";
@@ -38,6 +37,7 @@ import {
   CircleCheck,
   CircleDot,
   CircleX,
+  Hourglass,
 } from "lucide-react-native";
 import { useToast } from "@/contexts/toast-context";
 import { useMutation } from "@tanstack/react-query";
@@ -113,12 +113,12 @@ const ThemedCircleAlert = withUnistyles(CircleAlert);
 const ThemedCircleCheck = withUnistyles(CircleCheck);
 const ThemedCircleDot = withUnistyles(CircleDot);
 const ThemedCircleX = withUnistyles(CircleX);
+const ThemedHourglass = withUnistyles(Hourglass);
 const EMPTY_SHORTCUT_INDEX = new Map<string, number>();
 
 function statusWorkspaceKeyExtractor(workspace: SidebarWorkspaceEntry): string {
   return workspace.workspaceKey;
 }
-
 interface StatusWorkspaceListProps {
   groups: SidebarWorkspaceGroup[];
   pinnedWorkspaces: SidebarWorkspaceEntry[];
@@ -416,6 +416,7 @@ function StatusGroupHeader({
   collapsed: boolean;
 }) {
   const [isHovered, setIsHovered] = useState(false);
+  const { compactSidebarRows } = useSidebarAppearance();
   const toggleWorkspaceGroupCollapsed = useSidebarCollapsedSectionsStore(
     (state) => state.toggleWorkspaceGroupCollapsed,
   );
@@ -427,10 +428,11 @@ function StatusGroupHeader({
   const rowStyle = useCallback(
     ({ pressed }: PressableStateCallbackType) => [
       styles.statusGroupRow,
+      compactSidebarRows && styles.statusGroupRowCompact,
       isHovered && styles.statusGroupRowHovered,
       pressed && styles.statusGroupRowPressed,
     ],
-    [isHovered],
+    [compactSidebarRows, isHovered],
   );
   const accessibilityState = useMemo(() => ({ expanded: !collapsed }), [collapsed]);
 
@@ -481,7 +483,11 @@ function StatusGroupLeadingVisual({
   return <ThemedChevronDown size={14} uniProps={foregroundMutedColorMapping} />;
 }
 
-function StatusGroupIcon({ bucket }: { bucket: StatusBucket }) {
+function StatusGroupIcon({
+  bucket,
+}: {
+  bucket: SidebarWorkspaceGroup["leading"]["bucket"];
+}) {
   switch (bucket) {
     case "needs_input":
       return <ThemedCircleAlert size={14} uniProps={needsInputColorMapping} />;
@@ -491,6 +497,8 @@ function StatusGroupIcon({ bucket }: { bucket: StatusBucket }) {
       return <ThemedCircleCheck size={14} uniProps={attentionColorMapping} />;
     case "running":
       return <ThemedCircleDot size={14} uniProps={runningColorMapping} />;
+    case "recently_done":
+      return <ThemedHourglass size={14} uniProps={foregroundMutedColorMapping} />;
     case "done":
       return <ThemedCircleCheck size={14} uniProps={foregroundMutedColorMapping} />;
   }
@@ -1084,8 +1092,7 @@ const styles = StyleSheet.create((theme) => ({
   },
   statusWorkspaceListContainer: {},
   statusGroupRow: {
-    minHeight: 36,
-    paddingVertical: theme.spacing[2],
+    ...comfortableSidebarRowDensity(theme),
     paddingHorizontal: theme.spacing[2],
     borderRadius: theme.borderRadius.lg,
     marginBottom: theme.spacing[2],
@@ -1094,6 +1101,10 @@ const styles = StyleSheet.create((theme) => ({
     justifyContent: "space-between",
     gap: theme.spacing[2],
     userSelect: "none",
+  },
+  statusGroupRowCompact: {
+    ...compactSidebarRowDensity(theme),
+    marginBottom: theme.spacing[1],
   },
   statusGroupRowHovered: {
     backgroundColor: theme.colors.surfaceSidebarHover,
