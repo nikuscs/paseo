@@ -2017,6 +2017,25 @@ export const zhCN: TranslationResources = {
         title: "聊天大纲",
         description: "显示用于在提示词之间跳转的大纲",
       },
+      sidebar: {
+        title: "侧边栏",
+        compactRows: {
+          label: "紧凑行",
+          description: "为项目和工作区行使用更紧凑的间距",
+        },
+        hideDiffStats: {
+          label: "隐藏差异统计",
+          description: "隐藏工作区行上的 +/− 更改计数",
+        },
+        hidePrStatus: {
+          label: "隐藏 PR 状态",
+          description: "隐藏工作区行上的拉取请求徽章和检查",
+        },
+        hideHostNames: {
+          label: "隐藏主机名",
+          description: "按状态分组时隐藏机器名称",
+        },
+      },
       fonts: {
         title: "字体",
         systemDefault: "系统默认",
