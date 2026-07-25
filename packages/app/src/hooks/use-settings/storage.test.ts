@@ -15,6 +15,7 @@ import {
   parseClampedFontSize,
   parseTerminalScrollbackLines,
   saveAppSettings,
+  type AppearanceSettings,
   type SettingsDeps,
 } from "./storage";
 import { createFakeDesktopBridge, createInMemoryKeyValueStorage } from "./fakes";
@@ -743,11 +744,14 @@ describe("appearance settings", () => {
 });
 
 describe("sidebar appearance preferences", () => {
-  const ALL_DEFAULT = {
+  const ALL_DEFAULT: AppearanceSettings = {
     hideWorkspaceDiffStats: false,
     hideHostLabels: false,
     compactSidebarRows: false,
     hidePrStatus: false,
+    hideNewWorkspaceRow: false,
+    hideScriptIndicators: false,
+    recentlyDoneWindowMinutes: 0,
   };
 
   it("defaults every appearance toggle when the stored blob omits the key", async () => {
@@ -766,7 +770,12 @@ describe("sidebar appearance preferences", () => {
     const deps = makeDeps({
       storage: createInMemoryKeyValueStorage({
         [APP_SETTINGS_KEY]: JSON.stringify({
-          appearance: { compactSidebarRows: true, hidePrStatus: true },
+          appearance: {
+            compactSidebarRows: true,
+            hidePrStatus: true,
+            hideNewWorkspaceRow: true,
+            hideScriptIndicators: true,
+          },
         }),
       }),
     });
@@ -774,10 +783,11 @@ describe("sidebar appearance preferences", () => {
     const result = await loadAppSettingsFromStorage(deps);
 
     expect(result.appearance).toEqual({
-      hideWorkspaceDiffStats: false,
-      hideHostLabels: false,
+      ...ALL_DEFAULT,
       compactSidebarRows: true,
       hidePrStatus: true,
+      hideNewWorkspaceRow: true,
+      hideScriptIndicators: true,
     });
   });
 
@@ -793,6 +803,26 @@ describe("sidebar appearance preferences", () => {
     const result = await loadAppSettingsFromStorage(deps);
 
     expect(result.appearance).toEqual(ALL_DEFAULT);
+  });
+
+  it("keeps a supported recently-done window and rejects anything else", async () => {
+    async function loadWindow(value: unknown) {
+      const deps = makeDeps({
+        storage: createInMemoryKeyValueStorage({
+          [APP_SETTINGS_KEY]: JSON.stringify({
+            appearance: { recentlyDoneWindowMinutes: value },
+          }),
+        }),
+      });
+      const result = await loadAppSettingsFromStorage(deps);
+      return result.appearance.recentlyDoneWindowMinutes;
+    }
+
+    expect(await loadWindow(15)).toBe(15);
+    expect(await loadWindow(60)).toBe(60);
+    expect(await loadWindow(7)).toBe(0);
+    expect(await loadWindow("15")).toBe(0);
+    expect(await loadWindow(-5)).toBe(0);
   });
 
   it("ignores an appearance blob that is not an object", async () => {
@@ -822,12 +852,7 @@ describe("sidebar appearance preferences", () => {
     });
 
     const stored = JSON.parse(deps.storage.entries.get(APP_SETTINGS_KEY) ?? "null");
-    expect(stored.appearance).toEqual({
-      hideWorkspaceDiffStats: true,
-      hideHostLabels: false,
-      compactSidebarRows: false,
-      hidePrStatus: false,
-    });
+    expect(stored.appearance).toEqual({ ...ALL_DEFAULT, hideWorkspaceDiffStats: true });
   });
 });
 
