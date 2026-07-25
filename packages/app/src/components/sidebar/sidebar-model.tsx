@@ -5,12 +5,11 @@ import {
   type SidebarWorkspacesListResult,
 } from "@/hooks/use-sidebar-workspaces-list";
 import { useSidebarWorkspaceEntries } from "@/hooks/use-sidebar-workspace-entries";
-import type { StatusGroup } from "@/hooks/sidebar-status-view-model";
+import type { RecentlyDoneRecency, StatusGroup } from "@/hooks/sidebar-status-view-model";
 import { usePinnedSidebarKeys, type PinnedSidebarGroups } from "@/hooks/use-sidebar-pins";
 import { useSidebarCollapsedSectionsStore } from "@/stores/sidebar-collapsed-sections-store";
 import { useSidebarViewStore, type SidebarGroupMode } from "@/stores/sidebar-view-store";
 import type { SidebarShortcutModel } from "@/utils/sidebar-shortcuts";
-import { useRecentlyDoneRecency } from "@/components/sidebar/use-recently-done-recency";
 import { buildSidebarProjection } from "./sidebar-projection";
 
 interface SidebarModel extends SidebarWorkspacesListResult {
@@ -28,9 +27,11 @@ const EMPTY_WORKSPACE_ENTRIES = new Map<string, SidebarWorkspaceEntry>();
 
 export function SidebarModelProvider({
   active,
+  recency,
   children,
 }: {
   active?: boolean;
+  recency?: RecentlyDoneRecency;
   children: ReactNode;
 }) {
   const list = useSidebarWorkspacesList();
@@ -54,7 +55,6 @@ export function SidebarModelProvider({
     ? workspaceEntriesByKey
     : EMPTY_WORKSPACE_ENTRIES;
   const pinnedKeys = usePinnedSidebarKeys(list.projects);
-  const recency = useRecentlyDoneRecency(isStatusMode);
   const projection = useMemo(
     () =>
       buildSidebarProjection({
