@@ -24,10 +24,12 @@ import {
   MIN_CODE_FONT_SIZE,
   MIN_UI_FONT_SIZE,
   parseClampedFontSize,
+  RECENTLY_DONE_WINDOW_OPTIONS,
   sanitizeFontFamily,
   useAppSettings,
   type AppearanceSettings,
   type AppSettings,
+  type RecentlyDoneWindowMinutes,
 } from "@/hooks/use-settings";
 import {
   DEFAULT_MONO_FONT_STACK,
@@ -514,6 +516,74 @@ function SidebarToggleRow({
   );
 }
 
+function formatRecentlyDoneWindow(t: TFunction, value: RecentlyDoneWindowMinutes): string {
+  if (value === 0) return t("settings.appearance.sidebar.recentlyDone.options.off");
+  if (value === 60) return t("settings.appearance.sidebar.recentlyDone.options.hour");
+  return t("settings.appearance.sidebar.recentlyDone.options.minutes", { minutes: value });
+}
+
+function RecentlyDoneMenuItem({
+  value,
+  selected,
+  onChange,
+}: {
+  value: RecentlyDoneWindowMinutes;
+  selected: boolean;
+  onChange: (value: RecentlyDoneWindowMinutes) => void;
+}) {
+  const { t } = useTranslation();
+  const handleSelect = useCallback(() => onChange(value), [onChange, value]);
+  return (
+    <DropdownMenuItem selected={selected} onSelect={handleSelect}>
+      {formatRecentlyDoneWindow(t, value)}
+    </DropdownMenuItem>
+  );
+}
+
+function RecentlyDoneRow({
+  value,
+  onChange,
+}: {
+  value: RecentlyDoneWindowMinutes;
+  onChange: (value: RecentlyDoneWindowMinutes) => void;
+}) {
+  const { t } = useTranslation();
+  const selectedLabel = formatRecentlyDoneWindow(t, value);
+  return (
+    <View style={[settingsStyles.row, settingsStyles.rowBorder]}>
+      <View style={settingsStyles.rowContent}>
+        <Text style={settingsStyles.rowTitle}>
+          {t("settings.appearance.sidebar.recentlyDone.label")}
+        </Text>
+        <Text style={settingsStyles.rowHint}>
+          {t("settings.appearance.sidebar.recentlyDone.description")}
+        </Text>
+      </View>
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          style={dropdownTriggerStyle}
+          accessibilityLabel={t("settings.appearance.sidebar.recentlyDone.accessibilityLabel", {
+            value: selectedLabel,
+          })}
+        >
+          <Text style={styles.triggerText}>{selectedLabel}</Text>
+          <ThemedChevronDown size={ICON_SIZE.sm} uniProps={mutedColorMapping} />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent side="bottom" align="end" width={200}>
+          {RECENTLY_DONE_WINDOW_OPTIONS.map((option) => (
+            <RecentlyDoneMenuItem
+              key={option}
+              value={option}
+              selected={value === option}
+              onChange={onChange}
+            />
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </View>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Page
 // ---------------------------------------------------------------------------
@@ -576,6 +646,13 @@ export function AppearanceSection() {
   const handleAppearanceChange = useCallback(
     (key: keyof AppearanceSettings, value: boolean) => {
       void updateSettings({ appearance: { ...settings.appearance, [key]: value } });
+    },
+    [settings.appearance, updateSettings],
+  );
+
+  const handleRecentlyDoneWindowChange = useCallback(
+    (recentlyDoneWindowMinutes: RecentlyDoneWindowMinutes) => {
+      void updateSettings({ appearance: { ...settings.appearance, recentlyDoneWindowMinutes } });
     },
     [settings.appearance, updateSettings],
   );
@@ -705,12 +782,32 @@ export function AppearanceSection() {
             onChange={handleAppearanceChange}
           />
           <SidebarToggleRow
+            title={t("settings.appearance.sidebar.hideNewWorkspaceRow.label")}
+            hint={t("settings.appearance.sidebar.hideNewWorkspaceRow.description")}
+            settingKey="hideNewWorkspaceRow"
+            value={settings.appearance.hideNewWorkspaceRow}
+            withBorder
+            onChange={handleAppearanceChange}
+          />
+          <SidebarToggleRow
+            title={t("settings.appearance.sidebar.hideScriptIndicators.label")}
+            hint={t("settings.appearance.sidebar.hideScriptIndicators.description")}
+            settingKey="hideScriptIndicators"
+            value={settings.appearance.hideScriptIndicators}
+            withBorder
+            onChange={handleAppearanceChange}
+          />
+          <SidebarToggleRow
             title={t("settings.appearance.sidebar.hideHostNames.label")}
             hint={t("settings.appearance.sidebar.hideHostNames.description")}
             settingKey="hideHostLabels"
             value={settings.appearance.hideHostLabels}
             withBorder
             onChange={handleAppearanceChange}
+          />
+          <RecentlyDoneRow
+            value={settings.appearance.recentlyDoneWindowMinutes}
+            onChange={handleRecentlyDoneWindowChange}
           />
         </View>
       </SettingsSection>
