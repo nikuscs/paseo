@@ -2110,6 +2110,25 @@ export const en = {
         title: "Chat outline",
         description: "Show an outline for jumping between prompts",
       },
+      sidebar: {
+        title: "Sidebar",
+        compactRows: {
+          label: "Compact rows",
+          description: "Tighter spacing for project and workspace rows",
+        },
+        hideDiffStats: {
+          label: "Hide diff stats",
+          description: "Hide the +/− change counts on workspace rows",
+        },
+        hidePrStatus: {
+          label: "Hide PR status",
+          description: "Hide the pull request badge and checks on workspace rows",
+        },
+        hideHostNames: {
+          label: "Hide host names",
+          description: "Hide the machine name when grouping by status",
+        },
+      },
       fonts: {
         title: "Fonts",
         systemDefault: "System default",
