@@ -47,6 +47,16 @@ export const MIN_CODE_FONT_SIZE = 9;
 export const MAX_CODE_FONT_SIZE = 22; // line-height 1.5×22=33 stays safe
 export const MAX_FONT_FAMILY_LENGTH = 200;
 
+// Device-local appearance toggles for decluttering the sidebar. All default to
+// their "current behavior" (nothing hidden, comfortable density), so an old
+// stored blob without the key loads with today's look.
+export interface AppearanceSettings {
+  hideWorkspaceDiffStats: boolean;
+  hideHostLabels: boolean;
+  compactSidebarRows: boolean;
+  hidePrStatus: boolean;
+}
+
 export interface AppSettings {
   theme: ThemeName | "auto";
   language: AppLanguage;
@@ -67,6 +77,7 @@ export interface AppSettings {
   toolCallDetailLevel: ToolCallDetailLevel;
   chatOutlineEnabled: boolean;
   vimKeybindings: boolean;
+  appearance: AppearanceSettings;
 }
 
 export interface Settings extends AppSettings {
@@ -75,12 +86,21 @@ export interface Settings extends AppSettings {
 }
 
 /**
- * `sidebarRowItems` is widened back to `unknown` because it is still read for a value the
- * current shape no longer has — see `isChecksHiddenByLegacyRowItem`.
+ * Persisted settings with fields that require runtime migration widened back to `unknown`.
+ * `sidebarRowItems` is still read for a value the current shape no longer has — see
+ * `isChecksHiddenByLegacyRowItem`.
  */
-type StoredAppSettings = Partial<Omit<AppSettings, "sidebarRowItems">> & {
+type StoredAppSettings = Partial<Omit<AppSettings, "appearance" | "sidebarRowItems">> & {
+  appearance?: unknown;
   compactToolCalls?: unknown;
   sidebarRowItems?: unknown;
+};
+
+export const DEFAULT_APPEARANCE_SETTINGS: AppearanceSettings = {
+  hideWorkspaceDiffStats: false,
+  hideHostLabels: false,
+  compactSidebarRows: false,
+  hidePrStatus: false,
 };
 
 export const DEFAULT_CLIENT_SETTINGS: AppSettings = {
@@ -103,6 +123,7 @@ export const DEFAULT_CLIENT_SETTINGS: AppSettings = {
   toolCallDetailLevel: "detailed",
   chatOutlineEnabled: true,
   vimKeybindings: false,
+  appearance: DEFAULT_APPEARANCE_SETTINGS,
 };
 
 export const DEFAULT_APP_SETTINGS: Settings = {
@@ -331,7 +352,33 @@ function pickAppSettings(stored: StoredAppSettings): Partial<AppSettings> {
   if (toolCallDetailLevel !== null) {
     result.toolCallDetailLevel = toolCallDetailLevel;
   }
+  // Always produce a fresh, fully-defaulted appearance object so callers never
+  // see a shared default reference and never need a `??` fallback downstream.
+  result.appearance = parseAppearance(stored.appearance);
   return result;
+}
+
+function parseAppearance(value: unknown): AppearanceSettings {
+  const stored =
+    typeof value === "object" && value !== null && !Array.isArray(value)
+      ? (value as Partial<Record<keyof AppearanceSettings, unknown>>)
+      : {};
+  return {
+    hideWorkspaceDiffStats: readBoolean(
+      stored.hideWorkspaceDiffStats,
+      DEFAULT_APPEARANCE_SETTINGS.hideWorkspaceDiffStats,
+    ),
+    hideHostLabels: readBoolean(stored.hideHostLabels, DEFAULT_APPEARANCE_SETTINGS.hideHostLabels),
+    compactSidebarRows: readBoolean(
+      stored.compactSidebarRows,
+      DEFAULT_APPEARANCE_SETTINGS.compactSidebarRows,
+    ),
+    hidePrStatus: readBoolean(stored.hidePrStatus, DEFAULT_APPEARANCE_SETTINGS.hidePrStatus),
+  };
+}
+
+function readBoolean(value: unknown, fallback: boolean): boolean {
+  return typeof value === "boolean" ? value : fallback;
 }
 
 function pickAppSettingsFromLegacy(legacy: Record<string, unknown>): Partial<AppSettings> {

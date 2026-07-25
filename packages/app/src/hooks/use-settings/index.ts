@@ -31,6 +31,7 @@ import {
   parseTerminalScrollbackLines,
   sanitizeFontFamily,
   saveAppSettings as saveAppSettingsPure,
+  type AppearanceSettings,
   type AppSettings,
   type DesktopSettingsBridge,
   type KeyValueStorage,
@@ -61,6 +62,7 @@ export {
   sanitizeFontFamily,
 };
 export type {
+  AppearanceSettings,
   AppSettings,
   AppLanguage,
   DesktopSettingsBridge,
