@@ -1302,10 +1302,10 @@ const styles = StyleSheet.create((theme) => ({
     left: 0,
     right: 0,
     height: 2,
-    backgroundColor: theme.colors.accent,
+    backgroundColor: theme.colors.accentBright,
   },
   tabFocusIndicatorUnfocused: {
-    backgroundColor: theme.colors.borderAccent,
+    backgroundColor: theme.colors.accent,
   },
   tabDropIndicator: {
     position: "absolute",

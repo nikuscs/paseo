@@ -37,7 +37,9 @@ import {
 } from "@/styles/theme";
 import { isNative } from "@/constants/platform";
 import { settingsStyles } from "@/styles/settings";
+import type { CustomThemePreset } from "@/styles/custom-theme";
 import { AppearancePreview } from "./appearance-preview";
+import { CustomThemeImportRow } from "./custom-theme-import-row";
 
 // ---------------------------------------------------------------------------
 // Theme-reactive leaf icons (withUnistyles + uniProps color mapping — no
@@ -60,6 +62,7 @@ function getThemeLabel(t: TFunction, value: AppSettings["theme"]): string {
     midnight: "settings.appearance.theme.options.midnight",
     claude: "settings.appearance.theme.options.claude",
     ghostty: "settings.appearance.theme.options.ghostty",
+    custom: "settings.appearance.theme.options.custom",
     auto: "settings.appearance.theme.options.auto",
   };
   return t(labelKeys[value]);
@@ -99,9 +102,10 @@ function dropdownTriggerStyle({ pressed }: PressableStateCallbackType) {
 
 interface ThemeLeadingProps {
   themeValue: AppSettings["theme"];
+  customColor?: string;
 }
 
-function ThemeLeading({ themeValue }: ThemeLeadingProps) {
+function ThemeLeading({ themeValue, customColor }: ThemeLeadingProps) {
   switch (themeValue) {
     case "light":
       return <ThemedSun size={ICON_SIZE.md} uniProps={mutedColorMapping} />;
@@ -109,6 +113,8 @@ function ThemeLeading({ themeValue }: ThemeLeadingProps) {
       return <ThemedMoon size={ICON_SIZE.md} uniProps={mutedColorMapping} />;
     case "auto":
       return <ThemedMonitor size={ICON_SIZE.md} uniProps={mutedColorMapping} />;
+    case "custom":
+      return <ThemeSwatch color={customColor ?? THEME_SWATCHES.custom} />;
     default:
       return <ThemeSwatch color={THEME_SWATCHES[themeValue]} />;
   }
@@ -125,16 +131,20 @@ function ThemeSwatch({ color }: ThemeSwatchProps) {
 
 interface ThemeMenuItemProps {
   themeValue: AppSettings["theme"];
+  customColor?: string;
   selected: boolean;
   onChange: (theme: AppSettings["theme"]) => void;
 }
 
-function ThemeMenuItem({ themeValue, selected, onChange }: ThemeMenuItemProps) {
+function ThemeMenuItem({ themeValue, customColor, selected, onChange }: ThemeMenuItemProps) {
   const { t } = useTranslation();
   const handleSelect = useCallback(() => {
     onChange(themeValue);
   }, [onChange, themeValue]);
-  const leading = useMemo(() => <ThemeLeading themeValue={themeValue} />, [themeValue]);
+  const leading = useMemo(
+    () => <ThemeLeading themeValue={themeValue} customColor={customColor} />,
+    [customColor, themeValue],
+  );
   return (
     <DropdownMenuItem selected={selected} onSelect={handleSelect} leading={leading}>
       {getThemeLabel(t, themeValue)}
@@ -144,12 +154,14 @@ function ThemeMenuItem({ themeValue, selected, onChange }: ThemeMenuItemProps) {
 
 interface ThemeRowProps {
   value: AppSettings["theme"];
+  customTheme: CustomThemePreset | null;
   onChange: (theme: AppSettings["theme"]) => void;
 }
 
-function ThemeRow({ value, onChange }: ThemeRowProps) {
+function ThemeRow({ value, customTheme, onChange }: ThemeRowProps) {
   const { t } = useTranslation();
   const selectedLabel = getThemeLabel(t, value);
+  const customColor = customTheme?.colors.highlight ?? customTheme?.colors.accent;
   return (
     <View style={settingsStyles.row}>
       <View style={settingsStyles.rowContent}>
@@ -162,7 +174,7 @@ function ThemeRow({ value, onChange }: ThemeRowProps) {
             value: selectedLabel,
           })}
         >
-          <ThemeLeading themeValue={value} />
+          <ThemeLeading themeValue={value} customColor={customColor} />
           <Text style={styles.triggerText}>{selectedLabel}</Text>
           <ThemedChevronDown size={ICON_SIZE.sm} uniProps={mutedColorMapping} />
         </DropdownMenuTrigger>
@@ -184,6 +196,14 @@ function ThemeRow({ value, onChange }: ThemeRowProps) {
               onChange={onChange}
             />
           ))}
+          {customTheme ? (
+            <ThemeMenuItem
+              themeValue="custom"
+              customColor={customColor}
+              selected={value === "custom"}
+              onChange={onChange}
+            />
+          ) : null}
         </DropdownMenuContent>
       </DropdownMenu>
     </View>
@@ -506,6 +526,11 @@ export function AppearanceSection() {
     [updateSettings],
   );
 
+  const handleCustomThemeImport = useCallback(
+    (customTheme: CustomThemePreset) => updateSettings({ customTheme, theme: "custom" }),
+    [updateSettings],
+  );
+
   const handleSyntaxThemeChange = useCallback(
     (syntaxTheme: SyntaxThemeId) => {
       void updateSettings({ syntaxTheme });
@@ -611,7 +636,15 @@ export function AppearanceSection() {
     <View>
       <SettingsSection title={t("settings.appearance.theme.title")}>
         <View style={settingsStyles.card}>
-          <ThemeRow value={settings.theme} onChange={handleThemeChange} />
+          <ThemeRow
+            value={settings.theme}
+            customTheme={settings.customTheme}
+            onChange={handleThemeChange}
+          />
+          <CustomThemeImportRow
+            customThemeName={settings.customTheme?.name ?? null}
+            onImport={handleCustomThemeImport}
+          />
         </View>
       </SettingsSection>
       <SettingsSection title={t("settings.appearance.detailLevel.title")}>

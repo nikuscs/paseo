@@ -1864,7 +1864,14 @@ export const es: TranslationResources = {
           midnight: "Medianoche",
           claude: "claudio",
           ghostty: "fantasmal",
+          custom: "Personalizado",
           auto: "Sistema",
+        },
+        custom: {
+          title: "Tema personalizado",
+          none: "Importa un archivo de tema de Paseo en JSON",
+          import: "Importar",
+          importing: "Importando...",
         },
       },
       detailLevel: {

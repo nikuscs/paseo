@@ -1848,7 +1848,14 @@ export const ptBR: TranslationResources = {
           midnight: "Midnight",
           claude: "Claude",
           ghostty: "Ghostty",
+          custom: "Personalizado",
           auto: "Sistema",
+        },
+        custom: {
+          title: "Tema personalizado",
+          none: "Importe um arquivo de tema Paseo em JSON",
+          import: "Importar",
+          importing: "Importando...",
         },
       },
       detailLevel: {
