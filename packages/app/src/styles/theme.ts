@@ -107,7 +107,15 @@ export const baseColors = {
   },
 } as const;
 
-export type ThemeName = "light" | "dark" | "zinc" | "midnight" | "claude" | "ghostty" | "pureBlack";
+export type ThemeName =
+  | "light"
+  | "dark"
+  | "zinc"
+  | "midnight"
+  | "claude"
+  | "ghostty"
+  | "pureBlack"
+  | "custom";
 
 // Diff colors — the +/- inside a diff view, where the color *is* the signal and has to
 // survive being scanned line by line, so it stays saturated. Light uses muted tones, dark
@@ -733,7 +741,8 @@ type UnistylesThemeKey =
   | "darkMidnight"
   | "darkClaude"
   | "darkGhostty"
-  | "darkPureBlack";
+  | "darkPureBlack"
+  | "custom";
 
 export const THEME_TO_UNISTYLES: Record<ThemeName, UnistylesThemeKey> = {
   light: "light",
@@ -743,6 +752,7 @@ export const THEME_TO_UNISTYLES: Record<ThemeName, UnistylesThemeKey> = {
   claude: "darkClaude",
   ghostty: "darkGhostty",
   pureBlack: "darkPureBlack",
+  custom: "custom",
 };
 
 export const THEME_SWATCHES: Record<ThemeName, string> = {
@@ -753,4 +763,5 @@ export const THEME_SWATCHES: Record<ThemeName, string> = {
   claude: "#D97757",
   ghostty: "#8caaee",
   pureBlack: "#000000",
+  custom: "#20744A",
 };

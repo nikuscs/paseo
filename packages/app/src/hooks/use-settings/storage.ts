@@ -14,6 +14,7 @@ import {
   type SidebarRowItems,
 } from "@/components/sidebar/display-preferences/row-items";
 import { THEME_TO_UNISTYLES, type ThemeName } from "@/styles/theme";
+import { customThemeSchema, type CustomThemePreset } from "@/styles/custom-theme";
 
 export const APP_SETTINGS_KEY = "@paseo:app-settings";
 export const APP_SETTINGS_QUERY_KEY = ["app-settings"];
@@ -49,6 +50,7 @@ export const MAX_FONT_FAMILY_LENGTH = 200;
 
 export interface AppSettings {
   theme: ThemeName | "auto";
+  customTheme: CustomThemePreset | null;
   language: AppLanguage;
   sendBehavior: SendBehavior;
   serviceUrlBehavior: ServiceUrlBehavior;
@@ -78,13 +80,15 @@ export interface Settings extends AppSettings {
  * `sidebarRowItems` is widened back to `unknown` because it is still read for a value the
  * current shape no longer has — see `isChecksHiddenByLegacyRowItem`.
  */
-type StoredAppSettings = Partial<Omit<AppSettings, "sidebarRowItems">> & {
+type StoredAppSettings = Partial<Omit<AppSettings, "customTheme" | "sidebarRowItems">> & {
   compactToolCalls?: unknown;
+  customTheme?: unknown;
   sidebarRowItems?: unknown;
 };
 
 export const DEFAULT_CLIENT_SETTINGS: AppSettings = {
   theme: "auto",
+  customTheme: null,
   language: "system",
   sendBehavior: "interrupt",
   serviceUrlBehavior: "ask",
@@ -232,6 +236,25 @@ function parseStoredSidebarChecksDisplay(stored: StoredAppSettings): SidebarChec
   return isChecksHiddenByLegacyRowItem(stored.sidebarRowItems) ? "none" : null;
 }
 
+function pickThemeSettings(
+  stored: StoredAppSettings,
+): Pick<Partial<AppSettings>, "customTheme" | "theme"> {
+  const parsedCustomTheme = customThemeSchema.safeParse(stored.customTheme);
+  const customTheme = parsedCustomTheme.success ? parsedCustomTheme.data : null;
+  const result: Pick<Partial<AppSettings>, "customTheme" | "theme"> = {};
+  if (customTheme !== null) {
+    result.customTheme = customTheme;
+  }
+  if (
+    typeof stored.theme === "string" &&
+    VALID_THEMES.has(stored.theme) &&
+    (stored.theme !== "custom" || customTheme !== null)
+  ) {
+    result.theme = stored.theme;
+  }
+  return result;
+}
+
 function pickBooleanAppSettings(stored: StoredAppSettings): Partial<AppSettings> {
   const result: Partial<AppSettings> = {};
   if (typeof stored.useLegacyTerminalRenderer === "boolean") {
@@ -253,9 +276,6 @@ function pickBooleanAppSettings(stored: StoredAppSettings): Partial<AppSettings>
  */
 function pickEnumAppSettings(stored: StoredAppSettings): Partial<AppSettings> {
   const result: Partial<AppSettings> = {};
-  if (typeof stored.theme === "string" && VALID_THEMES.has(stored.theme)) {
-    result.theme = stored.theme;
-  }
   if (stored.sendBehavior === "interrupt" || stored.sendBehavior === "queue") {
     result.sendBehavior = stored.sendBehavior;
   }
@@ -285,7 +305,7 @@ function pickEnumAppSettings(stored: StoredAppSettings): Partial<AppSettings> {
 
 function pickAppSettings(stored: StoredAppSettings): Partial<AppSettings> {
   const result: Partial<AppSettings> = {};
-  Object.assign(result, pickEnumAppSettings(stored));
+  Object.assign(result, pickEnumAppSettings(stored), pickThemeSettings(stored));
   if (stored.sidebarRowItems !== undefined) {
     result.sidebarRowItems = parseSidebarRowItems(stored.sidebarRowItems);
   }
