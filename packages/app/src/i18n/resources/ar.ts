@@ -2070,7 +2070,7 @@ export const ar: TranslationResources = {
         },
         hideHostNames: {
           label: "إخفاء أسماء المضيفين",
-          description: "إخفاء اسم الجهاز عند التجميع حسب الحالة",
+          description: "إخفاء شارة اسم الجهاز في صفوف مساحات العمل",
         },
         recentlyDone: {
           label: "أُنجز حديثًا",
