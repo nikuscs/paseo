@@ -2129,7 +2129,7 @@ export const en = {
         },
         hideHostNames: {
           label: "Hide host names",
-          description: "Hide the machine name when grouping by status",
+          description: "Hide the machine name badge on workspace rows",
         },
         recentlyDone: {
           label: "Recently done",
