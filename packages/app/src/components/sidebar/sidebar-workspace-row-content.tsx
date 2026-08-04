@@ -159,10 +159,7 @@ export const SidebarWorkspaceRowContent = memo(function SidebarWorkspaceRowConte
   children?: ReactNode;
 }) {
   const {
-    settings: {
-      workspaceTitleSource,
-      appearance: { hidePrStatus, hideScriptIndicators },
-    },
+    settings: { workspaceTitleSource },
   } = useAppSettings();
   const workspaceLabel = resolveSidebarWorkspacePrimaryLabel({ workspace, workspaceTitleSource });
   const workspaceBranchTextStyle = useMemo(
@@ -204,8 +201,8 @@ export const SidebarWorkspaceRowContent = memo(function SidebarWorkspaceRowConte
           </View>
           <WorkspaceMetaRow
             hostBadge={hostBadge ?? null}
-            prHint={hidePrStatus ? null : workspace.prHint}
-            scriptSummary={hideScriptIndicators ? null : scriptSummary}
+            prHint={workspace.prHint}
+            scriptSummary={scriptSummary}
           />
         </View>
       </View>

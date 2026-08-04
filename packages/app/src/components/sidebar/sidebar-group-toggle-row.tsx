@@ -4,7 +4,7 @@ import { Pressable, Text, View, type PressableStateCallbackType } from "react-na
 import { ChevronDown, ChevronUp } from "lucide-react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { isWeb } from "@/constants/platform";
-import { useSidebarAppearance } from "@/components/sidebar/use-sidebar-appearance";
+import { useCompactSidebarRows } from "@/components/sidebar/display-preferences/model";
 import {
   comfortableSidebarSecondaryRowDensity,
   compactSidebarSecondaryRowDensity,
@@ -30,7 +30,7 @@ export function SidebarGroupToggleRow({
   testID: string;
 }) {
   const { t } = useTranslation();
-  const { compactSidebarRows } = useSidebarAppearance();
+  const compactSidebarRows = useCompactSidebarRows();
   const label = t(
     expanded ? "sidebar.workspace.actions.showLess" : "sidebar.workspace.actions.showMore",
   );
