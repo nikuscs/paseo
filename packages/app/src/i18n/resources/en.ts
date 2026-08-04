@@ -915,6 +915,12 @@ export const en = {
         project: "Project",
         status: "Status",
       },
+      sorting: {
+        label: "Sorting",
+        manual: "Manual",
+        name: "Name",
+        activity: "Recent activity",
+      },
       titleSource: {
         label: "Title",
         title: "Title",

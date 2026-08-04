@@ -927,6 +927,12 @@ export const ptBR: TranslationResources = {
         project: "Projeto",
         status: "Status",
       },
+      sorting: {
+        label: "Ordenação",
+        manual: "Manual",
+        name: "Nome",
+        activity: "Atividade recente",
+      },
       titleSource: {
         label: "Título",
         title: "Título",

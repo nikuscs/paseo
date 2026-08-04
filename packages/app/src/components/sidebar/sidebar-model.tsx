@@ -55,7 +55,7 @@ export function SidebarModelProvider({
   const isStatusMode = groupMode === "status";
   const workspaceEntriesByKey = useSidebarWorkspaceEntries(
     list.workspacePlacements,
-    active !== false || isStatusMode,
+    active !== false || isStatusMode || sortMode !== "manual",
   );
   const projectionWorkspaceEntriesByKey = isStatusMode
     ? workspaceEntriesByKey
@@ -63,7 +63,7 @@ export function SidebarModelProvider({
 
   // The "Sort by" preference only applies to project grouping; status mode has its own ordering.
   // Ordering keys are resolved from the workspace entries so Name matches the rendered label
-  // (branch vs title) and Activity uses the effective, agent-activity-aware status timestamp.
+  // (branch vs title) and Activity follows the daemon's workspace activity timestamp.
   const shouldSort = groupMode === "project" && sortMode !== "manual";
   const sortKeys = useMemo(() => {
     if (!shouldSort) {
@@ -76,7 +76,7 @@ export function SidebarModelProvider({
         workspaceKey,
         resolveSidebarWorkspacePrimaryLabel({ workspace: entry, workspaceTitleSource }),
       );
-      activityByKey.set(workspaceKey, entry.statusEnteredAt?.getTime() ?? 0);
+      activityByKey.set(workspaceKey, entry.activityAt?.getTime() ?? 0);
     }
     return { labelByKey, activityByKey };
   }, [shouldSort, workspaceEntriesByKey, workspaceTitleSource]);
@@ -99,7 +99,7 @@ export function SidebarModelProvider({
         projects: sortedProjects,
         pinnedKeys,
         workspaceEntriesByKey: projectionWorkspaceEntriesByKey,
-        projectNamesByKey: list.projectNamesByKey,
+        projectNamesByViewKey: list.projectNamesByViewKey,
         groupMode,
         pinnedCollapsed,
         collapsedProjectKeys,
@@ -109,7 +109,7 @@ export function SidebarModelProvider({
       collapsedProjectKeys,
       collapsedStatusGroupKeys,
       groupMode,
-      list.projectNamesByKey,
+      list.projectNamesByViewKey,
       sortedProjects,
       pinnedCollapsed,
       pinnedKeys,

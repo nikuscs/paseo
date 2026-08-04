@@ -897,6 +897,12 @@ export const zhCN: TranslationResources = {
         project: "项目",
         status: "状态",
       },
+      sorting: {
+        label: "排序",
+        manual: "手动",
+        name: "名称",
+        activity: "最近活动",
+      },
       titleSource: {
         label: "标题",
         title: "标题",
