@@ -1,6 +1,7 @@
 import { useCallback, useMemo } from "react";
 import {
   useAppSettings,
+  type RecentlyDoneWindowMinutes,
   type SidebarWorkspaceTrailing,
   type WorkspaceTitleSource,
 } from "@/hooks/use-settings";
@@ -23,6 +24,12 @@ export interface SidebarDisplayPreferences {
   trailing: SidebarWorkspaceTrailing;
   /** Picking the choice that is already showing clears the slot. */
   toggleTrailing: (choice: SidebarTrailingChoice) => void;
+  compactRows: boolean;
+  toggleCompactRows: () => void;
+  showNewWorkspaceRow: boolean;
+  toggleNewWorkspaceRow: () => void;
+  recentlyDoneWindowMinutes: RecentlyDoneWindowMinutes;
+  setRecentlyDoneWindowMinutes: (value: RecentlyDoneWindowMinutes) => void;
   hostFilters: readonly string[];
   toggleHostFilter: (serverId: string) => void;
   clearHostFilters: () => void;
@@ -49,6 +56,9 @@ export function useSidebarDisplayPreferences(): SidebarDisplayPreferences {
       sidebarWorkspaceTrailing,
       sidebarRowItems,
       sidebarChecksDisplay,
+      compactSidebarRows,
+      showNewWorkspaceRow,
+      recentlyDoneWindowMinutes,
     },
     updateSettings,
   } = useAppSettings();
@@ -63,7 +73,7 @@ export function useSidebarDisplayPreferences(): SidebarDisplayPreferences {
   const toggleRowItem = useCallback(
     (item: SidebarRowItem) => {
       void updateSettings({
-        sidebarRowItems: { ...sidebarRowItems, [item]: !sidebarRowItems[item] },
+        sidebarRowItems: { [item]: !sidebarRowItems[item] },
       });
     },
     [updateSettings, sidebarRowItems],
@@ -84,6 +94,18 @@ export function useSidebarDisplayPreferences(): SidebarDisplayPreferences {
     },
     [updateSettings, sidebarWorkspaceTrailing],
   );
+  const toggleCompactRows = useCallback(() => {
+    void updateSettings({ compactSidebarRows: !compactSidebarRows });
+  }, [compactSidebarRows, updateSettings]);
+  const toggleNewWorkspaceRow = useCallback(() => {
+    void updateSettings({ showNewWorkspaceRow: !showNewWorkspaceRow });
+  }, [showNewWorkspaceRow, updateSettings]);
+  const setRecentlyDoneWindowMinutes = useCallback(
+    (value: RecentlyDoneWindowMinutes) => {
+      void updateSettings({ recentlyDoneWindowMinutes: value });
+    },
+    [updateSettings],
+  );
 
   return useMemo(
     () => ({
@@ -97,6 +119,12 @@ export function useSidebarDisplayPreferences(): SidebarDisplayPreferences {
       setChecksDisplay,
       trailing: sidebarWorkspaceTrailing,
       toggleTrailing,
+      compactRows: compactSidebarRows,
+      toggleCompactRows,
+      showNewWorkspaceRow,
+      toggleNewWorkspaceRow,
+      recentlyDoneWindowMinutes,
+      setRecentlyDoneWindowMinutes,
       hostFilters,
       toggleHostFilter,
       clearHostFilters,
@@ -112,6 +140,12 @@ export function useSidebarDisplayPreferences(): SidebarDisplayPreferences {
       setChecksDisplay,
       sidebarWorkspaceTrailing,
       toggleTrailing,
+      compactSidebarRows,
+      toggleCompactRows,
+      showNewWorkspaceRow,
+      toggleNewWorkspaceRow,
+      recentlyDoneWindowMinutes,
+      setRecentlyDoneWindowMinutes,
       hostFilters,
       toggleHostFilter,
       clearHostFilters,
@@ -149,4 +183,12 @@ export function useSidebarMetaPreferences(): {
     }),
     [sidebarRowItems, sidebarChecksDisplay],
   );
+}
+
+export function useCompactSidebarRows(): boolean {
+  return useAppSettings().settings.compactSidebarRows;
+}
+
+export function useShowNewWorkspaceRow(): boolean {
+  return useAppSettings().settings.showNewWorkspaceRow;
 }

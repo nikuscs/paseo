@@ -18,12 +18,8 @@ export type { SidebarWorkspaceTrailing };
  */
 export function useSidebarWorkspaceTrailing(): SidebarWorkspaceTrailing {
   const {
-    settings: {
-      sidebarWorkspaceTrailing,
-      appearance: { hideWorkspaceDiffStats },
-    },
+    settings: { sidebarWorkspaceTrailing },
   } = useAppSettings();
-  if (hideWorkspaceDiffStats && sidebarWorkspaceTrailing === "diff") return "none";
   return sidebarWorkspaceTrailing;
 }
 
