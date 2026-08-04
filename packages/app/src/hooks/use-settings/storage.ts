@@ -1,7 +1,5 @@
 import { isSyntaxThemeId, type SyntaxThemeId } from "@getpaseo/highlight";
 import type { QueryClient } from "@tanstack/react-query";
-import type { DesktopSettings } from "@/desktop/settings/desktop-settings";
-import { parseAppLanguage, type AppLanguage } from "@/i18n/locales";
 import {
   DEFAULT_SIDEBAR_CHECKS_DISPLAY,
   parseSidebarChecksDisplay,
@@ -13,8 +11,10 @@ import {
   parseSidebarRowItems,
   type SidebarRowItems,
 } from "@/components/sidebar/display-preferences/row-items";
-import { THEME_TO_UNISTYLES, type ThemeName } from "@/styles/theme";
+import type { DesktopSettings } from "@/desktop/settings/desktop-settings";
+import { parseAppLanguage, type AppLanguage } from "@/i18n/locales";
 import { customThemeSchema, type CustomThemePreset } from "@/styles/custom-theme";
+import { THEME_TO_UNISTYLES, type ThemeName } from "@/styles/theme";
 
 export const APP_SETTINGS_KEY = "@paseo:app-settings";
 export const APP_SETTINGS_QUERY_KEY = ["app-settings"];
