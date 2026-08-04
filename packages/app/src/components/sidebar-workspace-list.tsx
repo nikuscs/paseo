@@ -107,7 +107,6 @@ import { useLongPressDragInteraction } from "@/components/sidebar/use-long-press
 import { PinnedSectionHeader } from "@/components/sidebar/pinned-section-header";
 import { SidebarGroupToggleRow } from "@/components/sidebar/sidebar-group-toggle-row";
 import { useLimitedSidebarGroup } from "@/components/sidebar/use-limited-sidebar-group";
-import { useSidebarAppearance } from "@/components/sidebar/use-sidebar-appearance";
 import {
   comfortableSidebarRowDensity,
   compactSidebarRowDensity,
@@ -163,7 +162,11 @@ import { OpenInFileManagerMenuItem } from "@/workspace/open-in-file-manager/menu
 import { useLocalDaemonServerId } from "@/hooks/use-is-local-daemon";
 import type { HostBadgeModel } from "@/hosts/appearance";
 import { useHostBadges } from "@/hosts/use-host-badges";
-import { useSidebarRowItems } from "@/components/sidebar/display-preferences/model";
+import {
+  useCompactSidebarRows,
+  useShowNewWorkspaceRow,
+  useSidebarRowItems,
+} from "@/components/sidebar/display-preferences/model";
 
 const workspaceKeyExtractor = (workspace: SidebarWorkspacePlacement) => workspace.workspaceKey;
 
@@ -909,7 +912,7 @@ function ProjectHeaderRow({
   const localDaemonServerId = useLocalDaemonServerId();
   const projectPath = resolveSidebarProjectLocalPath(project, localDaemonServerId);
   const settingsTarget = project.hosts[0] ?? null;
-  const { compactSidebarRows } = useSidebarAppearance();
+  const compactSidebarRows = useCompactSidebarRows();
   const handleBeginWorkspaceSetup = useCallback(() => {
     if (!worktreeTarget) {
       return;
@@ -1112,7 +1115,7 @@ function WorkspaceRowInner({
   const isCompact = useIsCompactFormFactor();
   const [isPressed, setIsPressed] = useState(false);
   const isTouchPlatform = platformIsNative || isCompact;
-  const { compactSidebarRows } = useSidebarAppearance();
+  const compactSidebarRows = useCompactSidebarRows();
   const interaction = useLongPressDragInteraction({
     drag,
     menuController,
@@ -1660,7 +1663,7 @@ function ProjectBlock({
     canToggle: canToggleWorkspaces,
     toggleExpanded: toggleWorkspacesExpanded,
   } = useLimitedSidebarGroup(project.workspaces);
-  const { hideNewWorkspaceRow } = useSidebarAppearance();
+  const showNewWorkspaceRow = useShowNewWorkspaceRow();
   const rowModel = useMemo(
     () =>
       buildSidebarProjectRowModel({
@@ -1839,7 +1842,7 @@ function ProjectBlock({
           ) : null}
         </>
       );
-    } else if (rowModel.trailingAction.kind === "new_workspace" && !hideNewWorkspaceRow) {
+    } else if (rowModel.trailingAction.kind === "new_workspace" && showNewWorkspaceRow) {
       projectChildren = (
         <NewWorkspaceGhostRow
           project={project}
@@ -1969,13 +1972,12 @@ export function SidebarWorkspaceList({
   const pathname = usePathname();
   const hosts = useHosts();
   const rowItems = useSidebarRowItems();
-  const { hideHostLabels } = useSidebarAppearance();
   // Host badge visibility is a lattice, not three competing switches: this gate is the global
   // "off", `shouldShowSidebarHostLabels` is the automatic "there is only one host so it says
   // nothing", and each host's own `badgeDisplay` decides name vs icon vs hidden. Turning the
   // item off here removes the badge everywhere; leaving it on defers to the per-host setting.
   const hostBadgeByServerId = useHostBadges({
-    enabled: rowItems.host && !hideHostLabels && shouldShowSidebarHostLabels(projects),
+    enabled: rowItems.host && shouldShowSidebarHostLabels(projects),
   });
   const serverIds = useMemo(() => hosts.map((host) => host.serverId), [hosts]);
   const supportsMultiplicityByServerId = useHostFeatureMap(serverIds, "workspaceMultiplicity");

@@ -1046,6 +1046,16 @@ export const ja: TranslationResources = {
         labels: "ラベル",
         diff: "差分統計",
         timestamp: "最終アクティビティ",
+        compactRows: "コンパクトな行",
+        newWorkspaceRow: "新しいワークスペース行",
+      },
+      recentlyDone: {
+        label: "最近完了",
+        options: {
+          off: "オフ",
+          minutes: "{{minutes}}分",
+          hour: "1時間",
+        },
       },
       checks: {
         iconAndText: "アイコンとテキスト",
@@ -2062,43 +2072,6 @@ export const ja: TranslationResources = {
       chatOutline: {
         title: "チャットのアウトライン",
         description: "プロンプト間を移動するためのアウトラインを表示します",
-      },
-      sidebar: {
-        title: "サイドバー",
-        compactRows: {
-          label: "コンパクト行",
-          description: "行・セクション見出し・ステータスグループの間隔を狭くする",
-        },
-        hideDiffStats: {
-          label: "差分統計を非表示",
-          description: "ワークスペース行の +/− 変更数を非表示にする",
-        },
-        hidePrStatus: {
-          label: "PR ステータスを非表示",
-          description: "ワークスペース行のプルリクエストバッジとチェックを非表示にする",
-        },
-        hideNewWorkspaceRow: {
-          label: "新規ワークスペース行を非表示",
-          description: "空のプロジェクトの下に表示される + 新規ワークスペース行を非表示にする",
-        },
-        hideScriptIndicators: {
-          label: "スクリプトインジケーターを非表示",
-          description: "実行中スクリプトの地球儀とターミナルのアイコンを非表示にする",
-        },
-        hideHostNames: {
-          label: "ホスト名を非表示",
-          description: "ワークスペース行のマシン名バッジを非表示にする",
-        },
-        recentlyDone: {
-          label: "最近完了",
-          description: "完了したばかりのワークスペースを「完了」の上の専用グループに表示する",
-          accessibilityLabel: "最近完了の期間、現在 {{value}}",
-          options: {
-            off: "オフ",
-            minutes: "{{minutes}} 分",
-            hour: "1 時間",
-          },
-        },
       },
       fonts: {
         title: "フォント",

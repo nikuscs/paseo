@@ -1044,6 +1044,16 @@ export const en = {
         labels: "Labels",
         diff: "Diff stats",
         timestamp: "Last activity",
+        compactRows: "Compact rows",
+        newWorkspaceRow: "New workspace row",
+      },
+      recentlyDone: {
+        label: "Recently done",
+        options: {
+          off: "Off",
+          minutes: "{{minutes}} min",
+          hour: "1 hour",
+        },
       },
       checks: {
         iconAndText: "Icon and text",
@@ -2109,43 +2119,6 @@ export const en = {
       chatOutline: {
         title: "Chat outline",
         description: "Show an outline for jumping between prompts",
-      },
-      sidebar: {
-        title: "Sidebar",
-        compactRows: {
-          label: "Compact rows",
-          description: "Tighter spacing for rows, section headers, and status groups",
-        },
-        hideDiffStats: {
-          label: "Hide diff stats",
-          description: "Hide the +/− change counts on workspace rows",
-        },
-        hidePrStatus: {
-          label: "Hide PR status",
-          description: "Hide the pull request badge and checks on workspace rows",
-        },
-        hideNewWorkspaceRow: {
-          label: "Hide New workspace row",
-          description: "Hide the + New workspace row under empty projects",
-        },
-        hideScriptIndicators: {
-          label: "Hide script indicators",
-          description: "Hide the globe and terminal glyphs for running scripts",
-        },
-        hideHostNames: {
-          label: "Hide host names",
-          description: "Hide the machine name badge on workspace rows",
-        },
-        recentlyDone: {
-          label: "Recently done",
-          description: "Show freshly finished workspaces in their own group above Done",
-          accessibilityLabel: "Recently done window, currently {{value}}",
-          options: {
-            off: "Off",
-            minutes: "{{minutes}} min",
-            hour: "1 hour",
-          },
-        },
       },
       fonts: {
         title: "Fonts",

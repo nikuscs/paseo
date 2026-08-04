@@ -1069,6 +1069,16 @@ export const es: TranslationResources = {
         labels: "Etiquetas",
         diff: "Estadísticas de cambios",
         timestamp: "Última actividad",
+        compactRows: "Filas compactas",
+        newWorkspaceRow: "Fila Nuevo espacio de trabajo",
+      },
+      recentlyDone: {
+        label: "Hecho recientemente",
+        options: {
+          off: "Desactivado",
+          minutes: "{{minutes}} min",
+          hour: "1 hora",
+        },
       },
       checks: {
         iconAndText: "Icono y texto",
@@ -2095,46 +2105,6 @@ export const es: TranslationResources = {
       chatOutline: {
         title: "Esquema del chat",
         description: "Muestra un esquema para saltar entre instrucciones",
-      },
-      sidebar: {
-        title: "Barra lateral",
-        compactRows: {
-          label: "Filas compactas",
-          description: "Espaciado más ajustado para filas, encabezados y grupos de estado",
-        },
-        hideDiffStats: {
-          label: "Ocultar estadísticas de cambios",
-          description: "Oculta los recuentos de cambios +/− en las filas de espacios de trabajo",
-        },
-        hidePrStatus: {
-          label: "Ocultar estado de PR",
-          description:
-            "Oculta la insignia de pull request y las comprobaciones en las filas de espacios de trabajo",
-        },
-        hideNewWorkspaceRow: {
-          label: "Ocultar fila Nuevo espacio de trabajo",
-          description: "Oculta la fila + Nuevo espacio de trabajo bajo los proyectos vacíos",
-        },
-        hideScriptIndicators: {
-          label: "Ocultar indicadores de scripts",
-          description: "Oculta los iconos de globo y terminal de los scripts en ejecución",
-        },
-        hideHostNames: {
-          label: "Ocultar nombres de host",
-          description:
-            "Oculta la insignia con el nombre de la máquina en las filas de espacios de trabajo",
-        },
-        recentlyDone: {
-          label: "Terminado hace poco",
-          description:
-            "Muestra los espacios de trabajo recién terminados en su propio grupo sobre Listo",
-          accessibilityLabel: "Ventana de terminado hace poco, actualmente {{value}}",
-          options: {
-            off: "Desactivado",
-            minutes: "{{minutes}} min",
-            hour: "1 hora",
-          },
-        },
       },
       fonts: {
         title: "Fuentes",
