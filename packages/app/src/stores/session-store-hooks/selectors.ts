@@ -6,7 +6,7 @@ import {
 } from "@/projects/workspace-structure";
 import type { DesktopBadgeWorkspaceStatus } from "@/utils/desktop-badge-state";
 import { resolveWorkspaceMapKeyByIdentity } from "@/utils/workspace-identity";
-import type { EmptyProjectDescriptor, WorkspaceDescriptor } from "../session-store";
+import type { ProjectDescriptor, WorkspaceDescriptor } from "../session-store";
 
 export type { DesktopBadgeWorkspaceStatus } from "@/utils/desktop-badge-state";
 export type { WorkspaceStructure, WorkspaceStructureProject } from "@/projects/workspace-structure";
@@ -18,7 +18,7 @@ export interface SessionsSnapshot {
       hasHydratedWorkspaces?: boolean;
       hasWorkspaceDirectorySnapshot?: boolean;
       workspaces: Map<string, WorkspaceDescriptor>;
-      emptyProjects?: Map<string, EmptyProjectDescriptor>;
+      projects?: Map<string, ProjectDescriptor>;
     }
   >;
 }
@@ -158,20 +158,20 @@ export function selectWorkspaceStructureProjects(
   const sessions: Array<{
     serverId: string;
     workspaces: Iterable<WorkspaceDescriptor>;
-    emptyProjects: Iterable<EmptyProjectDescriptor>;
+    projects: Iterable<ProjectDescriptor>;
   }> = [];
 
   for (const serverId of serverIds) {
     const session = state.sessions[serverId];
     const workspaces = session?.workspaces;
-    const emptyProjects = session?.emptyProjects;
-    if ((!workspaces || workspaces.size === 0) && (!emptyProjects || emptyProjects.size === 0)) {
+    const projects = session?.projects;
+    if (!projects || projects.size === 0) {
       continue;
     }
     sessions.push({
       serverId,
       workspaces: workspaces?.values() ?? [],
-      emptyProjects: emptyProjects?.values() ?? [],
+      projects: projects.values(),
     });
   }
 
@@ -259,8 +259,7 @@ export function composeWorkspaceStructure(input: {
 
   const orderedProjects = applyStoredOrdering({
     items: input.projects.map((project) => {
-      const workspaceOrder =
-        input.workspaceOrderByScope[project.projectKey] ?? EMPTY_WORKSPACE_KEYS;
+      const workspaceOrder = input.workspaceOrderByScope[project.viewKey] ?? EMPTY_WORKSPACE_KEYS;
       return {
         ...project,
         workspaceKeys: applyStoredOrdering({
@@ -271,7 +270,7 @@ export function composeWorkspaceStructure(input: {
       };
     }),
     storedOrder: input.projectOrder,
-    getKey: (project) => project.projectKey,
+    getKey: (project) => project.viewKey,
   });
 
   return { projects: orderedProjects };
