@@ -1054,6 +1054,16 @@ export const ru: TranslationResources = {
         labels: "Метки",
         diff: "Статистика изменений",
         timestamp: "Последняя активность",
+        compactRows: "Компактные строки",
+        newWorkspaceRow: "Строка «Новое рабочее пространство»",
+      },
+      recentlyDone: {
+        label: "Недавно завершённые",
+        options: {
+          off: "Выключено",
+          minutes: "{{minutes}} мин",
+          hour: "1 час",
+        },
       },
       checks: {
         iconAndText: "Значок и текст",
@@ -2091,44 +2101,6 @@ export const ru: TranslationResources = {
       chatOutline: {
         title: "Оглавление чата",
         description: "Показывать оглавление для перехода между запросами",
-      },
-      sidebar: {
-        title: "Боковая панель",
-        compactRows: {
-          label: "Компактные строки",
-          description: "Более плотные отступы для строк, заголовков разделов и групп статусов",
-        },
-        hideDiffStats: {
-          label: "Скрыть статистику изменений",
-          description: "Скрыть счётчики изменений +/− в строках рабочих пространств",
-        },
-        hidePrStatus: {
-          label: "Скрыть статус PR",
-          description: "Скрыть значок пул-реквеста и проверки в строках рабочих пространств",
-        },
-        hideNewWorkspaceRow: {
-          label: "Скрыть строку «Новое рабочее пространство»",
-          description: "Скрыть строку + Новое рабочее пространство под пустыми проектами",
-        },
-        hideScriptIndicators: {
-          label: "Скрыть индикаторы скриптов",
-          description: "Скрыть значки глобуса и терминала для запущенных скриптов",
-        },
-        hideHostNames: {
-          label: "Скрыть имена хостов",
-          description: "Скрыть значок с именем машины в строках рабочих пространств",
-        },
-        recentlyDone: {
-          label: "Недавно завершённые",
-          description:
-            "Показывать только что завершённые рабочие пространства отдельной группой над «Готово»",
-          accessibilityLabel: "Окно недавно завершённых, сейчас {{value}}",
-          options: {
-            off: "Выключено",
-            minutes: "{{minutes}} мин",
-            hour: "1 час",
-          },
-        },
       },
       fonts: {
         title: "Шрифты",

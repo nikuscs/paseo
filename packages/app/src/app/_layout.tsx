@@ -630,7 +630,7 @@ function SidebarChrome({
     selectIsAgentListOpen(state, { isCompact: isCompactLayout }),
   );
   const active = visible && isOpen;
-  const recency = useRecentlyDoneRecency();
+  const recency = useRecentlyDoneRecency(active);
   return (
     <SidebarModelProvider active={active} recency={recency}>
       {mounted ? <LeftSidebar active={active} /> : null}

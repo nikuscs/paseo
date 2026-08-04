@@ -36,8 +36,8 @@ import {
   RECENTLY_DONE_WINDOW_OPTIONS,
   sanitizeFontFamily,
   saveAppSettings as saveAppSettingsPure,
-  type AppearanceSettings,
   type AppSettings,
+  type AppSettingsUpdate,
   type OpenInSidePanePreferences,
   type DesktopSettingsBridge,
   type KeyValueStorage,
@@ -74,8 +74,8 @@ export {
   sanitizeFontFamily,
 };
 export type {
-  AppearanceSettings,
   AppSettings,
+  AppSettingsUpdate,
   AppLanguage,
   OpenInSidePanePreferences,
   DesktopSettingsBridge,
@@ -120,7 +120,7 @@ export interface UseAppSettingsReturn {
   settings: AppSettings;
   isLoading: boolean;
   error: unknown;
-  updateSettings: (updates: Partial<AppSettings>) => Promise<void>;
+  updateSettings: (updates: AppSettingsUpdate) => Promise<void>;
   resetSettings: () => Promise<void>;
 }
 
@@ -144,7 +144,7 @@ export function useAppSettings(): UseAppSettingsReturn {
   });
 
   const updateSettings = useCallback(
-    async (updates: Partial<AppSettings>) => {
+    async (updates: AppSettingsUpdate) => {
       try {
         await saveAppSettings({ queryClient, updates });
       } catch (err) {
@@ -240,13 +240,13 @@ export function useSettings<TSelected>(
   };
 }
 
-export async function persistAppSettings(updates: Partial<AppSettings>): Promise<void> {
+export async function persistAppSettings(updates: AppSettingsUpdate): Promise<void> {
   await saveAppSettings({ queryClient: appQueryClient, updates });
 }
 
 export async function saveAppSettings(input: {
   queryClient: QueryClient;
-  updates: Partial<AppSettings>;
+  updates: AppSettingsUpdate;
   deps?: SettingsDeps;
 }): Promise<void> {
   await saveAppSettingsPure({
