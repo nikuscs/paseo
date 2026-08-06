@@ -154,6 +154,7 @@ describe("test-daemon-connection connectToDaemon", () => {
         host: "deploy@example.com",
         sshPort: 2222,
         daemonPort: 7777,
+        identityFile: "/keys/paseo",
       },
       undefined,
       {

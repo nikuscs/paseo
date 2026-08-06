@@ -1626,6 +1626,8 @@ export const ko: TranslationResources = {
       helper: "원격 호스트에서 실행 중인 Paseo 데몬에 연결합니다.",
       fields: {
         target: "SSH 호스트",
+        identityFile: "ID 파일 경로",
+        optional: "선택 사항",
       },
       actions: {
         cancel: "취소",

@@ -82,6 +82,7 @@ describe("Remote SSH desktop transport", () => {
         host: "deploy@example.com",
         sshPort: 2222,
         daemonPort: 7777,
+        identityFile: "/Users/example/.ssh/paseo",
       }),
     ).toEqual([
       "-T",
@@ -95,6 +96,8 @@ describe("Remote SSH desktop transport", () => {
       "ExitOnForwardFailure=yes",
       "-p",
       "2222",
+      "-i",
+      "/Users/example/.ssh/paseo",
       "-W",
       "127.0.0.1:7777",
       "deploy@example.com",

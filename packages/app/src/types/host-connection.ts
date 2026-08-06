@@ -38,6 +38,7 @@ export interface RemoteSshHostConnection {
   host: string;
   sshPort?: number;
   daemonPort?: number;
+  identityFile?: string;
 }
 
 export interface RelayHostConnection {
@@ -158,7 +159,8 @@ function remoteSshConnectionEquals(
   return (
     left.host === right.host &&
     left.sshPort === right.sshPort &&
-    left.daemonPort === right.daemonPort
+    left.daemonPort === right.daemonPort &&
+    left.identityFile === right.identityFile
   );
 }
 
@@ -326,6 +328,7 @@ export function createRemoteSshHostConnection(input: {
   host: string;
   sshPort?: number;
   daemonPort?: number;
+  identityFile?: string;
 }): RemoteSshHostConnection {
   const host = validateSshHost(input.host);
   const sshPort = input.sshPort === undefined ? undefined : validatePort(input.sshPort, "SSH port");
@@ -334,12 +337,14 @@ export function createRemoteSshHostConnection(input: {
     input.daemonPort === undefined || input.daemonPort === DEFAULT_SSH_DAEMON_PORT
       ? undefined
       : validatePort(input.daemonPort, "Daemon port");
+  const identityFile = input.identityFile?.trim() || undefined;
 
   const id = [
     "ssh",
     encodeURIComponent(host),
     sshPort === undefined ? "" : String(sshPort),
     daemonPort === undefined ? "" : String(daemonPort),
+    ...(identityFile ? [encodeURIComponent(identityFile)] : []),
   ].join(":");
 
   return {
@@ -348,6 +353,7 @@ export function createRemoteSshHostConnection(input: {
     host,
     ...(sshPort !== undefined ? { sshPort } : {}),
     ...(daemonPort !== undefined ? { daemonPort } : {}),
+    ...(identityFile ? { identityFile } : {}),
   };
 }
 
@@ -375,6 +381,7 @@ const StoredHostConnectionSchema = z.discriminatedUnion("type", [
     host: z.string(),
     sshPort: z.number().optional(),
     daemonPort: z.number().optional(),
+    identityFile: z.string().optional(),
   }),
   z.strictObject({
     id: z.string().optional(),
@@ -426,6 +433,7 @@ function normalizeStoredConnection(connection: StoredHostConnection): HostConnec
         host: connection.host,
         ...(connection.sshPort !== undefined ? { sshPort: connection.sshPort } : {}),
         ...(connection.daemonPort !== undefined ? { daemonPort: connection.daemonPort } : {}),
+        ...(connection.identityFile !== undefined ? { identityFile: connection.identityFile } : {}),
       });
     } catch {
       return null;

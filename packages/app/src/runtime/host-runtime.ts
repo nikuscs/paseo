@@ -535,6 +535,7 @@ function createDefaultDeps(): HostRuntimeControllerDeps {
             host: connection.host,
             ...(connection.sshPort !== undefined ? { sshPort: connection.sshPort } : {}),
             ...(connection.daemonPort !== undefined ? { daemonPort: connection.daemonPort } : {}),
+            ...(connection.identityFile ? { identityFile: connection.identityFile } : {}),
           }),
         });
       }
@@ -1782,6 +1783,7 @@ export class HostRuntimeStore {
     host: string;
     sshPort?: number;
     daemonPort?: number;
+    identityFile?: string;
     label?: string;
   }): Promise<{ profile: HostProfile; serverId: string; hostname: string | null }> {
     return this.probeAndUpsertConnection({
@@ -2528,6 +2530,7 @@ export interface HostMutations {
     host: string;
     sshPort?: number;
     daemonPort?: number;
+    identityFile?: string;
     label?: string;
   }) => Promise<{ profile: HostProfile; serverId: string; hostname: string | null }>;
   upsertRelayConnection: (input: {
