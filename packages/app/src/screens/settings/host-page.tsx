@@ -111,6 +111,9 @@ function formatHostConnectionLabel(connection: HostConnection, t: TFunction): st
   if (connection.type === "directSocket" || connection.type === "directPipe") {
     return `${t("settings.host.badges.local")} (${connection.path})`;
   }
+  if (connection.type === "remoteSsh") {
+    return `${t("settings.host.badges.remoteSsh")} (${connection.host})`;
+  }
   return `TCP (${connection.endpoint})`;
 }
 
@@ -130,6 +133,12 @@ function formatActiveConnectionBadge(
     return {
       icon: <Monitor size={theme.iconSize.sm} color={theme.colors.foregroundMuted} />,
       text: t("settings.host.badges.local"),
+    };
+  }
+  if (activeConnection.type === "remoteSsh") {
+    return {
+      icon: <Globe size={theme.iconSize.sm} color={theme.colors.foregroundMuted} />,
+      text: t("settings.host.badges.remoteSsh"),
     };
   }
   return {
@@ -1829,6 +1838,7 @@ const styles = StyleSheet.create((theme) => ({
     height: 6,
     borderRadius: theme.borderRadius.full,
   },
+
   badgePill: {
     flexDirection: "row",
     alignItems: "center",
