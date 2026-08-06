@@ -1684,6 +1684,8 @@ export const es: TranslationResources = {
       helper: "Conéctate a un daemon de Paseo en el host remoto.",
       fields: {
         target: "Host SSH",
+        identityFile: "Ruta del archivo de identidad",
+        optional: "Opcional",
       },
       actions: {
         cancel: "Cancelar",

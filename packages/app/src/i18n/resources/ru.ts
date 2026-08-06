@@ -1667,6 +1667,8 @@ export const ru: TranslationResources = {
       helper: "Подключитесь к демону Paseo на удалённом хосте.",
       fields: {
         target: "Хост SSH",
+        identityFile: "Путь к файлу ключа",
+        optional: "Необязательно",
       },
       actions: {
         cancel: "Отмена",

@@ -1621,6 +1621,8 @@ export const zhCN: TranslationResources = {
       helper: "连接到远程主机上运行的 Paseo 守护进程。",
       fields: {
         target: "SSH 主机",
+        identityFile: "身份文件路径",
+        optional: "可选",
       },
       actions: {
         cancel: "取消",

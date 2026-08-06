@@ -1688,6 +1688,8 @@ export const fr: TranslationResources = {
       helper: "Connectez-vous à un daemon Paseo sur l’hôte distant.",
       fields: {
         target: "Hôte SSH",
+        identityFile: "Chemin du fichier d’identité",
+        optional: "Facultatif",
       },
       actions: {
         cancel: "Annuler",

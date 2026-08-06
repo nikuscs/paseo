@@ -51,14 +51,18 @@ export function AddRemoteSshHostModal({
   const isCompact = useIsCompactFormFactor();
   const { probeAndUpsertRemoteSshConnection } = useHostMutations();
   const targetRef = useRef("");
+  const identityFileRef = useRef("");
   const inputRef = useRef<EditingTextInputHandle>(null);
+  const identityInputRef = useRef<EditingTextInputHandle>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const header = useMemo<SheetHeader>(() => ({ title: t("pairing.remoteSsh.title") }), [t]);
 
   const clear = useCallback(() => {
     targetRef.current = "";
+    identityFileRef.current = "";
     inputRef.current?.replaceText("");
+    identityInputRef.current?.replaceText("");
     setErrorMessage("");
   }, []);
 
@@ -94,7 +98,11 @@ export function AddRemoteSshHostModal({
     try {
       setIsSaving(true);
       setErrorMessage("");
-      result = await probeAndUpsertRemoteSshConnection(target);
+      const identityFile = identityFileRef.current.trim();
+      result = await probeAndUpsertRemoteSshConnection({
+        ...target,
+        ...(identityFile ? { identityFile } : {}),
+      });
     } catch (error) {
       const message =
         error instanceof DaemonConnectionTestError
@@ -115,6 +123,9 @@ export function AddRemoteSshHostModal({
   }, [clear, hosts, isSaving, onClose, onSaved, probeAndUpsertRemoteSshConnection, t]);
   const handleTargetChange = useCallback((value: string) => {
     targetRef.current = value;
+  }, []);
+  const handleIdentityFileChange = useCallback((value: string) => {
+    identityFileRef.current = value;
   }, []);
   const handleSubmit = useCallback(() => void handleSave(), [handleSave]);
 
@@ -139,6 +150,21 @@ export function AddRemoteSshHostModal({
           initialValue=""
           onChangeText={handleTargetChange}
           placeholder="ssh://user@host"
+          autoCapitalize="none"
+          autoCorrect={false}
+          editable={!isSaving}
+          returnKeyType="next"
+        />
+      </Field>
+      <Field label={t("pairing.remoteSsh.fields.identityFile")} testID="remote-ssh-identity">
+        <FormTextInput
+          ref={identityInputRef}
+          size={isCompact ? "md" : "sm"}
+          testID="remote-ssh-identity-input"
+          accessibilityLabel={t("pairing.remoteSsh.fields.identityFile")}
+          initialValue=""
+          onChangeText={handleIdentityFileChange}
+          placeholder={t("pairing.remoteSsh.fields.optional")}
           autoCapitalize="none"
           autoCorrect={false}
           editable={!isSaving}

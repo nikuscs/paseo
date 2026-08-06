@@ -1640,6 +1640,8 @@ export const ar: TranslationResources = {
       helper: "الاتصال بخادم Paseo يعمل على المضيف البعيد.",
       fields: {
         target: "مضيف SSH",
+        identityFile: "مسار ملف الهوية",
+        optional: "اختياري",
       },
       actions: {
         cancel: "إلغاء",
