@@ -169,7 +169,6 @@ describe("WorkspaceFilesSession", () => {
     ]);
   });
 
-
   test("lists directory entries", async () => {
     const cwd = makeDir("workspace-files-list-");
     writeFileSync(join(cwd, "a.txt"), "alpha");

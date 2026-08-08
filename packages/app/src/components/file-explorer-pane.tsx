@@ -265,6 +265,7 @@ export function FileExplorerPane({
     [normalizedWorkspaceRoot, workspaceId],
   );
   const hasWorkspaceScope = Boolean(workspaceStateKey && normalizedWorkspaceRoot);
+  const client = useSessionStore((state) => state.sessions[serverId]?.client ?? null);
   const explorerState = useSessionStore((state) =>
     workspaceStateKey && state.sessions[serverId]
       ? state.sessions[serverId]?.fileExplorer.get(workspaceStateKey)
