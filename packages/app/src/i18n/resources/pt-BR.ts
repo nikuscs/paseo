@@ -558,6 +558,7 @@ export const ptBR: TranslationResources = {
         closeLeft: "Fechar à esquerda",
         closeRight: "Fechar à direita",
         closeOthers: "Fechar outras abas",
+        closeEditorTabs: "Fechar abas do editor",
         reloadAgent: "Recarregar agente",
         reloadAgentTooltip: "Recarregue o agente para atualizar skills, MCPs ou status de login.",
         close: "Fechar",
@@ -616,6 +617,7 @@ export const ptBR: TranslationResources = {
         closeTabsLeftTitle: "Fechar abas à esquerda?",
         closeTabsRightTitle: "Fechar abas à direita?",
         closeOtherTabsTitle: "Fechar outras abas?",
+        closeEditorTabsTitle: "Fechar abas do editor?",
         bulk: {
           all: "Isso vai arquivar {{agents}} agente(s), fechar {{terminals}} terminal(ais) e fechar {{tabs}} aba(s). Qualquer processo em execução em um terminal fechado será interrompido imediatamente.",
           agentsAndTerminals:
