@@ -24,7 +24,7 @@ import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import type { DaemonClient } from "@getpaseo/client/internal/daemon-client";
 import { useIsCompactFormFactor, WORKSPACE_SECONDARY_HEADER_HEIGHT } from "@/constants/layout";
 import * as Clipboard from "expo-clipboard";
-import { ChevronDown, Eye, EyeOff, RotateCw, Search } from "lucide-react-native";
+import { ChevronDown, Eye, EyeOff, Folder, RotateCw, Search } from "lucide-react-native";
 import { MaterialFileIcon } from "@/components/material-file-icon";
 import {
   TreeChevron,
@@ -78,6 +78,7 @@ const SORT_OPTIONS: { value: SortOption }[] = [
 const ThemedChevronDown = withUnistyles(ChevronDown);
 const ThemedEye = withUnistyles(Eye);
 const ThemedEyeOff = withUnistyles(EyeOff);
+const ThemedFolder = withUnistyles(Folder);
 const ThemedLoadingSpinner = withUnistyles(LoadingSpinner);
 const ThemedRotateCw = withUnistyles(RotateCw);
 const ThemedSearch = withUnistyles(Search);
@@ -612,8 +613,7 @@ function FileExplorerPaneContent(props: FileExplorerPaneContentProps) {
   const [isSearchMode, setIsSearchMode] = useState(false);
   const showHiddenFiles = usePanelStore((state) => state.explorerShowHiddenFiles);
 
-  const enterSearchMode = useCallback(() => setIsSearchMode(true), []);
-  const exitSearchMode = useCallback(() => setIsSearchMode(false), []);
+  const toggleSearchMode = useCallback(() => setIsSearchMode((current) => !current), []);
   const handleOpenSearchMatch = useCallback(
     (path: string, line: number) => onOpenFile?.(path, line, line),
     [onOpenFile],
@@ -644,7 +644,6 @@ function FileExplorerPaneContent(props: FileExplorerPaneContentProps) {
         client={client}
         workspaceRoot={workspaceRoot}
         onOpenMatch={handleOpenSearchMatch}
-        onExit={exitSearchMode}
       />
     );
   } else if (error) {
@@ -716,15 +715,19 @@ function FileExplorerPaneContent(props: FileExplorerPaneContentProps) {
         </Pressable>
         <View style={styles.headerActions}>
           <Pressable
-            onPress={enterSearchMode}
+            onPress={toggleSearchMode}
             hitSlop={8}
             style={iconButtonStyleProp}
             accessibilityRole="button"
-            accessibilityLabel={t("common.actions.search")}
+            accessibilityLabel={isSearchMode ? "Show files" : t("common.actions.search")}
             accessibilityState={isSearchMode ? selectedAccessibilityState : undefined}
             testID="files-search-toggle"
           >
-            <ThemedSearch size={ICON_SIZE.sm} uniProps={foregroundMutedColorMapping} />
+            {isSearchMode ? (
+              <ThemedFolder size={ICON_SIZE.sm} uniProps={foregroundMutedColorMapping} />
+            ) : (
+              <ThemedSearch size={ICON_SIZE.sm} uniProps={foregroundMutedColorMapping} />
+            )}
           </Pressable>
           <Pressable
             onPress={handleToggleHiddenFiles}
