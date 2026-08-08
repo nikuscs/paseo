@@ -109,6 +109,8 @@ interface SplitContainerProps {
   onCloseTabsToLeft: (tabId: string, paneTabs: WorkspaceTabDescriptor[]) => Promise<void> | void;
   onCloseTabsToRight: (tabId: string, paneTabs: WorkspaceTabDescriptor[]) => Promise<void> | void;
   onCloseOtherTabs: (tabId: string, paneTabs: WorkspaceTabDescriptor[]) => Promise<void> | void;
+  onCloseEditorTabs: () => Promise<void> | void;
+  canCloseEditorTabs: boolean;
   onCreateNewTab: (input: { paneId?: string }) => void;
   buildPaneContentModel: (input: {
     paneId: string;
@@ -391,6 +393,8 @@ export function SplitContainer({
   onCloseTabsToLeft,
   onCloseTabsToRight,
   onCloseOtherTabs,
+  onCloseEditorTabs,
+  canCloseEditorTabs,
   onCreateNewTab,
   buildPaneContentModel,
   onFocusPane,
@@ -665,6 +669,8 @@ export function SplitContainer({
           onCloseTabsToLeft={onCloseTabsToLeft}
           onCloseTabsToRight={onCloseTabsToRight}
           onCloseOtherTabs={onCloseOtherTabs}
+          onCloseEditorTabs={onCloseEditorTabs}
+          canCloseEditorTabs={canCloseEditorTabs}
           onCreateNewTab={onCreateNewTab}
           buildPaneContentModel={buildPaneContentModel}
           onFocusPane={onFocusPane}
@@ -870,6 +876,8 @@ function SplitNodeView({
   onCloseTabsToLeft,
   onCloseTabsToRight,
   onCloseOtherTabs,
+  onCloseEditorTabs,
+  canCloseEditorTabs,
   onCreateNewTab,
   buildPaneContentModel,
   onFocusPane,
@@ -945,6 +953,8 @@ function SplitNodeView({
             onCloseTabsToLeft={onCloseTabsToLeft}
             onCloseTabsToRight={onCloseTabsToRight}
             onCloseOtherTabs={onCloseOtherTabs}
+            onCloseEditorTabs={onCloseEditorTabs}
+            canCloseEditorTabs={canCloseEditorTabs}
             onCreateNewTab={onCreateNewTab}
             buildPaneContentModel={buildPaneContentModel}
             onFocusPane={onFocusPane}
@@ -993,6 +1003,8 @@ function SplitNodeView({
               onCloseTabsToLeft={onCloseTabsToLeft}
               onCloseTabsToRight={onCloseTabsToRight}
               onCloseOtherTabs={onCloseOtherTabs}
+              onCloseEditorTabs={onCloseEditorTabs}
+              canCloseEditorTabs={canCloseEditorTabs}
               onCreateNewTab={onCreateNewTab}
               buildPaneContentModel={buildPaneContentModel}
               onFocusPane={onFocusPane}
@@ -1049,6 +1061,8 @@ function SplitPaneView({
   onCloseTabsToLeft,
   onCloseTabsToRight,
   onCloseOtherTabs,
+  onCloseEditorTabs,
+  canCloseEditorTabs,
   onCreateNewTab,
   buildPaneContentModel,
   onFocusPane,
@@ -1194,6 +1208,8 @@ function SplitPaneView({
             onCloseTabsToLeft={handleCloseTabsToLeft}
             onCloseTabsToRight={handleCloseTabsToRight}
             onCloseOtherTabs={handleCloseOtherTabs}
+            onCloseEditorTabs={onCloseEditorTabs}
+            canCloseEditorTabs={canCloseEditorTabs}
             onCreateNewTab={onCreateNewTab}
             onReorderTabs={handleReorderTabs}
             externalDndContext
