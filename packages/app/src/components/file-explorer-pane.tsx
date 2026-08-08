@@ -89,6 +89,7 @@ const ThemedChevronDown = withUnistyles(ChevronDown);
 const ThemedEye = withUnistyles(Eye);
 const ThemedEyeOff = withUnistyles(EyeOff);
 const ThemedFilePlus = withUnistyles(FilePlus);
+const ThemedFolder = withUnistyles(Folder);
 const ThemedFolderPlus = withUnistyles(FolderPlus);
 const ThemedLoadingSpinner = withUnistyles(LoadingSpinner);
 const ThemedRotateCw = withUnistyles(RotateCw);
@@ -1216,8 +1217,7 @@ function FileExplorerPaneContent(props: FileExplorerPaneContentProps) {
   const handleNewFolderAtRoot = useCallback(() => {
     onNewEntryAtRoot?.(".", "directory");
   }, [onNewEntryAtRoot]);
-  const enterSearchMode = useCallback(() => setIsSearchMode(true), []);
-  const exitSearchMode = useCallback(() => setIsSearchMode(false), []);
+  const toggleSearchMode = useCallback(() => setIsSearchMode((current) => !current), []);
   const handleOpenSearchMatch = useCallback(
     (path: string, line: number) => onOpenFile?.(path, line, line),
     [onOpenFile],
@@ -1248,7 +1248,6 @@ function FileExplorerPaneContent(props: FileExplorerPaneContentProps) {
         client={client}
         workspaceRoot={workspaceRoot}
         onOpenMatch={handleOpenSearchMatch}
-        onExit={exitSearchMode}
       />
     );
   } else if (error) {
@@ -1350,18 +1349,25 @@ function FileExplorerPaneContent(props: FileExplorerPaneContentProps) {
             </>
           ) : null}
           <Pressable
-            onPress={enterSearchMode}
+            onPress={toggleSearchMode}
             hitSlop={8}
             style={iconButtonStyleProp}
             accessibilityRole="button"
-            accessibilityLabel={t("common.actions.search")}
+            accessibilityLabel={isSearchMode ? "Show files" : t("common.actions.search")}
             accessibilityState={isSearchMode ? selectedAccessibilityState : undefined}
             testID="files-search-toggle"
           >
-            <ThemedSearch
-              size={paneContentToolbarIconSize(isCompact)}
-              uniProps={foregroundMutedColorMapping}
-            />
+            {isSearchMode ? (
+              <ThemedFolder
+                size={paneContentToolbarIconSize(isCompact)}
+                uniProps={foregroundMutedColorMapping}
+              />
+            ) : (
+              <ThemedSearch
+                size={paneContentToolbarIconSize(isCompact)}
+                uniProps={foregroundMutedColorMapping}
+              />
+            )}
           </Pressable>
           <Pressable
             onPress={handleToggleHiddenFiles}
