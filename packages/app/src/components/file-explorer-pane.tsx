@@ -1217,16 +1217,18 @@ function FileExplorerPaneContent(props: FileExplorerPaneContentProps) {
         style={[styles.paneHeader, { paddingRight: paneContentToolbarTrailingPadding(isCompact) }]}
         testID="files-pane-header"
       >
-        <Pressable
-          onPress={handleSortCycle}
-          style={sortTriggerStyleProp}
-          testID="files-sort-trigger"
-        >
-          <Text style={styles.sortTriggerText} testID="files-sort-label">
-            {currentSortLabel}
-          </Text>
-          <ChevronDown size={12} color={theme.colors.foregroundMuted} />
-        </Pressable>
+        {isSearchMode ? null : (
+          <Pressable
+            onPress={handleSortCycle}
+            style={sortTriggerStyleProp}
+            testID="files-sort-trigger"
+          >
+            <Text style={styles.sortTriggerText} testID="files-sort-label">
+              {currentSortLabel}
+            </Text>
+            <ChevronDown size={12} color={theme.colors.foregroundMuted} />
+          </Pressable>
+        )}
         <ToolbarControls style={styles.headerActions}>
           {onNewEntryAtRoot ? (
             <>
@@ -1716,6 +1718,7 @@ const styles = StyleSheet.create((theme) => ({
     color: theme.colors.foregroundMuted,
   },
   headerActions: {
+    marginLeft: "auto",
     flexDirection: "row",
     alignItems: "center",
   },
