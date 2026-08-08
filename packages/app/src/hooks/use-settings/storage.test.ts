@@ -699,9 +699,9 @@ describe("sidebar display preferences", () => {
     expect(result.sidebarRowItems).toEqual({
       host: false,
       changeRequest: false,
-      checks: false,
-      scripts: false,
+      services: false,
     });
+    expect(result.sidebarChecksDisplay).toBe("none");
     expect(result.compactSidebarRows).toBe(true);
     expect(result.showNewWorkspaceRow).toBe(false);
     expect(result.recentlyDoneWindowMinutes).toBe(30);
