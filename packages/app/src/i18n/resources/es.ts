@@ -587,6 +587,7 @@ export const es: TranslationResources = {
         closeLeft: "Cerca de la izquierda",
         closeRight: "Cerca de la derecha",
         closeOthers: "Cerrar otras pestañas",
+        closeEditorTabs: "Cerrar pestañas del editor",
         moveToMain: "Mover al panel principal",
         reloadAgent: "Recargar agente",
         reloadAgentTooltip:
@@ -654,6 +655,7 @@ export const es: TranslationResources = {
         closeTabsLeftTitle: "¿Cerrar pestañas a la izquierda?",
         closeTabsRightTitle: "¿Cerrar pestañas a la derecha?",
         closeOtherTabsTitle: "¿Cerrar otras pestañas?",
+        closeEditorTabsTitle: "¿Cerrar pestañas del editor?",
         bulk: {
           all: "Esto archivará los agentes{{agents}}, cerrará los terminales{{terminals}}y cerrará las pestañas{{tabs}}. Cualquier proceso en ejecución en una terminal cerrada se detendrá inmediatamente.",
           agentsAndTerminals:
