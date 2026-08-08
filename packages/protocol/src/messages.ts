@@ -2291,6 +2291,19 @@ export const FileWriteRequestSchema = z.object({
   requestId: z.string(),
 });
 
+export const FileSearchRequestSchema = z.object({
+  type: z.literal("fs.search.request"),
+  cwd: z.string(),
+  query: z.string().min(1).max(1000),
+  caseSensitive: z.boolean().optional(),
+  wholeWord: z.boolean().optional(),
+  useRegex: z.boolean().optional(),
+  includePattern: z.string().max(1000).optional(),
+  excludePattern: z.string().max(1000).optional(),
+  maxResults: z.number().int().min(1).max(2000).optional(),
+  requestId: z.string(),
+});
+
 export const ProjectIconRequestSchema = z.object({
   type: z.literal("project_icon_request"),
   cwd: z.string(),
@@ -2684,6 +2697,7 @@ export const SessionInboundMessageSchema = z.discriminatedUnion("type", [
   FileSubscribeRequestSchema,
   FileUnsubscribeRequestSchema,
   FileWriteRequestSchema,
+  FileSearchRequestSchema,
   ProjectIconRequestSchema,
   ProjectIconGetRequestSchema,
   FileDownloadTokenRequestSchema,
@@ -2987,6 +3001,8 @@ export const ServerInfoStatusPayloadSchema = z
         workspaceScriptManagement: z.boolean().optional(),
         // COMPAT(projectCustomIcon): added in v0.2.0, remove after 2027-01-20.
         projectCustomIcon: z.boolean().optional(),
+        // COMPAT(fileContentSearch): added in v0.3.0, remove gate after 2027-02-10.
+        fileContentSearch: z.boolean().optional(),
       })
       .optional(),
   })
@@ -4940,6 +4956,32 @@ export const FileWriteResponseSchema = z.object({
   }),
 });
 
+export const FileSearchMatchSchema = z.object({
+  line: z.number().int().positive(),
+  column: z.number().int().positive(),
+  matchLength: z.number().int().nonnegative(),
+  lineContent: z.string().max(500),
+  lineContentStartColumn: z.number().int().positive().optional(),
+});
+
+export const FileSearchResponseSchema = z.object({
+  type: z.literal("fs.search.response"),
+  payload: z.object({
+    cwd: z.string(),
+    files: z
+      .array(
+        z.object({
+          path: z.string(),
+          matches: z.array(FileSearchMatchSchema).max(100),
+        }),
+      )
+      .max(2000),
+    totalMatches: z.number().int().nonnegative().max(2000),
+    truncated: z.boolean(),
+    requestId: z.string(),
+  }),
+});
+
 export const FileUpdateSchema = z.object({
   type: z.literal("fs.file.update"),
   payload: z.object({
@@ -5534,6 +5576,7 @@ export const SessionOutboundMessageSchema = z.discriminatedUnion("type", [
   FileSubscribeResponseSchema,
   FileUnsubscribeResponseSchema,
   FileWriteResponseSchema,
+  FileSearchResponseSchema,
   FileUpdateSchema,
   ProjectIconResponseSchema,
   ProjectIconGetResponseSchema,
@@ -5957,6 +6000,9 @@ export type FileUnsubscribeRequest = z.infer<typeof FileUnsubscribeRequestSchema
 export type FileUnsubscribeResponse = z.infer<typeof FileUnsubscribeResponseSchema>;
 export type FileWriteRequest = z.infer<typeof FileWriteRequestSchema>;
 export type FileWriteResponse = z.infer<typeof FileWriteResponseSchema>;
+export type FileSearchRequest = z.infer<typeof FileSearchRequestSchema>;
+export type FileSearchResponse = z.infer<typeof FileSearchResponseSchema>;
+export type FileSearchMatch = z.infer<typeof FileSearchMatchSchema>;
 export type FileWriteResult = z.infer<typeof FileWriteResultSchema>;
 export type FileUpdate = z.infer<typeof FileUpdateSchema>;
 export type ProjectIconRequest = z.infer<typeof ProjectIconRequestSchema>;

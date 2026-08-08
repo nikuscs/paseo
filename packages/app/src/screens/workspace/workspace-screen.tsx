@@ -2316,20 +2316,21 @@ function WorkspaceScreenContent({
   ]);
 
   const handleOpenFileFromExplorer = useCallback(
-    function handleOpenFileFromExplorer(filePath: string) {
+    function handleOpenFileFromExplorer(filePath: string, lineStart?: number, lineEnd?: number) {
       if (!persistenceKey) {
         return;
       }
-      const location = normalizeWorkspaceFileLocation({ path: filePath });
+      const location = normalizeWorkspaceFileLocation({ path: filePath, lineStart, lineEnd });
       if (!location) {
         return;
       }
       const tabId = openWorkspaceTabFocused(persistenceKey, createWorkspaceFileTabTarget(location));
       if (tabId) {
+        requestFileNavigation(tabId);
         navigateToTabId(tabId);
       }
     },
-    [navigateToTabId, openWorkspaceTabFocused, persistenceKey],
+    [navigateToTabId, openWorkspaceTabFocused, persistenceKey, requestFileNavigation],
   );
 
   const handleOpenFileFromChat = useCallback(

@@ -32,6 +32,8 @@ export type {
   DaemonEvent,
   BrowserAutomationExecuteRequestMessage,
   BrowserAutomationExecuteResponseMessage,
+  FileSearchInput,
+  FileSearchResult,
   WebSocketFactory,
   WebSocketLike,
 } from "./daemon-client.js";

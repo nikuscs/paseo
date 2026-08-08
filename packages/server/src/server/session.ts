@@ -2191,6 +2191,8 @@ export class Session {
         return undefined;
       case "fs.file.write.request":
         return this.workspaceFilesSession.handleFileWriteRequest(msg);
+      case "fs.search.request":
+        return this.workspaceFilesSession.handleFileSearchRequest(msg, source);
       case "project_icon_request":
         return this.workspaceFilesSession.handleProjectIconRequest(msg);
       case "project.icon.get.request":
