@@ -140,6 +140,8 @@ interface MobileWorkspaceTabSwitcherProps {
   onCloseTabsAbove: (tabId: string) => Promise<void> | void;
   onCloseTabsBelow: (tabId: string) => Promise<void> | void;
   onCloseOtherTabs: (tabId: string) => Promise<void> | void;
+  onCloseEditorTabs: () => Promise<void> | void;
+  canCloseEditorTabs: boolean;
 }
 
 function MobileWorkspaceTabOption({
@@ -161,6 +163,8 @@ function MobileWorkspaceTabOption({
   onCloseTabsAbove,
   onCloseTabsBelow,
   onCloseOtherTabs,
+  onCloseEditorTabs,
+  canCloseEditorTabs,
 }: {
   tab: WorkspaceTabDescriptor;
   tabIndex: number;
@@ -180,6 +184,8 @@ function MobileWorkspaceTabOption({
   onCloseTabsAbove: (tabId: string) => Promise<void> | void;
   onCloseTabsBelow: (tabId: string) => Promise<void> | void;
   onCloseOtherTabs: (tabId: string) => Promise<void> | void;
+  onCloseEditorTabs: () => Promise<void> | void;
+  canCloseEditorTabs: boolean;
 }) {
   const { t } = useTranslation();
   const tabMenuLabels = useMemo<WorkspaceTabMenuLabels>(
@@ -194,6 +200,7 @@ function MobileWorkspaceTabOption({
       closeLeft: t("workspace.tabs.menu.closeLeft"),
       closeRight: t("workspace.tabs.menu.closeRight"),
       closeOthers: t("workspace.tabs.menu.closeOthers"),
+      closeEditorTabs: t("workspace.tabs.menu.closeEditorTabs"),
       reloadAgent: t("workspace.tabs.menu.reloadAgent"),
       reloadAgentTooltip: t("workspace.tabs.menu.reloadAgentTooltip"),
       close: t("workspace.tabs.menu.close"),
@@ -217,6 +224,8 @@ function MobileWorkspaceTabOption({
     onCloseTabsBefore: onCloseTabsAbove,
     onCloseTabsAfter: onCloseTabsBelow,
     onCloseOtherTabs,
+    onCloseEditorTabs,
+    canCloseEditorTabs,
     labels: tabMenuLabels,
   });
 
@@ -289,6 +298,8 @@ export const MobileWorkspaceTabSwitcher = memo(function MobileWorkspaceTabSwitch
   onCloseTabsAbove,
   onCloseTabsBelow,
   onCloseOtherTabs,
+  onCloseEditorTabs,
+  canCloseEditorTabs,
 }: MobileWorkspaceTabSwitcherProps) {
   const { t } = useTranslation();
   const tabFallbackLabels = useMemo(
@@ -411,6 +422,8 @@ export const MobileWorkspaceTabSwitcher = memo(function MobileWorkspaceTabSwitch
           onCloseTabsAbove={onCloseTabsAbove}
           onCloseTabsBelow={onCloseTabsBelow}
           onCloseOtherTabs={onCloseOtherTabs}
+          onCloseEditorTabs={onCloseEditorTabs}
+          canCloseEditorTabs={canCloseEditorTabs}
         />
       );
     },
@@ -430,6 +443,8 @@ export const MobileWorkspaceTabSwitcher = memo(function MobileWorkspaceTabSwitch
       onCloseTabsAbove,
       onCloseTabsBelow,
       onCloseOtherTabs,
+      onCloseEditorTabs,
+      canCloseEditorTabs,
     ],
   );
 
