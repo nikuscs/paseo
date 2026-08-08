@@ -20,8 +20,15 @@ interface LoggerLike {
   info(...args: unknown[]): void;
 }
 
+export interface ProviderRename {
+  from: string;
+  to: string;
+}
+
 export interface DaemonConfigChangeDetails {
   removedProviders: readonly string[];
+  replacedProviders: readonly string[];
+  renamedProviders: readonly ProviderRename[];
 }
 
 type ConfigListener = (config: MutableDaemonConfig, details: DaemonConfigChangeDetails) => void;
@@ -161,6 +168,37 @@ export function applyMutableProviderConfigToOverrides(
   return nextOverrides;
 }
 
+/**
+ * A rename carries no mutation of its own: the caller already sends the new definition in
+ * `replaceProviders` (or `providers`) and the old id in `removeProviders`. Reject renames that
+ * don't match that shape rather than half-applying one.
+ */
+function assertProviderMutationsAreConsistent(params: {
+  replacedProviders: readonly string[];
+  removedProviderSet: ReadonlySet<string>;
+  renameProviders: Record<string, string>;
+  definedProviders: ReadonlySet<string>;
+}): void {
+  const { replacedProviders, removedProviderSet, renameProviders, definedProviders } = params;
+  const conflictingProvider = replacedProviders.find((providerId) =>
+    removedProviderSet.has(providerId),
+  );
+  if (conflictingProvider) {
+    throw new Error(`Provider ${conflictingProvider} cannot be removed and replaced together`);
+  }
+  for (const [from, to] of Object.entries(renameProviders)) {
+    if (from === to) {
+      throw new Error(`Provider rename for ${from} must change the provider id`);
+    }
+    if (!removedProviderSet.has(from)) {
+      throw new Error(`Provider rename from ${from} must also remove ${from}`);
+    }
+    if (!definedProviders.has(to)) {
+      throw new Error(`Provider rename to ${to} must also define ${to}`);
+    }
+  }
+}
+
 export class DaemonConfigStore {
   private current: MutableDaemonConfig;
   private readonly paseoHome: string;
@@ -195,9 +233,38 @@ export class DaemonConfigStore {
         "Relay is controlled by a daemon launch override. Remove PASEO_RELAY_ENABLED or the relay CLI flag before changing it here.",
       );
     }
-    const { removeProviders = [], ...configPatch } = parsedPatch;
+    const {
+      removeProviders = [],
+      replaceProviders = {},
+      renameProviders = {},
+      ...configPatch
+    } = parsedPatch;
     const removedProviders = Array.from(new Set(removeProviders));
-    const merged = deepMerge(this.current, configPatch);
+    const replacedProviders = Object.keys(replaceProviders);
+    const removedProviderSet = new Set(removedProviders);
+    assertProviderMutationsAreConsistent({
+      replacedProviders,
+      removedProviderSet,
+      renameProviders,
+      definedProviders: new Set([
+        ...replacedProviders,
+        ...Object.keys(configPatch.providers ?? {}),
+      ]),
+    });
+    const renamedProviders: ProviderRename[] = Object.entries(renameProviders).map(
+      ([from, to]) => ({
+        from,
+        to,
+      }),
+    );
+    const mergePatch =
+      replacedProviders.length > 0
+        ? {
+            ...configPatch,
+            providers: { ...configPatch.providers, ...replaceProviders },
+          }
+        : configPatch;
+    const merged = deepMerge(omitProvidersFromConfig(this.current, replacedProviders), mergePatch);
     const next = MutableDaemonConfigSchema.parse(
       omitMetadataGenerationProvidersFromConfig(
         omitProvidersFromConfig(merged, removedProviders),
@@ -210,12 +277,22 @@ export class DaemonConfigStore {
     });
     const configChanged = !isEqualValue(this.current, next);
 
-    if (!configChanged && removedProviders.length === 0) {
+    if (!configChanged && removedProviders.length === 0 && replacedProviders.length === 0) {
       return this.current;
     }
 
-    const persistedBeforePatch = this.persistConfig(next, removedProviders);
-    if (!configChanged) return this.current;
+    const persistedBeforePatch = this.persistConfig(next, removedProviders, replacedProviders);
+    if (!configChanged) {
+      const changeDetails: DaemonConfigChangeDetails = {
+        removedProviders,
+        replacedProviders,
+        renamedProviders,
+      };
+      for (const listener of this.changeListeners) {
+        listener(next, changeDetails);
+      }
+      return this.current;
+    }
 
     const previous = this.current;
     const appliedFieldChanges: AppliedFieldChange[] = [];
@@ -242,7 +319,11 @@ export class DaemonConfigStore {
       throw error;
     }
 
-    const changeDetails: DaemonConfigChangeDetails = { removedProviders };
+    const changeDetails: DaemonConfigChangeDetails = {
+      removedProviders,
+      replacedProviders,
+      renamedProviders,
+    };
     for (const listener of this.changeListeners) {
       listener(next, changeDetails);
     }
@@ -277,12 +358,14 @@ export class DaemonConfigStore {
   private persistConfig(
     config: MutableDaemonConfig,
     removeProviders: readonly string[],
+    replaceProviders: readonly string[],
   ): PersistedConfig {
     const persisted = loadPersistedConfig(this.paseoHome, this.logger);
     const nextPersisted = mergeMutableConfigIntoPersistedConfig({
       persisted,
       mutable: config,
       removeProviders,
+      replaceProviders,
       persistRelayEnabled: this.relayEnabledMutable,
     });
     savePersistedConfig(this.paseoHome, nextPersisted, this.logger);
@@ -294,9 +377,10 @@ function mergeMutableConfigIntoPersistedConfig(params: {
   persisted: PersistedConfig;
   mutable: MutableDaemonConfig;
   removeProviders: readonly string[];
+  replaceProviders: readonly string[];
   persistRelayEnabled: boolean;
 }): PersistedConfig {
-  const { persisted, mutable, removeProviders, persistRelayEnabled } = params;
+  const { persisted, mutable, removeProviders, replaceProviders, persistRelayEnabled } = params;
   if (!mutable.relay) {
     throw new Error("Mutable daemon config is missing relay state");
   }
@@ -304,7 +388,7 @@ function mergeMutableConfigIntoPersistedConfig(params: {
   const metadataGenerationProviders = readMetadataGenerationProviders(mutable);
   const persistedProviderOverrides = omitProvidersFromOverrides(
     persisted.agents?.providers as Record<string, ProviderOverride> | undefined,
-    removeProviders,
+    [...removeProviders, ...replaceProviders],
   );
   const providerOverrides = applyMutableProviderConfigToOverrides(
     persistedProviderOverrides,
