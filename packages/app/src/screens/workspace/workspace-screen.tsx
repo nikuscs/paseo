@@ -193,6 +193,7 @@ import {
   type BulkCloseConfirmationLabels,
   classifyBulkClosableTabs,
   closeBulkWorkspaceTabs,
+  selectWorkspaceEditorTabs,
 } from "@/screens/workspace/workspace-bulk-close";
 import { resolveCloseAgentTabPolicy } from "@/subagents";
 import {
@@ -1765,18 +1766,25 @@ function WorkspaceScreenContent({
       terminalsQueryKey,
     });
 
-  const allTabDescriptorsById = useMemo(() => {
-    const map = new Map<string, WorkspaceTabDescriptor>();
-    for (const tab of uiTabs) {
-      map.set(tab.tabId, {
+  const allTabDescriptors = useMemo<WorkspaceTabDescriptor[]>(
+    () =>
+      uiTabs.map((tab) => ({
         key: tab.tabId,
         tabId: tab.tabId,
         kind: tab.target.kind,
         target: tab.target,
-      });
-    }
-    return map;
-  }, [uiTabs]);
+      })),
+    [uiTabs],
+  );
+  const allTabDescriptorsById = useMemo(
+    () => new Map(allTabDescriptors.map((tab) => [tab.tabId, tab])),
+    [allTabDescriptors],
+  );
+  const editorTabs = useMemo(
+    () => selectWorkspaceEditorTabs(allTabDescriptors),
+    [allTabDescriptors],
+  );
+  const canCloseEditorTabs = editorTabs.length > 0;
   const bulkCloseConfirmationLabels = useMemo<BulkCloseConfirmationLabels>(
     () => ({
       newTab: t("workspace.tabs.actions.newTab"),
@@ -2407,6 +2415,13 @@ function WorkspaceScreenContent({
     },
     [handleCloseOtherTabsInPane, tabs],
   );
+  const handleCloseEditorTabs = useCallback(async () => {
+    await handleBulkCloseTabs({
+      tabsToClose: editorTabs,
+      title: t("workspace.tabs.confirmations.closeEditorTabsTitle"),
+      logLabel: "from close editor tabs",
+    });
+  }, [editorTabs, handleBulkCloseTabs, t]);
 
   const handleClosePane = useCallback(
     async (paneId: string) => {
@@ -3402,6 +3417,8 @@ function WorkspaceScreenContent({
             onCloseTabsAbove={handleCloseTabsToLeft}
             onCloseTabsBelow={handleCloseTabsToRight}
             onCloseOtherTabs={handleCloseOtherTabs}
+            onCloseEditorTabs={handleCloseEditorTabs}
+            canCloseEditorTabs={canCloseEditorTabs}
           />
           <WorkspaceHeaderMenuMobile
             normalizedServerId={normalizedServerId}
@@ -3429,6 +3446,8 @@ function WorkspaceScreenContent({
       currentBranchName,
       explorerSidebarToggleAccessibilityState,
       explorerSidebarToggleLabel,
+      handleCloseEditorTabs,
+      canCloseEditorTabs,
       handleCloseOtherTabs,
       handleCloseTabById,
       handleCloseTabsToLeft,
@@ -3491,6 +3510,8 @@ function WorkspaceScreenContent({
         onCloseTabsToLeft={handleCloseTabsToLeftInPane}
         onCloseTabsToRight={handleCloseTabsToRightInPane}
         onCloseOtherTabs={handleCloseOtherTabsInPane}
+        onCloseEditorTabs={handleCloseEditorTabs}
+        canCloseEditorTabs={canCloseEditorTabs}
         onCreateNewTab={handleCreateNewTab}
         buildPaneContentModel={buildDesktopPaneContentModel}
         onFocusPane={handleFocusPane}
@@ -3526,6 +3547,8 @@ function WorkspaceScreenContent({
     handleCloseTabsToLeftInPane,
     handleCloseTabsToRightInPane,
     handleCloseOtherTabsInPane,
+    handleCloseEditorTabs,
+    canCloseEditorTabs,
     handleCreateNewTab,
     buildDesktopPaneContentModel,
     handleFocusPane,
@@ -3596,6 +3619,8 @@ function WorkspaceScreenContent({
             onCloseTabsToLeft={handleCloseTabsToLeft}
             onCloseTabsToRight={handleCloseTabsToRight}
             onCloseOtherTabs={handleCloseOtherTabs}
+            onCloseEditorTabs={handleCloseEditorTabs}
+            canCloseEditorTabs={canCloseEditorTabs}
             onCreateNewTab={handleCreateNewTab}
             onReorderTabs={handleReorderTabsInFocusedPane}
             focusModeEnabled={desktopFocusModeEnabled}
