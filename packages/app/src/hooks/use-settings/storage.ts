@@ -48,6 +48,9 @@ export const MIN_CODE_FONT_SIZE = 9;
 export const MAX_CODE_FONT_SIZE = 22; // line-height 1.5×22=33 stays safe
 export const MAX_FONT_FAMILY_LENGTH = 200;
 
+export const RECENTLY_DONE_WINDOW_OPTIONS = [0, 1, 5, 15, 30, 60] as const; // minutes, 0 = off
+export type RecentlyDoneWindowMinutes = (typeof RECENTLY_DONE_WINDOW_OPTIONS)[number];
+
 export interface AppSettings {
   theme: ThemeName | "auto";
   customTheme: CustomThemePreset | null;
@@ -65,6 +68,9 @@ export interface AppSettings {
   sidebarWorkspaceTrailing: SidebarWorkspaceTrailing;
   sidebarRowItems: SidebarRowItems;
   sidebarChecksDisplay: SidebarChecksDisplay;
+  compactSidebarRows: boolean;
+  showNewWorkspaceRow: boolean;
+  recentlyDoneWindowMinutes: RecentlyDoneWindowMinutes;
   autoExpandReasoning: boolean;
   toolCallDetailLevel: ToolCallDetailLevel;
   chatOutlineEnabled: boolean;
@@ -76,14 +82,26 @@ export interface Settings extends AppSettings {
   releaseChannel: ReleaseChannel;
 }
 
-/**
- * Persisted values that require runtime validation are widened back to `unknown`.
- * `sidebarRowItems` is also read for a legacy value; see `isChecksHiddenByLegacyRowItem`.
- */
+export type AppSettingsUpdate = Omit<Partial<AppSettings>, "sidebarRowItems"> & {
+  sidebarRowItems?: Partial<SidebarRowItems>;
+};
+
+interface LegacyAppearanceSettings {
+  hideWorkspaceDiffStats?: unknown;
+  hideHostLabels?: unknown;
+  compactSidebarRows?: unknown;
+  hidePrStatus?: unknown;
+  hideNewWorkspaceRow?: unknown;
+  hideScriptIndicators?: unknown;
+  recentlyDoneWindowMinutes?: unknown;
+}
+
+/** Persisted values that require runtime validation are widened back to `unknown`. */
 type StoredAppSettings = Partial<Omit<AppSettings, "customTheme" | "sidebarRowItems">> & {
   customTheme?: unknown;
   compactToolCalls?: unknown;
   sidebarRowItems?: unknown;
+  appearance?: unknown;
 };
 
 export const DEFAULT_CLIENT_SETTINGS: AppSettings = {
@@ -103,6 +121,9 @@ export const DEFAULT_CLIENT_SETTINGS: AppSettings = {
   sidebarWorkspaceTrailing: "diff",
   sidebarRowItems: DEFAULT_SIDEBAR_ROW_ITEMS,
   sidebarChecksDisplay: DEFAULT_SIDEBAR_CHECKS_DISPLAY,
+  compactSidebarRows: false,
+  showNewWorkspaceRow: true,
+  recentlyDoneWindowMinutes: 0,
   autoExpandReasoning: false,
   toolCallDetailLevel: "detailed",
   chatOutlineEnabled: true,
@@ -138,7 +159,7 @@ const appSettingsSaveQueues = new WeakMap<QueryClient, Promise<void>>();
 
 export async function saveAppSettings(input: {
   queryClient: QueryClient;
-  updates: Partial<AppSettings>;
+  updates: AppSettingsUpdate;
   deps: SettingsDeps;
 }): Promise<void> {
   const previousSave = appSettingsSaveQueues.get(input.queryClient) ?? Promise.resolve();
@@ -153,7 +174,10 @@ export async function saveAppSettings(input: {
       input.queryClient.getQueryData<AppSettings>(APP_SETTINGS_QUERY_KEY) ??
       (await loadAppSettingsFromStorage(input.deps));
     const current = normalizeAppSettings(storedCurrent);
-    const next = { ...current, ...input.updates };
+    const sidebarRowItems = input.updates.sidebarRowItems
+      ? { ...current.sidebarRowItems, ...input.updates.sidebarRowItems }
+      : current.sidebarRowItems;
+    const next = { ...current, ...input.updates, sidebarRowItems };
     await input.deps.storage.setItem(APP_SETTINGS_KEY, JSON.stringify(next));
     input.queryClient.setQueryData<AppSettings>(APP_SETTINGS_QUERY_KEY, next);
   })();
@@ -283,6 +307,12 @@ function pickBooleanAppSettings(stored: StoredAppSettings): Partial<AppSettings>
   if (typeof stored.chatOutlineEnabled === "boolean") {
     result.chatOutlineEnabled = stored.chatOutlineEnabled;
   }
+  if (typeof stored.compactSidebarRows === "boolean") {
+    result.compactSidebarRows = stored.compactSidebarRows;
+  }
+  if (typeof stored.showNewWorkspaceRow === "boolean") {
+    result.showNewWorkspaceRow = stored.showNewWorkspaceRow;
+  }
   return result;
 }
 
@@ -320,16 +350,46 @@ function pickEnumAppSettings(stored: StoredAppSettings): Partial<AppSettings> {
   return result;
 }
 
-function pickAppSettings(stored: StoredAppSettings): Partial<AppSettings> {
-  const result: Partial<AppSettings> = pickThemeSettings(stored);
-  Object.assign(result, pickEnumAppSettings(stored));
+function pickSidebarSettings(stored: StoredAppSettings): Partial<AppSettings> {
+  const result: Partial<AppSettings> = {};
+  const legacyAppearance = parseLegacyAppearance(stored.appearance);
   if (stored.sidebarRowItems !== undefined) {
     result.sidebarRowItems = parseSidebarRowItems(stored.sidebarRowItems);
+  } else if (legacyAppearance) {
+    result.sidebarRowItems = {
+      ...DEFAULT_SIDEBAR_ROW_ITEMS,
+      host: !readBoolean(legacyAppearance.hideHostLabels, false),
+      changeRequest: !readBoolean(legacyAppearance.hidePrStatus, false),
+      services: !readBoolean(legacyAppearance.hideScriptIndicators, false),
+    };
   }
   const sidebarChecksDisplay = parseStoredSidebarChecksDisplay(stored);
   if (sidebarChecksDisplay !== null) {
     result.sidebarChecksDisplay = sidebarChecksDisplay;
+  } else if (legacyAppearance && readBoolean(legacyAppearance.hidePrStatus, false)) {
+    result.sidebarChecksDisplay = "none";
   }
+  if (
+    stored.sidebarWorkspaceTrailing === undefined &&
+    readBoolean(legacyAppearance?.hideWorkspaceDiffStats, false)
+  ) {
+    result.sidebarWorkspaceTrailing = "none";
+  }
+  if (typeof stored.compactSidebarRows !== "boolean" && legacyAppearance) {
+    result.compactSidebarRows = readBoolean(legacyAppearance.compactSidebarRows, false);
+  }
+  if (typeof stored.showNewWorkspaceRow !== "boolean" && legacyAppearance) {
+    result.showNewWorkspaceRow = !readBoolean(legacyAppearance.hideNewWorkspaceRow, false);
+  }
+  result.recentlyDoneWindowMinutes = readRecentlyDoneWindowMinutes(
+    stored.recentlyDoneWindowMinutes ?? legacyAppearance?.recentlyDoneWindowMinutes,
+  );
+  return result;
+}
+
+function pickAppSettings(stored: StoredAppSettings): Partial<AppSettings> {
+  const result: Partial<AppSettings> = pickThemeSettings(stored);
+  Object.assign(result, pickEnumAppSettings(stored), pickSidebarSettings(stored));
   const language = parseAppLanguage(stored.language);
   if (language !== null) {
     result.language = language;
@@ -369,6 +429,30 @@ function pickAppSettings(stored: StoredAppSettings): Partial<AppSettings> {
     result.toolCallDetailLevel = toolCallDetailLevel;
   }
   return result;
+}
+
+function parseLegacyAppearance(value: unknown): LegacyAppearanceSettings | null {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return null;
+  return {
+    hideWorkspaceDiffStats:
+      "hideWorkspaceDiffStats" in value ? value.hideWorkspaceDiffStats : undefined,
+    hideHostLabels: "hideHostLabels" in value ? value.hideHostLabels : undefined,
+    compactSidebarRows: "compactSidebarRows" in value ? value.compactSidebarRows : undefined,
+    hidePrStatus: "hidePrStatus" in value ? value.hidePrStatus : undefined,
+    hideNewWorkspaceRow: "hideNewWorkspaceRow" in value ? value.hideNewWorkspaceRow : undefined,
+    hideScriptIndicators: "hideScriptIndicators" in value ? value.hideScriptIndicators : undefined,
+    recentlyDoneWindowMinutes:
+      "recentlyDoneWindowMinutes" in value ? value.recentlyDoneWindowMinutes : undefined,
+  };
+}
+
+function readRecentlyDoneWindowMinutes(value: unknown): RecentlyDoneWindowMinutes {
+  const match = RECENTLY_DONE_WINDOW_OPTIONS.find((option) => option === value);
+  return match ?? 0;
+}
+
+function readBoolean(value: unknown, fallback: boolean): boolean {
+  return typeof value === "boolean" ? value : fallback;
 }
 
 function pickAppSettingsFromLegacy(legacy: Record<string, unknown>): Partial<AppSettings> {

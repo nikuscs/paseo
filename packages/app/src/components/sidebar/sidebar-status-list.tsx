@@ -18,6 +18,7 @@ import {
   CircleCheck,
   CircleDot,
   CircleX,
+  Hourglass,
 } from "lucide-react-native";
 import { useToast } from "@/contexts/toast-context";
 import { useMutation } from "@tanstack/react-query";
@@ -55,6 +56,11 @@ import {
   SidebarWorkspaceContextMenu,
   SidebarWorkspaceMenu,
 } from "@/components/sidebar/sidebar-workspace-menu";
+import { useCompactSidebarRows } from "@/components/sidebar/display-preferences/model";
+import {
+  comfortableSidebarRowDensity,
+  compactSidebarRowDensity,
+} from "@/components/sidebar/sidebar-row-metrics";
 import { PinnedSectionHeader } from "@/components/sidebar/pinned-section-header";
 import { SidebarGroupToggleRow } from "@/components/sidebar/sidebar-group-toggle-row";
 import { useLimitedSidebarGroup } from "@/components/sidebar/use-limited-sidebar-group";
@@ -85,6 +91,7 @@ const ThemedCircleAlert = withUnistyles(CircleAlert);
 const ThemedCircleCheck = withUnistyles(CircleCheck);
 const ThemedCircleDot = withUnistyles(CircleDot);
 const ThemedCircleX = withUnistyles(CircleX);
+const ThemedHourglass = withUnistyles(Hourglass);
 interface StatusWorkspaceListProps {
   groups: StatusGroup[];
   pinnedWorkspaces: SidebarWorkspaceEntry[];
@@ -225,9 +232,9 @@ function StatusGroupList({
     <>
       {groups.map((group) => (
         <StatusGroupRows
-          key={group.bucket}
+          key={group.key}
           group={group}
-          collapsed={collapsedStatusGroupKeys.has(group.bucket)}
+          collapsed={collapsedStatusGroupKeys.has(group.key)}
           projectIconByProjectViewKey={projectIconByProjectViewKey}
           shortcutIndex={shortcutIndex}
           showShortcutBadges={showShortcutBadges}
@@ -275,7 +282,7 @@ function StatusGroupRows({
       {!collapsed ? (
         <View
           style={styles.statusWorkspaceListContainer}
-          testID={`sidebar-status-group-rows-${group.bucket}`}
+          testID={`sidebar-status-group-rows-${group.key}`}
         >
           {visibleWorkspaces.map((workspace) => (
             <StatusWorkspaceRow
@@ -298,7 +305,7 @@ function StatusGroupRows({
               expanded={workspacesExpanded}
               onPress={toggleWorkspacesExpanded}
               indented
-              testID={`sidebar-status-show-more-${group.bucket}`}
+              testID={`sidebar-status-show-more-${group.key}`}
             />
           ) : null}
         </View>
@@ -331,21 +338,23 @@ function buildStatusRowProjectPresentation({
 
 function StatusGroupHeader({ group, collapsed }: { group: StatusGroup; collapsed: boolean }) {
   const [isHovered, setIsHovered] = useState(false);
+  const compactSidebarRows = useCompactSidebarRows();
   const toggleStatusGroupCollapsed = useSidebarCollapsedSectionsStore(
     (state) => state.toggleStatusGroupCollapsed,
   );
   const handlePress = useCallback(() => {
-    toggleStatusGroupCollapsed(group.bucket);
-  }, [group.bucket, toggleStatusGroupCollapsed]);
+    toggleStatusGroupCollapsed(group.key);
+  }, [group.key, toggleStatusGroupCollapsed]);
   const handleHoverIn = useCallback(() => setIsHovered(true), []);
   const handleHoverOut = useCallback(() => setIsHovered(false), []);
   const rowStyle = useCallback(
     ({ pressed }: PressableStateCallbackType) => [
       styles.statusGroupRow,
+      compactSidebarRows && styles.statusGroupRowCompact,
       isHovered && styles.statusGroupRowHovered,
       pressed && styles.statusGroupRowPressed,
     ],
-    [isHovered],
+    [compactSidebarRows, isHovered],
   );
   const accessibilityState = useMemo(() => ({ expanded: !collapsed }), [collapsed]);
 
@@ -357,12 +366,12 @@ function StatusGroupHeader({ group, collapsed }: { group: StatusGroup; collapsed
         accessibilityState={accessibilityState}
         style={rowStyle}
         onPress={handlePress}
-        testID={`sidebar-status-group-${group.bucket}`}
+        testID={`sidebar-status-group-${group.key}`}
       >
         <View style={styles.statusGroupRowLeft}>
           <View style={styles.statusGroupLeadingVisualSlot}>
             <StatusGroupLeadingVisual
-              bucket={group.bucket}
+              groupKey={group.key}
               collapsed={collapsed}
               showChevron={isHovered}
             />
@@ -379,16 +388,16 @@ function StatusGroupHeader({ group, collapsed }: { group: StatusGroup; collapsed
 }
 
 function StatusGroupLeadingVisual({
-  bucket,
+  groupKey,
   collapsed,
   showChevron,
 }: {
-  bucket: StatusGroup["bucket"];
+  groupKey: StatusGroup["key"];
   collapsed: boolean;
   showChevron: boolean;
 }) {
   if (!showChevron) {
-    return <StatusGroupIcon bucket={bucket} />;
+    return <StatusGroupIcon groupKey={groupKey} />;
   }
   if (collapsed) {
     return <ThemedChevronRight size={14} uniProps={foregroundMutedColorMapping} />;
@@ -396,8 +405,8 @@ function StatusGroupLeadingVisual({
   return <ThemedChevronDown size={14} uniProps={foregroundMutedColorMapping} />;
 }
 
-function StatusGroupIcon({ bucket }: { bucket: StatusGroup["bucket"] }) {
-  switch (bucket) {
+function StatusGroupIcon({ groupKey }: { groupKey: StatusGroup["key"] }) {
+  switch (groupKey) {
     case "needs_input":
       return <ThemedCircleAlert size={14} uniProps={needsInputColorMapping} />;
     case "failed":
@@ -406,6 +415,8 @@ function StatusGroupIcon({ bucket }: { bucket: StatusGroup["bucket"] }) {
       return <ThemedCircleCheck size={14} uniProps={attentionColorMapping} />;
     case "running":
       return <ThemedCircleDot size={14} uniProps={runningColorMapping} />;
+    case "recently_done":
+      return <ThemedHourglass size={14} uniProps={foregroundMutedColorMapping} />;
     case "done":
       return <ThemedCircleCheck size={14} uniProps={foregroundMutedColorMapping} />;
   }
@@ -688,6 +699,7 @@ function StatusWorkspaceRowInner({
 }) {
   const isTouchPlatform = platformIsNative;
   const trailing = useSidebarWorkspaceTrailing();
+  const compactSidebarRows = useCompactSidebarRows();
 
   const isDesktop = !isTouchPlatform;
   const serviceSummary = isDesktop ? selectWorkspaceServiceSummary(workspace.scripts) : null;
@@ -716,6 +728,7 @@ function StatusWorkspaceRowInner({
           selected,
           isHovered,
           inStatusGroup,
+          compact: compactSidebarRows,
         });
         return (
           <View style={styles.workspaceRowContainer} {...hoverHandlers}>
@@ -860,13 +873,16 @@ function getStatusWorkspaceRowStyle({
   selected,
   isHovered,
   inStatusGroup,
+  compact,
 }: {
   selected: boolean;
   isHovered: boolean;
   inStatusGroup: boolean;
+  compact: boolean;
 }) {
   return [
     styles.workspaceRow,
+    compact && styles.workspaceRowCompact,
     inStatusGroup && sidebarWorkspaceRowStyles.rowIndented,
     selected && styles.sidebarRowSelected,
     isHovered && styles.workspaceRowHovered,
@@ -895,8 +911,7 @@ const styles = StyleSheet.create((theme) => ({
   },
   statusWorkspaceListContainer: {},
   statusGroupRow: {
-    minHeight: 36,
-    paddingVertical: theme.spacing[2],
+    ...comfortableSidebarRowDensity(theme),
     paddingHorizontal: theme.spacing[2],
     borderRadius: theme.borderRadius.lg,
     marginBottom: theme.spacing[2],
@@ -905,6 +920,10 @@ const styles = StyleSheet.create((theme) => ({
     justifyContent: "space-between",
     gap: theme.spacing[2],
     userSelect: "none",
+  },
+  statusGroupRowCompact: {
+    ...compactSidebarRowDensity(theme),
+    marginBottom: theme.spacing[1],
   },
   statusGroupRowHovered: {
     backgroundColor: theme.colors.surfaceSidebarHover,
@@ -945,9 +964,8 @@ const styles = StyleSheet.create((theme) => ({
     position: "relative",
   },
   workspaceRow: {
-    minHeight: 36,
-    marginBottom: theme.spacing[0.5],
-    paddingVertical: theme.spacing[2],
+    ...comfortableSidebarRowDensity(theme),
+    marginBottom: theme.spacing[1],
     paddingLeft: theme.spacing[2],
     paddingRight: theme.spacing[3],
     borderRadius: theme.borderRadius.lg,
@@ -957,6 +975,7 @@ const styles = StyleSheet.create((theme) => ({
     gap: theme.spacing[1],
     userSelect: "none",
   },
+  workspaceRowCompact: compactSidebarRowDensity(theme),
   workspaceRowHovered: {
     backgroundColor: theme.colors.surfaceSidebarHover,
   },

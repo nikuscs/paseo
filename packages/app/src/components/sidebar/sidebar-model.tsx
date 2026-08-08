@@ -5,7 +5,7 @@ import {
   type SidebarWorkspacesListResult,
 } from "@/hooks/use-sidebar-workspaces-list";
 import { useSidebarWorkspaceEntries } from "@/hooks/use-sidebar-workspace-entries";
-import type { StatusGroup } from "@/hooks/sidebar-status-view-model";
+import type { RecentlyDoneRecency, StatusGroup } from "@/hooks/sidebar-status-view-model";
 import { usePinnedSidebarKeys, type PinnedSidebarGroups } from "@/hooks/use-sidebar-pins";
 import { useSidebarCollapsedSectionsStore } from "@/stores/sidebar-collapsed-sections-store";
 import { useSidebarViewStore, type SidebarGroupMode } from "@/stores/sidebar-view-store";
@@ -27,9 +27,11 @@ const EMPTY_WORKSPACE_ENTRIES = new Map<string, SidebarWorkspaceEntry>();
 
 export function SidebarModelProvider({
   active,
+  recency,
   children,
 }: {
   active?: boolean;
+  recency?: RecentlyDoneRecency;
   children: ReactNode;
 }) {
   const list = useSidebarWorkspacesList();
@@ -64,6 +66,7 @@ export function SidebarModelProvider({
         pinnedCollapsed,
         collapsedProjectKeys,
         collapsedStatusGroupKeys,
+        recency,
       }),
     [
       collapsedProjectKeys,
@@ -74,6 +77,7 @@ export function SidebarModelProvider({
       pinnedCollapsed,
       pinnedKeys,
       projectionWorkspaceEntriesByKey,
+      recency,
     ],
   );
   const value = useMemo(

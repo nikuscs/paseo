@@ -3,8 +3,13 @@ import { useTranslation } from "react-i18next";
 import { Pressable, Text, View, type PressableStateCallbackType } from "react-native";
 import { ChevronDown, ChevronUp } from "lucide-react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
-import { isWeb } from "@/constants/platform";
+import { useCompactSidebarRows } from "@/components/sidebar/display-preferences/model";
+import {
+  comfortableSidebarSecondaryRowDensity,
+  compactSidebarSecondaryRowDensity,
+} from "@/components/sidebar/sidebar-row-metrics";
 import { sidebarWorkspaceRowStyles } from "@/components/sidebar/sidebar-workspace-row-content";
+import { isWeb } from "@/constants/platform";
 import type { Theme } from "@/styles/theme";
 
 const foregroundMutedColorMapping = (theme: Theme) => ({
@@ -38,17 +43,19 @@ export function SidebarGroupToggleRow({
   testID: string;
 }) {
   const { t } = useTranslation();
+  const compactSidebarRows = useCompactSidebarRows();
   const label = t(
     expanded ? "sidebar.workspace.actions.showLess" : "sidebar.workspace.actions.showMore",
   );
   const rowStyle = useCallback(
     ({ hovered = false, pressed }: PressableStateCallbackType & { hovered?: boolean }) => [
       styles.row,
+      compactSidebarRows && styles.rowCompact,
       indented && sidebarWorkspaceRowStyles.rowIndented,
       hovered && !pressed && styles.rowHovered,
       pressed && styles.rowPressed,
     ],
-    [indented],
+    [compactSidebarRows, indented],
   );
 
   return (
@@ -86,9 +93,8 @@ export function SidebarGroupToggleRow({
 const styles = StyleSheet.create((theme) => ({
   // Kept in step with `workspaceRow` in sidebar-workspace-list.tsx and sidebar-status-list.tsx.
   row: {
-    minHeight: 36,
+    ...comfortableSidebarSecondaryRowDensity(theme),
     marginBottom: theme.spacing[0.5],
-    paddingVertical: theme.spacing[2],
     paddingLeft: theme.spacing[2],
     paddingRight: theme.spacing[3],
     borderRadius: theme.borderRadius.lg,
@@ -97,6 +103,7 @@ const styles = StyleSheet.create((theme) => ({
     gap: theme.spacing[2],
     userSelect: "none",
   },
+  rowCompact: compactSidebarSecondaryRowDensity(theme),
   rowHovered: {
     backgroundColor: theme.colors.surfaceSidebarHover,
   },
