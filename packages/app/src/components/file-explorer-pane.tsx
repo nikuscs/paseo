@@ -28,7 +28,7 @@ import type { DaemonClient } from "@getpaseo/client/internal/daemon-client";
 import { useIsCompactFormFactor } from "@/constants/layout";
 import { isWeb } from "@/constants/platform";
 import * as Clipboard from "expo-clipboard";
-import { ChevronDown, Eye, EyeOff, FilePlus, FolderPlus, RotateCw, Search } from "lucide-react-native";
+import { ChevronDown, Eye, EyeOff, FilePlus, Folder, FolderPlus, RotateCw, Search } from "lucide-react-native";
 import { MaterialFileIcon } from "@/components/material-file-icon";
 import {
   TreeChevron,
@@ -1171,8 +1171,7 @@ function FileExplorerPaneContent(props: FileExplorerPaneContentProps) {
   const handleNewFolderAtRoot = useCallback(() => {
     onNewEntryAtRoot?.(".", "directory");
   }, [onNewEntryAtRoot]);
-  const enterSearchMode = useCallback(() => setIsSearchMode(true), []);
-  const exitSearchMode = useCallback(() => setIsSearchMode(false), []);
+  const toggleSearchMode = useCallback(() => setIsSearchMode((current) => !current), []);
   const handleOpenSearchMatch = useCallback(
     (path: string, line: number) => onOpenFile?.(path, line, line),
     [onOpenFile],
@@ -1258,17 +1257,24 @@ function FileExplorerPaneContent(props: FileExplorerPaneContentProps) {
             </>
           ) : null}
           <ToolbarButton
-            label={t("common.actions.search")}
+            label={isSearchMode ? "Show files" : t("common.actions.search")}
             selected={isSearchMode}
             compact={isCompact}
             hitSlop={8}
             testID="files-search-toggle"
-            onPress={enterSearchMode}
+            onPress={toggleSearchMode}
           >
-            <Search
-              size={paneContentToolbarIconSize(isCompact)}
-              color={theme.colors.foregroundExtraMuted}
-            />
+            {isSearchMode ? (
+              <Folder
+                size={paneContentToolbarIconSize(isCompact)}
+                color={theme.colors.foregroundExtraMuted}
+              />
+            ) : (
+              <Search
+                size={paneContentToolbarIconSize(isCompact)}
+                color={theme.colors.foregroundExtraMuted}
+              />
+            )}
           </ToolbarButton>
           <ToolbarButton
             label={hiddenFilesToggleAccessibilityLabel}
@@ -1323,7 +1329,6 @@ function FileExplorerPaneContent(props: FileExplorerPaneContentProps) {
           client={client}
           workspaceRoot={workspaceRoot}
           onOpenMatch={handleOpenSearchMatch}
-          onExit={exitSearchMode}
         />
       ) : (
         <ContextMenu>
