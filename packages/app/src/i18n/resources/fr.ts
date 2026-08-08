@@ -1909,7 +1909,14 @@ export const fr: TranslationResources = {
           midnight: "Minuit",
           claude: "Claude",
           ghostty: "Fantôme",
+          custom: "Personnalisé",
           auto: "Système",
+        },
+        custom: {
+          title: "Thème personnalisé",
+          none: "Importer un fichier de thème Paseo JSON",
+          import: "Importer",
+          importing: "Importation...",
         },
       },
       detailLevel: {

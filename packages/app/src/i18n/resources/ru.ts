@@ -1895,7 +1895,14 @@ export const ru: TranslationResources = {
           midnight: "Полночь",
           claude: "Клод",
           ghostty: "Призрачный",
+          custom: "Пользовательская",
           auto: "Система",
+        },
+        custom: {
+          title: "Пользовательская тема",
+          none: "Импортируйте JSON-файл темы Paseo",
+          import: "Импортировать",
+          importing: "Импорт...",
         },
       },
       detailLevel: {

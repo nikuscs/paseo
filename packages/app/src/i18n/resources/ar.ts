@@ -1859,7 +1859,14 @@ export const ar: TranslationResources = {
           midnight: "منتصف الليل",
           claude: "كلود",
           ghostty: "شبحي",
+          custom: "مخصص",
           auto: "نظام",
+        },
+        custom: {
+          title: "سمة مخصصة",
+          none: "استورد ملف سمة Paseo بصيغة JSON",
+          import: "استيراد",
+          importing: "جارٍ الاستيراد...",
         },
       },
       detailLevel: {

@@ -1869,7 +1869,14 @@ export const en = {
           midnight: "Midnight",
           claude: "Claude",
           ghostty: "Ghostty",
+          custom: "Custom",
           auto: "System",
+        },
+        custom: {
+          title: "Custom theme",
+          none: "Import a Paseo theme JSON file",
+          import: "Import",
+          importing: "Importing...",
         },
       },
       detailLevel: {
