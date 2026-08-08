@@ -526,6 +526,7 @@ export const ru: TranslationResources = {
         closeLeft: "Ближе к левому краю",
         closeRight: "Ближе к правому",
         closeOthers: "Закрыть другие вкладки",
+        closeEditorTabs: "Закрыть вкладки редактора",
         reloadAgent: "Перезагрузить агент",
         reloadAgentTooltip: "Перезагрузите агента, чтобы обновить навыки, MCP или статус входа.",
         close: "Закрывать",
@@ -585,6 +586,7 @@ export const ru: TranslationResources = {
         closeTabsLeftTitle: "Закрыть вкладки слева?",
         closeTabsRightTitle: "Закрыть вкладки справа?",
         closeOtherTabsTitle: "Закрыть другие вкладки?",
+        closeEditorTabsTitle: "Закрыть вкладки редактора?",
         bulk: {
           all: "При этом агенты{{agents}}будут заархивированы, терминалы{{terminals}}закроются, а вкладки{{tabs}}будут закрыты. Любой запущенный процесс в закрытом терминале будет немедленно остановлен.",
           agentsAndTerminals:

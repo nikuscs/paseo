@@ -24,6 +24,7 @@ import {
   Columns2,
   Copy,
   Pencil,
+  PanelTopClose,
   RotateCw,
   Rows2,
   Globe,
@@ -101,6 +102,7 @@ const ThemedRotateCw = withUnistyles(RotateCw);
 const ThemedArrowLeftToLine = withUnistyles(ArrowLeftToLine);
 const ThemedArrowRightToLine = withUnistyles(ArrowRightToLine);
 const ThemedCopyX = withUnistyles(CopyX);
+const ThemedPanelTopClose = withUnistyles(PanelTopClose);
 const ThemedPencil = withUnistyles(Pencil);
 const ThemedSquarePen = withUnistyles(SquarePen);
 const ThemedSquareTerminal = withUnistyles(SquareTerminal);
@@ -336,6 +338,8 @@ function TabContextMenuItem({
         return <ThemedArrowRightToLine size={16} uniProps={mutedColorMapping} />;
       case "copy-x":
         return <ThemedCopyX size={16} uniProps={mutedColorMapping} />;
+      case "panel-top-close":
+        return <ThemedPanelTopClose size={16} uniProps={mutedColorMapping} />;
       case "pencil":
         return <ThemedPencil size={16} uniProps={mutedColorMapping} />;
       case "x":
@@ -426,6 +430,8 @@ interface WorkspaceDesktopTabsRowProps {
   onCloseTabsToLeft: (tabId: string) => Promise<void> | void;
   onCloseTabsToRight: (tabId: string) => Promise<void> | void;
   onCloseOtherTabs: (tabId: string) => Promise<void> | void;
+  onCloseEditorTabs: () => Promise<void> | void;
+  canCloseEditorTabs: boolean;
   onCreateDraftTab: (input: { paneId?: string }) => void;
   onCreateTerminalTab: (input: { paneId?: string; profile?: TerminalProfileInput }) => void;
   onCreateBrowserTab: (input: { paneId?: string }) => void;
@@ -772,6 +778,8 @@ export function WorkspaceDesktopTabsRow({
   onCloseTabsToLeft,
   onCloseTabsToRight,
   onCloseOtherTabs,
+  onCloseEditorTabs,
+  canCloseEditorTabs,
   onCreateDraftTab,
   onCreateTerminalTab,
   onCreateBrowserTab,
@@ -857,6 +865,7 @@ export function WorkspaceDesktopTabsRow({
       closeLeft: t("workspace.tabs.menu.closeLeft"),
       closeRight: t("workspace.tabs.menu.closeRight"),
       closeOthers: t("workspace.tabs.menu.closeOthers"),
+      closeEditorTabs: t("workspace.tabs.menu.closeEditorTabs"),
       reloadAgent: t("workspace.tabs.menu.reloadAgent"),
       reloadAgentTooltip: t("workspace.tabs.menu.reloadAgentTooltip"),
       close: t("workspace.tabs.menu.close"),
@@ -955,6 +964,8 @@ export function WorkspaceDesktopTabsRow({
           onCloseTabsToLeft={onCloseTabsToLeft}
           onCloseTabsToRight={onCloseTabsToRight}
           onCloseOtherTabs={onCloseOtherTabs}
+          onCloseEditorTabs={onCloseEditorTabs}
+          canCloseEditorTabs={canCloseEditorTabs}
           resolvedTabWidth={resolvedTabWidth}
           showLabel={showLabel}
           showCloseButton={shouldShowCloseButton}
@@ -976,6 +987,8 @@ export function WorkspaceDesktopTabsRow({
       normalizedServerId,
       normalizedWorkspaceId,
       onCloseOtherTabs,
+      onCloseEditorTabs,
+      canCloseEditorTabs,
       onCloseTab,
       onCloseTabsToLeft,
       onCloseTabsToRight,
@@ -1109,6 +1122,8 @@ function ResolvedDesktopTabChip({
   onCloseTabsToLeft,
   onCloseTabsToRight,
   onCloseOtherTabs,
+  onCloseEditorTabs,
+  canCloseEditorTabs,
   resolvedTabWidth,
   showLabel,
   showCloseButton,
@@ -1136,6 +1151,8 @@ function ResolvedDesktopTabChip({
   onCloseTabsToLeft: (tabId: string) => Promise<void> | void;
   onCloseTabsToRight: (tabId: string) => Promise<void> | void;
   onCloseOtherTabs: (tabId: string) => Promise<void> | void;
+  onCloseEditorTabs: () => Promise<void> | void;
+  canCloseEditorTabs: boolean;
   resolvedTabWidth: number;
   showLabel: boolean;
   showCloseButton: boolean;
@@ -1164,12 +1181,16 @@ function ResolvedDesktopTabChip({
         onCloseTabsToLeft,
         onCloseTabsToRight,
         onCloseOtherTabs,
+        onCloseEditorTabs,
+        canCloseEditorTabs,
         labels,
       }),
     [
       index,
       item.tab,
       onCloseOtherTabs,
+      onCloseEditorTabs,
+      canCloseEditorTabs,
       onCloseTab,
       onCloseTabsToLeft,
       onCloseTabsToRight,
