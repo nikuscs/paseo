@@ -704,16 +704,18 @@ function FileExplorerPaneContent(props: FileExplorerPaneContentProps) {
   return (
     <View style={[styles.treePane, styles.treePaneFill]}>
       <View style={styles.paneHeader} testID="files-pane-header">
-        <Pressable
-          onPress={handleSortCycle}
-          style={sortTriggerStyleProp}
-          testID="files-sort-trigger"
-        >
-          <Text style={styles.sortTriggerText} testID="files-sort-label">
-            {currentSortLabel}
-          </Text>
-          <ThemedChevronDown size={12} uniProps={foregroundMutedColorMapping} />
-        </Pressable>
+        {isSearchMode ? null : (
+          <Pressable
+            onPress={handleSortCycle}
+            style={sortTriggerStyleProp}
+            testID="files-sort-trigger"
+          >
+            <Text style={styles.sortTriggerText} testID="files-sort-label">
+              {currentSortLabel}
+            </Text>
+            <ThemedChevronDown size={12} uniProps={foregroundMutedColorMapping} />
+          </Pressable>
+        )}
         <View style={styles.headerActions}>
           <Pressable
             onPress={toggleSearchMode}
@@ -1077,6 +1079,7 @@ const styles = StyleSheet.create((theme) => ({
     color: theme.colors.foregroundMuted,
   },
   headerActions: {
+    marginLeft: "auto",
     flexDirection: "row",
     alignItems: "center",
     gap: theme.spacing[1],
