@@ -167,8 +167,8 @@ export const SidebarWorkspaceRowContent = memo(function SidebarWorkspaceRowConte
             currentBranch={workspace.currentBranch}
             projectName={leadingProjectName}
             hostBadge={hostBadge ?? null}
-            prHint={hidePrStatus ? null : workspace.prHint}
-            serviceSummary={hideScriptIndicators ? null : serviceSummary}
+            prHint={workspace.prHint}
+            serviceSummary={serviceSummary}
             labels={labels}
           />
         </View>
