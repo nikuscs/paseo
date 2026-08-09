@@ -928,8 +928,7 @@ describe("sidebar display preferences", () => {
     expect(result.sidebarRowItems).toEqual({
       host: false,
       changeRequest: false,
-      checks: false,
-      scripts: false,
+      services: false,
     });
     expect(result.compactSidebarRows).toBe(true);
     expect(result.showNewWorkspaceRow).toBe(false);
@@ -968,17 +967,17 @@ describe("sidebar display preferences", () => {
       updates: { sidebarRowItems: { host: false } },
       deps,
     });
-    const hideScripts = saveAppSettings({
+    const hideServices = saveAppSettings({
       queryClient,
-      updates: { sidebarRowItems: { scripts: false } },
+      updates: { sidebarRowItems: { services: false } },
       deps,
     });
-    await Promise.all([hideHost, hideScripts]);
+    await Promise.all([hideHost, hideServices]);
 
     const expected = {
       ...DEFAULT_CLIENT_SETTINGS.sidebarRowItems,
       host: false,
-      scripts: false,
+      services: false,
     };
     expect(queryClient.getQueryData<AppSettings>(APP_SETTINGS_QUERY_KEY)?.sidebarRowItems).toEqual(
       expected,
