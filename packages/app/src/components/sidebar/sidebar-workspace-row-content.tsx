@@ -193,8 +193,8 @@ export const SidebarWorkspaceRowContent = memo(function SidebarWorkspaceRowConte
           </View>
           <WorkspaceMetaRow
             hostBadge={hostBadge ?? null}
-            prHint={hidePrStatus ? null : workspace.prHint}
-            serviceSummary={hideScriptIndicators ? null : serviceSummary}
+            prHint={workspace.prHint}
+            serviceSummary={serviceSummary}
           />
         </View>
       </View>

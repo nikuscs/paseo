@@ -313,25 +313,18 @@ function pickEnumAppSettings(stored: StoredAppSettings): Partial<AppSettings> {
   return result;
 }
 
-function pickAppSettings(stored: StoredAppSettings): Partial<AppSettings> {
+function pickSidebarAppSettings(stored: StoredAppSettings): Partial<AppSettings> {
   const result: Partial<AppSettings> = {};
   const legacyAppearance = parseLegacyAppearance(stored.appearance);
-  Object.assign(result, pickEnumAppSettings(stored));
-  if (stored.sidebarRowItems !== undefined) {
-    result.sidebarRowItems = parseSidebarRowItems(stored.sidebarRowItems);
-  } else if (legacyAppearance) {
-    result.sidebarRowItems = {
-      ...DEFAULT_SIDEBAR_ROW_ITEMS,
-      host: !readBoolean(legacyAppearance.hideHostLabels, false),
-      changeRequest: !readBoolean(legacyAppearance.hidePrStatus, false),
-      checks: !readBoolean(legacyAppearance.hidePrStatus, false),
-      scripts: !readBoolean(legacyAppearance.hideScriptIndicators, false),
-    };
-  }
-  const sidebarChecksDisplay = parseStoredSidebarChecksDisplay(stored);
-  if (sidebarChecksDisplay !== null) {
-    result.sidebarChecksDisplay = sidebarChecksDisplay;
-  }
+  result.sidebarRowItems =
+    stored.sidebarRowItems !== undefined
+      ? parseSidebarRowItems(stored.sidebarRowItems)
+      : {
+          ...DEFAULT_SIDEBAR_ROW_ITEMS,
+          host: !readBoolean(legacyAppearance?.hideHostLabels, false),
+          changeRequest: !readBoolean(legacyAppearance?.hidePrStatus, false),
+          services: !readBoolean(legacyAppearance?.hideScriptIndicators, false),
+        };
   if (
     stored.sidebarWorkspaceTrailing === undefined &&
     readBoolean(legacyAppearance?.hideWorkspaceDiffStats, false)
@@ -347,6 +340,16 @@ function pickAppSettings(stored: StoredAppSettings): Partial<AppSettings> {
   result.recentlyDoneWindowMinutes = readRecentlyDoneWindowMinutes(
     stored.recentlyDoneWindowMinutes ?? legacyAppearance?.recentlyDoneWindowMinutes,
   );
+  return result;
+}
+
+function pickAppSettings(stored: StoredAppSettings): Partial<AppSettings> {
+  const result: Partial<AppSettings> = {};
+  Object.assign(result, pickEnumAppSettings(stored), pickSidebarAppSettings(stored));
+  const sidebarChecksDisplay = parseStoredSidebarChecksDisplay(stored);
+  if (sidebarChecksDisplay !== null) {
+    result.sidebarChecksDisplay = sidebarChecksDisplay;
+  }
   const language = parseAppLanguage(stored.language);
   if (language !== null) {
     result.language = language;
