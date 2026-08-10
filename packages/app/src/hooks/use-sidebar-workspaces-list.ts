@@ -32,6 +32,7 @@ export {
   deriveProjectStatusBucket,
   deriveSidebarLoadingState,
   shouldShowSidebarHostLabels,
+  sortSidebarProjects,
   type SidebarLoadingState,
   type SidebarOrderUpdates,
   type SidebarStatusWorkspacePlacement,

@@ -970,6 +970,12 @@ export const fr: TranslationResources = {
         project: "Projet",
         status: "Statut",
       },
+      sorting: {
+        label: "Tri",
+        manual: "Manuel",
+        name: "Nom",
+        activity: "Activité récente",
+      },
       titleSource: {
         label: "Titre",
         title: "Titre",

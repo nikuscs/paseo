@@ -940,6 +940,12 @@ export const ar: TranslationResources = {
         project: "المشروع",
         status: "الحالة",
       },
+      sorting: {
+        label: "الترتيب",
+        manual: "يدوي",
+        name: "الاسم",
+        activity: "النشاط الأخير",
+      },
       titleSource: {
         label: "العنوان",
         title: "العنوان",
