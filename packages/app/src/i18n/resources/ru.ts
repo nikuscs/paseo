@@ -1933,7 +1933,14 @@ export const ru: TranslationResources = {
           claude: "Клод",
           ghostty: "Призрачный",
           pureBlack: "Чистый чёрный",
+          custom: "Пользовательская",
           auto: "Система",
+        },
+        custom: {
+          title: "Пользовательская тема",
+          none: "Импортируйте JSON-файл темы Paseo",
+          import: "Импортировать",
+          importing: "Импорт...",
         },
       },
       detailLevel: {

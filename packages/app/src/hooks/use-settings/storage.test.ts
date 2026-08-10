@@ -12,8 +12,10 @@ import {
   parseClampedFontSize,
   parseTerminalScrollbackLines,
   saveAppSettings,
+  type KeyValueStorage,
   type SettingsDeps,
 } from "./storage";
+import { DEFAULT_CUSTOM_THEME_PRESET } from "@/styles/custom-theme";
 import { createFakeDesktopBridge, createInMemoryKeyValueStorage } from "./fakes";
 
 const LEGACY_SETTINGS_KEY = "@paseo:settings";
@@ -40,6 +42,39 @@ describe("loadAppSettingsFromStorage", () => {
     const result = await loadAppSettingsFromStorage(deps);
 
     expect(result.theme).toBe("auto");
+  });
+
+  it("restores a valid custom theme", async () => {
+    const deps = makeDeps({
+      storage: createInMemoryKeyValueStorage({
+        [APP_SETTINGS_KEY]: JSON.stringify({
+          theme: "custom",
+          customTheme: DEFAULT_CUSTOM_THEME_PRESET,
+        }),
+      }),
+    });
+
+    const result = await loadAppSettingsFromStorage(deps);
+
+    expect(result.theme).toBe("custom");
+    expect(result.customTheme).toEqual(DEFAULT_CUSTOM_THEME_PRESET);
+  });
+
+  it("does not activate a custom theme with an invalid color", async () => {
+    const invalidCustomTheme = {
+      ...DEFAULT_CUSTOM_THEME_PRESET,
+      colors: { ...DEFAULT_CUSTOM_THEME_PRESET.colors, background: "red" },
+    };
+    const deps = makeDeps({
+      storage: createInMemoryKeyValueStorage({
+        [APP_SETTINGS_KEY]: JSON.stringify({ theme: "custom", customTheme: invalidCustomTheme }),
+      }),
+    });
+
+    const result = await loadAppSettingsFromStorage(deps);
+
+    expect(result.theme).toBe("auto");
+    expect(result.customTheme).toBeNull();
   });
 
   it("seeds storage with the client defaults when nothing is persisted", async () => {
@@ -323,6 +358,80 @@ describe("saveAppSettings", () => {
         terminalScrollbackLines: 42_000,
       }),
     );
+  });
+
+  it("serializes overlapping updates without losing either setting", async () => {
+    const entries = new Map([[APP_SETTINGS_KEY, JSON.stringify(DEFAULT_CLIENT_SETTINGS)]]);
+    let releaseFirstWrite = () => {};
+    const firstWriteGate = new Promise<void>((resolve) => {
+      releaseFirstWrite = resolve;
+    });
+    let markFirstWriteStarted = () => {};
+    const firstWriteStarted = new Promise<void>((resolve) => {
+      markFirstWriteStarted = resolve;
+    });
+    let writeCount = 0;
+    const storage: KeyValueStorage = {
+      async getItem(key) {
+        return entries.get(key) ?? null;
+      },
+      async setItem(key, value) {
+        writeCount += 1;
+        if (writeCount === 1) {
+          markFirstWriteStarted();
+          await firstWriteGate;
+        }
+        entries.set(key, value);
+      },
+    };
+    const deps = { storage, desktop: createFakeDesktopBridge() };
+    const queryClient = new QueryClient();
+    queryClient.setQueryData(APP_SETTINGS_QUERY_KEY, DEFAULT_CLIENT_SETTINGS);
+
+    const themeSave = saveAppSettings({
+      queryClient,
+      updates: { theme: "light" },
+      deps,
+    });
+    await firstWriteStarted;
+    const scrollbackSave = saveAppSettings({
+      queryClient,
+      updates: { terminalScrollbackLines: 42_000 },
+      deps,
+    });
+
+    await Promise.resolve();
+    expect(writeCount).toBe(1);
+    releaseFirstWrite();
+    await Promise.all([themeSave, scrollbackSave]);
+
+    const expected = {
+      ...DEFAULT_CLIENT_SETTINGS,
+      theme: "light",
+      terminalScrollbackLines: 42_000,
+    };
+    expect(JSON.parse(entries.get(APP_SETTINGS_KEY) ?? "null")).toEqual(expected);
+    expect(queryClient.getQueryData(APP_SETTINGS_QUERY_KEY)).toEqual(expected);
+  });
+
+  it("does not update the cache when persistence fails", async () => {
+    const storage: KeyValueStorage = {
+      getItem: async () => JSON.stringify(DEFAULT_CLIENT_SETTINGS),
+      setItem: async () => {
+        throw new Error("storage unavailable");
+      },
+    };
+    const queryClient = new QueryClient();
+    queryClient.setQueryData(APP_SETTINGS_QUERY_KEY, DEFAULT_CLIENT_SETTINGS);
+
+    await expect(
+      saveAppSettings({
+        queryClient,
+        updates: { theme: "custom", customTheme: DEFAULT_CUSTOM_THEME_PRESET },
+        deps: { storage, desktop: createFakeDesktopBridge() },
+      }),
+    ).rejects.toThrow("storage unavailable");
+    expect(queryClient.getQueryData(APP_SETTINGS_QUERY_KEY)).toEqual(DEFAULT_CLIENT_SETTINGS);
   });
 
   it("normalizes a legacy cached settings shape before saving", async () => {

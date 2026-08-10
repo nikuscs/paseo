@@ -19,6 +19,7 @@ const ALL_THEME_KEYS = [
   "darkClaude",
   "darkGhostty",
   "darkPureBlack",
+  "custom",
 ] as const;
 
 // The UI font size at which the FONT_SIZE ramp is authored (1.0 scale factor).
