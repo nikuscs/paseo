@@ -975,6 +975,16 @@ export const ptBR: TranslationResources = {
         services: "Serviços",
         diff: "Estatísticas de diff",
         timestamp: "Última atividade",
+        compactRows: "Linhas compactas",
+        newWorkspaceRow: "Linha Novo workspace",
+      },
+      recentlyDone: {
+        label: "Concluído há pouco",
+        options: {
+          off: "Desativado",
+          minutes: "{{minutes}} min",
+          hour: "1 hora",
+        },
       },
       checks: {
         iconAndText: "Ícone e texto",

@@ -983,6 +983,16 @@ export const fr: TranslationResources = {
         services: "Services",
         diff: "Statistiques de diff",
         timestamp: "Dernière activité",
+        compactRows: "Lignes compactes",
+        newWorkspaceRow: "Ligne Nouvel espace de travail",
+      },
+      recentlyDone: {
+        label: "Récemment terminé",
+        options: {
+          off: "Désactivé",
+          minutes: "{{minutes}} min",
+          hour: "1 heure",
+        },
       },
       checks: {
         iconAndText: "Icône et texte",
