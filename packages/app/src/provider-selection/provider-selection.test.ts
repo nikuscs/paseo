@@ -8,6 +8,7 @@ import {
   buildSelectedTriggerLabel,
   filterAndRankModelRows,
   matchesModelSearch,
+  resolveProviderIconId,
   resolveSelectedModelLabel,
   resolveSubmissionReadiness,
 } from "./provider-selection";
@@ -34,6 +35,36 @@ describe("combined model selector data", () => {
       models: overrides.models ?? [codexModel],
     };
   }
+
+  it("orders provider accounts after their base provider and borrows its icon", () => {
+    const providers = buildSelectableProviderSelectorProviders([
+      snapshotEntry({ provider: "claude", label: "Claude" }),
+      snapshotEntry({ provider: "codex", label: "Codex" }),
+      snapshotEntry({
+        provider: "claude-work",
+        label: "Claude (Work)",
+        source: "custom",
+        baseProviderId: "claude",
+        models: [{ provider: "claude-work", id: "fable", label: "Fable 5" }],
+      }),
+    ]);
+
+    expect(providers.map((provider) => provider.id)).toEqual(["claude", "claude-work", "codex"]);
+    expect(resolveProviderIconId(providers, "claude-work")).toBe("claude");
+    expect(resolveProviderIconId(providers, "codex")).toBe("codex");
+    const accountRows =
+      providers[1].modelSelection.kind === "models" ? providers[1].modelSelection.rows : [];
+    expect(accountRows[0]?.iconProviderId).toBe("claude");
+    expect(accountRows[0]?.modelLabel).toBe("Claude (Work) · Fable 5");
+    expect(
+      resolveSelectedModelLabel({
+        providers,
+        selectedProvider: "claude-work",
+        selectedModel: "fable",
+        isLoading: false,
+      }),
+    ).toBe("Claude (Work) · Fable 5");
+  });
 
   it("builds selector providers from ready enabled snapshot entries", () => {
     expect(
