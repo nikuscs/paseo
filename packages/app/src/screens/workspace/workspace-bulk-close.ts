@@ -47,6 +47,24 @@ interface CloseBulkWorkspaceTabsInput {
   warn?: (message: string, payload: object) => void;
 }
 
+function isWorkspaceEditorTab(tab: WorkspaceTabDescriptor): boolean {
+  switch (tab.target.kind) {
+    case "agent":
+    case "draft":
+    case "provider_subagent":
+    case "terminal":
+      return false;
+    default:
+      return true;
+  }
+}
+
+export function selectWorkspaceEditorTabs(
+  tabs: WorkspaceTabDescriptor[],
+): WorkspaceTabDescriptor[] {
+  return tabs.filter(isWorkspaceEditorTab);
+}
+
 export function classifyBulkClosableTabs(tabs: WorkspaceTabDescriptor[]): BulkClosableTabGroups {
   const groups: BulkClosableTabGroups = {
     agentTabs: [],

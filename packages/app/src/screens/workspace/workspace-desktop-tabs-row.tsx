@@ -24,6 +24,7 @@ import {
   Columns2,
   Copy,
   Pencil,
+  PanelTopClose,
   RotateCw,
   Rows2,
   Globe,
@@ -78,6 +79,7 @@ import type { WorkspaceTabDescriptor } from "@/screens/workspace/workspace-tabs-
 import type { Theme } from "@/styles/theme";
 import { RenderProfile } from "@/utils/render-profiler";
 import { useDaemonConfig } from "@/hooks/use-daemon-config";
+import type { TerminalProfile } from "@getpaseo/protocol/messages";
 import {
   getTerminalProfileIcon,
   resolveTerminalProfiles,
@@ -101,6 +103,7 @@ const ThemedRotateCw = withUnistyles(RotateCw);
 const ThemedArrowLeftToLine = withUnistyles(ArrowLeftToLine);
 const ThemedArrowRightToLine = withUnistyles(ArrowRightToLine);
 const ThemedCopyX = withUnistyles(CopyX);
+const ThemedPanelTopClose = withUnistyles(PanelTopClose);
 const ThemedPencil = withUnistyles(Pencil);
 const ThemedSquarePen = withUnistyles(SquarePen);
 const ThemedSquareTerminal = withUnistyles(SquareTerminal);
@@ -142,7 +145,7 @@ function ProfileLeadingIcon({ iconKey }: { iconKey: string | undefined }) {
 }
 
 interface PinnableProfileMenuItemProps {
-  profile: { id: string; name: string; command: string; args?: string[]; icon?: string };
+  profile: TerminalProfile;
   disabled?: boolean;
   onLaunch: (target: PinnedTabTarget) => void;
 }
@@ -208,52 +211,88 @@ function WorkspaceInlineAddTabButton({
   );
 }
 
-interface WorkspaceTabRowExtrasProps {
+interface WorkspaceTabCreationMenuProps {
+  profiles: readonly TerminalProfile[];
   onCreateAgentTab: () => void;
   onCreateTerminal: () => void;
   onCreateBrowser: () => void;
-  onCreateTerminalWithProfile: (profile: TerminalProfileInput) => void;
   onEditProfiles: () => void;
-  normalizedServerId: string;
+  onLaunch: (target: PinnedTabTarget) => void;
   showCreateBrowserTab: boolean;
   terminalDisabled: boolean;
 }
 
-function WorkspaceTabRowExtras({
+interface WorkspaceTabCreationMenuItemsProps extends WorkspaceTabCreationMenuProps {
+  testIDPrefix: string;
+}
+
+function WorkspaceTabCreationMenuItems({
+  testIDPrefix,
+  profiles,
   onCreateAgentTab,
   onCreateTerminal,
   onCreateBrowser,
-  onCreateTerminalWithProfile,
   onEditProfiles,
-  normalizedServerId,
+  onLaunch,
   showCreateBrowserTab,
   terminalDisabled,
-}: WorkspaceTabRowExtrasProps) {
+}: WorkspaceTabCreationMenuItemsProps) {
   const { t } = useTranslation();
-  const { config } = useDaemonConfig(normalizedServerId);
-  const profiles = useMemo(
-    () => resolveTerminalProfiles(config?.terminalProfiles),
-    [config?.terminalProfiles],
-  );
 
-  const handlers = useMemo<TabTargetHandlers>(
-    () => ({
-      createDraft: onCreateAgentTab,
-      createTerminal: onCreateTerminal,
-      createBrowser: onCreateBrowser,
-      createTerminalWithProfile: onCreateTerminalWithProfile,
-    }),
-    [onCreateAgentTab, onCreateBrowser, onCreateTerminal, onCreateTerminalWithProfile],
+  return (
+    <>
+      <PinnableMenuItem
+        testID={`${testIDPrefix}-agent`}
+        target={DRAFT_TARGET}
+        label={t("workspace.tabs.actions.newAgent")}
+        leading={AGENT_ICON}
+        onSelect={onCreateAgentTab}
+      />
+      <PinnableMenuItem
+        testID={`${testIDPrefix}-terminal`}
+        target={TERMINAL_TARGET}
+        label={t("workspace.tabs.actions.newTerminal")}
+        leading={TERMINAL_ICON}
+        disabled={terminalDisabled}
+        onSelect={terminalDisabled ? undefined : onCreateTerminal}
+      />
+      {showCreateBrowserTab ? (
+        <PinnableMenuItem
+          testID={`${testIDPrefix}-browser`}
+          target={BROWSER_TARGET}
+          label={t("workspace.tabs.actions.newBrowser")}
+          leading={BROWSER_ICON}
+          onSelect={onCreateBrowser}
+        />
+      ) : null}
+      <DropdownMenuSeparator />
+      <DropdownMenuLabel>{t("workspace.tabs.actions.terminalProfilesMenu")}</DropdownMenuLabel>
+      {profiles.map((profile) => (
+        <PinnableProfileMenuItem
+          key={profile.id}
+          profile={profile}
+          disabled={terminalDisabled}
+          onLaunch={onLaunch}
+        />
+      ))}
+      <DropdownMenuSeparator />
+      <DropdownMenuItem testID={`${testIDPrefix}-edit-profiles`} onSelect={onEditProfiles}>
+        {t("workspace.tabs.actions.editTerminalProfiles")}
+      </DropdownMenuItem>
+    </>
   );
+}
 
-  const onLaunch = useCallback(
-    (target: PinnedTabTarget) => {
-      runPinnedTabTarget(target, profiles, handlers);
-    },
-    [handlers, profiles],
-  );
+interface WorkspaceTabRowExtrasProps extends WorkspaceTabCreationMenuProps {
+  normalizedServerId: string;
+}
 
-  const launchers = usePinnedLaunchers({ serverId: normalizedServerId, onLaunch });
+function WorkspaceTabRowExtras(props: WorkspaceTabRowExtrasProps) {
+  const { t } = useTranslation();
+  const launchers = usePinnedLaunchers({
+    serverId: props.normalizedServerId,
+    onLaunch: props.onLaunch,
+  });
 
   return (
     <>
@@ -274,48 +313,29 @@ function WorkspaceTabRowExtras({
           </TooltipContent>
         </Tooltip>
         <DropdownMenuContent side="bottom" align="end" offset={4} minWidth={200}>
-          <PinnableMenuItem
-            testID="workspace-new-tab-menu-agent"
-            target={DRAFT_TARGET}
-            label={t("workspace.tabs.actions.newAgent")}
-            leading={AGENT_ICON}
-            onSelect={onCreateAgentTab}
-          />
-          <PinnableMenuItem
-            testID="workspace-new-tab-menu-terminal"
-            target={TERMINAL_TARGET}
-            label={t("workspace.tabs.actions.newTerminal")}
-            leading={TERMINAL_ICON}
-            disabled={terminalDisabled}
-            onSelect={terminalDisabled ? undefined : onCreateTerminal}
-          />
-          {showCreateBrowserTab ? (
-            <PinnableMenuItem
-              testID="workspace-new-tab-menu-browser"
-              target={BROWSER_TARGET}
-              label={t("workspace.tabs.actions.newBrowser")}
-              leading={BROWSER_ICON}
-              onSelect={onCreateBrowser}
-            />
-          ) : null}
-          <DropdownMenuSeparator />
-          <DropdownMenuLabel>{t("workspace.tabs.actions.terminalProfilesMenu")}</DropdownMenuLabel>
-          {profiles.map((profile) => (
-            <PinnableProfileMenuItem
-              key={profile.id}
-              profile={profile}
-              disabled={terminalDisabled}
-              onLaunch={onLaunch}
-            />
-          ))}
-          <DropdownMenuSeparator />
-          <DropdownMenuItem testID="workspace-new-tab-menu-edit-profiles" onSelect={onEditProfiles}>
-            {t("workspace.tabs.actions.editTerminalProfiles")}
-          </DropdownMenuItem>
+          <WorkspaceTabCreationMenuItems testIDPrefix="workspace-new-tab-menu" {...props} />
         </DropdownMenuContent>
       </DropdownMenu>
       <PinnedTargetsRow launchers={launchers} testIdPrefix="workspace-pinned-target" />
     </>
+  );
+}
+
+function WorkspaceEmptyTabStripContextMenu(props: WorkspaceTabCreationMenuProps) {
+  const { t } = useTranslation();
+
+  return (
+    <ContextMenu>
+      <ContextMenuTrigger
+        testID="workspace-empty-tab-strip"
+        enabledOnMobile={false}
+        accessibilityLabel={t("workspace.tabs.actions.moreActions")}
+        style={styles.emptyTabStrip}
+      />
+      <ContextMenuContent align="start" width={DROPDOWN_WIDTH} testID="workspace-empty-tab-menu">
+        <WorkspaceTabCreationMenuItems testIDPrefix="workspace-empty-tab-menu" {...props} />
+      </ContextMenuContent>
+    </ContextMenu>
   );
 }
 
@@ -336,6 +356,8 @@ function TabContextMenuItem({
         return <ThemedArrowRightToLine size={16} uniProps={mutedColorMapping} />;
       case "copy-x":
         return <ThemedCopyX size={16} uniProps={mutedColorMapping} />;
+      case "panel-top-close":
+        return <ThemedPanelTopClose size={16} uniProps={mutedColorMapping} />;
       case "pencil":
         return <ThemedPencil size={16} uniProps={mutedColorMapping} />;
       case "x":
@@ -426,6 +448,8 @@ interface WorkspaceDesktopTabsRowProps {
   onCloseTabsToLeft: (tabId: string) => Promise<void> | void;
   onCloseTabsToRight: (tabId: string) => Promise<void> | void;
   onCloseOtherTabs: (tabId: string) => Promise<void> | void;
+  onCloseEditorTabs: () => Promise<void> | void;
+  canCloseEditorTabs: boolean;
   onCreateDraftTab: (input: { paneId?: string }) => void;
   onCreateTerminalTab: (input: { paneId?: string; profile?: TerminalProfileInput }) => void;
   onCreateBrowserTab: (input: { paneId?: string }) => void;
@@ -772,6 +796,8 @@ export function WorkspaceDesktopTabsRow({
   onCloseTabsToLeft,
   onCloseTabsToRight,
   onCloseOtherTabs,
+  onCloseEditorTabs,
+  canCloseEditorTabs,
   onCreateDraftTab,
   onCreateTerminalTab,
   onCreateBrowserTab,
@@ -857,6 +883,7 @@ export function WorkspaceDesktopTabsRow({
       closeLeft: t("workspace.tabs.menu.closeLeft"),
       closeRight: t("workspace.tabs.menu.closeRight"),
       closeOthers: t("workspace.tabs.menu.closeOthers"),
+      closeEditorTabs: t("workspace.tabs.menu.closeEditorTabs"),
       reloadAgent: t("workspace.tabs.menu.reloadAgent"),
       reloadAgentTooltip: t("workspace.tabs.menu.reloadAgentTooltip"),
       close: t("workspace.tabs.menu.close"),
@@ -918,6 +945,41 @@ export function WorkspaceDesktopTabsRow({
   }, [onCreateBrowserTab, paneId]);
 
   const terminalDisabled = disableCreateTerminal || isWaitingOnTerminalReadiness;
+  const { config } = useDaemonConfig(normalizedServerId);
+  const profiles = useMemo(
+    () => resolveTerminalProfiles(config?.terminalProfiles),
+    [config?.terminalProfiles],
+  );
+  const tabTargetHandlers = useMemo<TabTargetHandlers>(
+    () => ({
+      createDraft: handleCreateAgentTab,
+      createTerminal: handleCreateTerminal,
+      createBrowser: handleCreateBrowser,
+      createTerminalWithProfile: handleCreateTerminalWithProfile,
+    }),
+    [
+      handleCreateAgentTab,
+      handleCreateBrowser,
+      handleCreateTerminal,
+      handleCreateTerminalWithProfile,
+    ],
+  );
+  const handleLaunchTabTarget = useCallback(
+    (target: PinnedTabTarget) => {
+      runPinnedTabTarget(target, profiles, tabTargetHandlers);
+    },
+    [profiles, tabTargetHandlers],
+  );
+  const tabCreationMenuProps: WorkspaceTabCreationMenuProps = {
+    profiles,
+    onCreateAgentTab: handleCreateAgentTab,
+    onCreateTerminal: handleCreateTerminal,
+    onCreateBrowser: handleCreateBrowser,
+    onEditProfiles: handleEditProfiles,
+    onLaunch: handleLaunchTabTarget,
+    showCreateBrowserTab,
+    terminalDisabled,
+  };
 
   const renderTab = useCallback(
     ({
@@ -955,6 +1017,8 @@ export function WorkspaceDesktopTabsRow({
           onCloseTabsToLeft={onCloseTabsToLeft}
           onCloseTabsToRight={onCloseTabsToRight}
           onCloseOtherTabs={onCloseOtherTabs}
+          onCloseEditorTabs={onCloseEditorTabs}
+          canCloseEditorTabs={canCloseEditorTabs}
           resolvedTabWidth={resolvedTabWidth}
           showLabel={showLabel}
           showCloseButton={shouldShowCloseButton}
@@ -976,6 +1040,8 @@ export function WorkspaceDesktopTabsRow({
       normalizedServerId,
       normalizedWorkspaceId,
       onCloseOtherTabs,
+      onCloseEditorTabs,
+      canCloseEditorTabs,
       onCloseTab,
       onCloseTabsToLeft,
       onCloseTabsToRight,
@@ -1058,18 +1124,10 @@ export function WorkspaceDesktopTabsRow({
           onCreateAgentTab={handleCreateAgentTab}
           onLayout={handleInlineAddButtonLayout}
         />
+        <WorkspaceEmptyTabStripContextMenu {...tabCreationMenuProps} />
       </ScrollView>
       <View style={styles.tabsActions} onLayout={handleTabsActionsLayout}>
-        <WorkspaceTabRowExtras
-          onCreateAgentTab={handleCreateAgentTab}
-          onCreateTerminal={handleCreateTerminal}
-          onCreateBrowser={handleCreateBrowser}
-          onCreateTerminalWithProfile={handleCreateTerminalWithProfile}
-          onEditProfiles={handleEditProfiles}
-          normalizedServerId={normalizedServerId}
-          showCreateBrowserTab={showCreateBrowserTab}
-          terminalDisabled={terminalDisabled}
-        />
+        <WorkspaceTabRowExtras {...tabCreationMenuProps} normalizedServerId={normalizedServerId} />
         {showPaneSplitActions ? (
           <>
             <SplitActionButton
@@ -1109,6 +1167,8 @@ function ResolvedDesktopTabChip({
   onCloseTabsToLeft,
   onCloseTabsToRight,
   onCloseOtherTabs,
+  onCloseEditorTabs,
+  canCloseEditorTabs,
   resolvedTabWidth,
   showLabel,
   showCloseButton,
@@ -1136,6 +1196,8 @@ function ResolvedDesktopTabChip({
   onCloseTabsToLeft: (tabId: string) => Promise<void> | void;
   onCloseTabsToRight: (tabId: string) => Promise<void> | void;
   onCloseOtherTabs: (tabId: string) => Promise<void> | void;
+  onCloseEditorTabs: () => Promise<void> | void;
+  canCloseEditorTabs: boolean;
   resolvedTabWidth: number;
   showLabel: boolean;
   showCloseButton: boolean;
@@ -1164,12 +1226,16 @@ function ResolvedDesktopTabChip({
         onCloseTabsToLeft,
         onCloseTabsToRight,
         onCloseOtherTabs,
+        onCloseEditorTabs,
+        canCloseEditorTabs,
         labels,
       }),
     [
       index,
       item.tab,
       onCloseOtherTabs,
+      onCloseEditorTabs,
+      canCloseEditorTabs,
       onCloseTab,
       onCloseTabsToLeft,
       onCloseTabsToRight,
@@ -1252,6 +1318,10 @@ const styles = StyleSheet.create((theme) => ({
   tabsContent: {
     flexDirection: "row",
     alignItems: "stretch",
+    flexGrow: 1,
+  },
+  emptyTabStrip: {
+    flex: 1,
   },
   tabsActions: {
     flexDirection: "row",

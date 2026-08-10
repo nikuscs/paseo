@@ -96,6 +96,16 @@ test.describe("Tab creation", () => {
     await assertNewChatTileVisible(page);
     await assertNewTabMenuTriggerVisible(page);
   });
+
+  test("right-clicking the empty tab strip opens tab creation actions", async ({ page }) => {
+    await page.setViewportSize({ width: 1600, height: 900 });
+    await gotoWorkspace(page, workspace.workspaceId);
+
+    await page.getByTestId("workspace-empty-tab-strip").click({ button: "right" });
+
+    await expect(page.getByTestId("workspace-empty-tab-menu-agent")).toBeVisible();
+    await expect(page.getByTestId("workspace-empty-tab-menu-terminal")).toBeVisible();
+  });
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
