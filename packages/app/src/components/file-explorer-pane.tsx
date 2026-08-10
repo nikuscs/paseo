@@ -23,7 +23,8 @@ import {
   type TextInputKeyPressEventData,
   type ViewStyle,
 } from "react-native";
-import { StyleSheet, useUnistyles, withUnistyles } from "react-native-unistyles";
+import { StyleSheet, withUnistyles } from "react-native-unistyles";
+import type { DaemonClient } from "@getpaseo/client/internal/daemon-client";
 import { useIsCompactFormFactor, WORKSPACE_SECONDARY_HEADER_HEIGHT } from "@/constants/layout";
 import { isWeb } from "@/constants/platform";
 import * as Clipboard from "expo-clipboard";
@@ -35,6 +36,7 @@ import {
   Folder,
   FolderPlus,
   RotateCw,
+  Search,
 } from "lucide-react-native";
 import { MaterialFileIcon } from "@/components/material-file-icon";
 import {
@@ -53,6 +55,8 @@ import {
   type OverlayFlatListScrollbar,
 } from "@/components/ui/overlay-scrollbar/use-overlay-flat-list-scrollbar";
 import type { Theme } from "@/styles/theme";
+import { ICON_SIZE } from "@/styles/theme";
+import { FileSearchPane } from "@/file-explorer/search-pane";
 import type {
   AgentFileExplorerState,
   ExplorerDirectory,
@@ -88,11 +92,19 @@ const SORT_OPTIONS: { value: SortOption }[] = [
   { value: "size" },
 ];
 
-const ThemedLoadingSpinner = withUnistyles(LoadingSpinner);
+const ThemedChevronDown = withUnistyles(ChevronDown);
+const ThemedEye = withUnistyles(Eye);
+const ThemedEyeOff = withUnistyles(EyeOff);
+const ThemedFilePlus = withUnistyles(FilePlus);
 const ThemedFolder = withUnistyles(Folder);
+const ThemedFolderPlus = withUnistyles(FolderPlus);
+const ThemedLoadingSpinner = withUnistyles(LoadingSpinner);
+const ThemedRotateCw = withUnistyles(RotateCw);
+const ThemedSearch = withUnistyles(Search);
 const foregroundMutedColorMapping = (theme: Theme) => ({
   color: theme.colors.foregroundMuted,
 });
+const selectedAccessibilityState = { selected: true } as const;
 
 function DirectoryChevronIcon({ loading, expanded }: { loading: boolean; expanded: boolean }) {
   if (loading) {
@@ -424,7 +436,7 @@ interface FileExplorerPaneProps {
   serverId: string;
   workspaceId?: string | null;
   workspaceRoot: string;
-  onOpenFile?: (filePath: string) => void;
+  onOpenFile?: (filePath: string, lineStart?: number, lineEnd?: number) => void;
   onAddToChat?: (path: string) => void;
 }
 
@@ -448,6 +460,7 @@ export function FileExplorerPane({
     [normalizedWorkspaceRoot, workspaceId],
   );
   const hasWorkspaceScope = Boolean(workspaceStateKey && normalizedWorkspaceRoot);
+  const client = useSessionStore((state) => state.sessions[serverId]?.client ?? null);
   const explorerState = useSessionStore((state) =>
     workspaceStateKey && state.sessions[serverId]
       ? state.sessions[serverId]?.fileExplorer.get(workspaceStateKey)
@@ -1082,6 +1095,9 @@ export function FileExplorerPane({
         handleRetry={handleRetry}
         sortTriggerStyle={sortTriggerStyle}
         iconButtonStyle={iconButtonStyle}
+        client={client ?? null}
+        workspaceRoot={normalizedWorkspaceRoot}
+        onOpenFile={onOpenFile}
       />
     </View>
   );
@@ -1156,10 +1172,12 @@ interface FileExplorerPaneContentProps {
   handleRetry: () => void;
   sortTriggerStyle: (state: PressableStateCallbackType) => StyleProp<ViewStyle>;
   iconButtonStyle: (state: PressableStateCallbackType) => StyleProp<ViewStyle>;
+  client: DaemonClient | null;
+  workspaceRoot: string;
+  onOpenFile?: (filePath: string, lineStart?: number, lineEnd?: number) => void;
 }
 
 function FileExplorerPaneContent(props: FileExplorerPaneContentProps) {
-  const { theme } = useUnistyles();
   const { t } = useTranslation();
   const {
     error,
@@ -1179,8 +1197,12 @@ function FileExplorerPaneContent(props: FileExplorerPaneContentProps) {
     handleRetry,
     sortTriggerStyle: sortTriggerStyleProp,
     iconButtonStyle: iconButtonStyleProp,
+    client,
+    workspaceRoot,
+    onOpenFile,
   } = props;
 
+  const [isSearchMode, setIsSearchMode] = useState(false);
   const showHiddenFiles = usePanelStore((state) => state.explorerShowHiddenFiles);
 
   const handleNewFileAtRoot = useCallback(() => {
@@ -1189,6 +1211,11 @@ function FileExplorerPaneContent(props: FileExplorerPaneContentProps) {
   const handleNewFolderAtRoot = useCallback(() => {
     onNewEntryAtRoot?.(".", "directory");
   }, [onNewEntryAtRoot]);
+  const toggleSearchMode = useCallback(() => setIsSearchMode((current) => !current), []);
+  const handleOpenSearchMatch = useCallback(
+    (path: string, line: number) => onOpenFile?.(path, line, line),
+    [onOpenFile],
+  );
 
   const hiddenFilesToggleAccessibilityLabel = showHiddenFiles
     ? t("workspace.fileExplorer.actions.hideHiddenFiles")
@@ -1208,8 +1235,17 @@ function FileExplorerPaneContent(props: FileExplorerPaneContentProps) {
     [showHiddenFiles],
   );
 
-  if (error) {
-    return (
+  let paneContent: ReactNode;
+  if (isSearchMode) {
+    paneContent = (
+      <FileSearchPane
+        client={client}
+        workspaceRoot={workspaceRoot}
+        onOpenMatch={handleOpenSearchMatch}
+      />
+    );
+  } else if (error) {
+    paneContent = (
       <View style={styles.centerState}>
         <Text style={styles.errorText}>{error}</Text>
         <View style={styles.errorActions}>
@@ -1224,93 +1260,15 @@ function FileExplorerPaneContent(props: FileExplorerPaneContentProps) {
         </View>
       </View>
     );
-  }
-
-  if (showInitialLoading) {
-    return (
+  } else if (showInitialLoading) {
+    paneContent = (
       <View style={styles.centerState}>
         <ThemedLoadingSpinner size="small" uniProps={foregroundMutedColorMapping} />
         <Text style={styles.loadingText}>{t("workspace.fileExplorer.states.loading")}</Text>
       </View>
     );
-  }
-
-  return (
-    <View style={[styles.treePane, styles.treePaneFill]}>
-      <View style={styles.paneHeader} testID="files-pane-header">
-        <Pressable
-          onPress={handleSortCycle}
-          style={sortTriggerStyleProp}
-          testID="files-sort-trigger"
-        >
-          <Text style={styles.sortTriggerText} testID="files-sort-label">
-            {currentSortLabel}
-          </Text>
-          <ChevronDown size={12} color={theme.colors.foregroundMuted} />
-        </Pressable>
-        <View style={styles.headerActions}>
-          {onNewEntryAtRoot ? (
-            <>
-              <Pressable
-                onPress={handleNewFileAtRoot}
-                hitSlop={8}
-                style={iconButtonStyleProp}
-                accessibilityRole="button"
-                accessibilityLabel={t("workspace.fileActions.newFile")}
-                testID="files-new-file"
-              >
-                <FilePlus size={theme.iconSize.sm} color={theme.colors.foregroundMuted} />
-              </Pressable>
-              <Pressable
-                onPress={handleNewFolderAtRoot}
-                hitSlop={8}
-                style={iconButtonStyleProp}
-                accessibilityRole="button"
-                accessibilityLabel={t("workspace.fileActions.newFolder")}
-                testID="files-new-folder"
-              >
-                <FolderPlus size={theme.iconSize.sm} color={theme.colors.foregroundMuted} />
-              </Pressable>
-            </>
-          ) : null}
-          <Pressable
-            onPress={handleToggleHiddenFiles}
-            hitSlop={8}
-            style={hiddenFilesToggleStyle}
-            accessibilityRole="button"
-            accessibilityLabel={hiddenFilesToggleAccessibilityLabel}
-            accessibilityState={hiddenFilesToggleAccessibilityState}
-            testID="files-hidden-toggle"
-          >
-            {showHiddenFiles ? (
-              <Eye size={theme.iconSize.sm} color={theme.colors.foregroundMuted} />
-            ) : (
-              <EyeOff size={theme.iconSize.sm} color={theme.colors.foregroundMuted} />
-            )}
-          </Pressable>
-          <Pressable
-            onPress={handleRefresh}
-            disabled={isRefreshFetching}
-            hitSlop={8}
-            style={iconButtonStyleProp}
-            accessibilityRole="button"
-            accessibilityLabel={
-              isRefreshFetching
-                ? t("workspace.fileExplorer.actions.refreshing")
-                : t("workspace.fileExplorer.actions.refresh")
-            }
-            testID="files-refresh"
-          >
-            <View style={styles.refreshIcon}>
-              {isRefreshFetching ? (
-                <LoadingSpinner size={theme.iconSize.sm} color={theme.colors.foregroundMuted} />
-              ) : (
-                <RotateCw size={theme.iconSize.sm} color={theme.colors.foregroundMuted} />
-              )}
-            </View>
-          </Pressable>
-        </View>
-      </View>
+  } else {
+    paneContent = (
       <ContextMenu>
         <RootCreationContextTarget enabled={Boolean(onNewEntryAtRoot)}>
           {listRows.length === 0 ? (
@@ -1347,6 +1305,103 @@ function FileExplorerPaneContent(props: FileExplorerPaneContentProps) {
           />
         ) : null}
       </ContextMenu>
+    );
+  }
+
+  return (
+    <View style={[styles.treePane, styles.treePaneFill]}>
+      <View style={styles.paneHeader} testID="files-pane-header">
+        {isSearchMode ? null : (
+          <Pressable
+            onPress={handleSortCycle}
+            style={sortTriggerStyleProp}
+            testID="files-sort-trigger"
+          >
+            <Text style={styles.sortTriggerText} testID="files-sort-label">
+              {currentSortLabel}
+            </Text>
+            <ThemedChevronDown size={12} uniProps={foregroundMutedColorMapping} />
+          </Pressable>
+        )}
+        <View style={styles.headerActions}>
+          {onNewEntryAtRoot ? (
+            <>
+              <Pressable
+                onPress={handleNewFileAtRoot}
+                hitSlop={8}
+                style={iconButtonStyleProp}
+                accessibilityRole="button"
+                accessibilityLabel={t("workspace.fileActions.newFile")}
+                testID="files-new-file"
+              >
+                <ThemedFilePlus size={ICON_SIZE.sm} uniProps={foregroundMutedColorMapping} />
+              </Pressable>
+              <Pressable
+                onPress={handleNewFolderAtRoot}
+                hitSlop={8}
+                style={iconButtonStyleProp}
+                accessibilityRole="button"
+                accessibilityLabel={t("workspace.fileActions.newFolder")}
+                testID="files-new-folder"
+              >
+                <ThemedFolderPlus size={ICON_SIZE.sm} uniProps={foregroundMutedColorMapping} />
+              </Pressable>
+            </>
+          ) : null}
+          <Pressable
+            onPress={toggleSearchMode}
+            hitSlop={8}
+            style={iconButtonStyleProp}
+            accessibilityRole="button"
+            accessibilityLabel={isSearchMode ? "Show files" : t("common.actions.search")}
+            accessibilityState={isSearchMode ? selectedAccessibilityState : undefined}
+            testID="files-search-toggle"
+          >
+            {isSearchMode ? (
+              <ThemedFolder size={ICON_SIZE.sm} uniProps={foregroundMutedColorMapping} />
+            ) : (
+              <ThemedSearch size={ICON_SIZE.sm} uniProps={foregroundMutedColorMapping} />
+            )}
+          </Pressable>
+          <Pressable
+            onPress={handleToggleHiddenFiles}
+            hitSlop={8}
+            style={hiddenFilesToggleStyle}
+            accessibilityRole="button"
+            accessibilityLabel={hiddenFilesToggleAccessibilityLabel}
+            accessibilityState={hiddenFilesToggleAccessibilityState}
+            testID="files-hidden-toggle"
+          >
+            {showHiddenFiles ? (
+              <ThemedEye size={ICON_SIZE.sm} uniProps={foregroundMutedColorMapping} />
+            ) : (
+              <ThemedEyeOff size={ICON_SIZE.sm} uniProps={foregroundMutedColorMapping} />
+            )}
+          </Pressable>
+          <Pressable
+            onPress={handleRefresh}
+            disabled={isRefreshFetching}
+            hitSlop={8}
+            style={iconButtonStyleProp}
+            accessibilityRole="button"
+            accessibilityLabel={
+              isRefreshFetching
+                ? t("workspace.fileExplorer.actions.refreshing")
+                : t("workspace.fileExplorer.actions.refresh")
+            }
+            testID="files-refresh"
+          >
+            <View style={styles.refreshIcon}>
+              {isRefreshFetching ? (
+                <ThemedLoadingSpinner size={ICON_SIZE.sm} uniProps={foregroundMutedColorMapping} />
+              ) : (
+                <ThemedRotateCw size={ICON_SIZE.sm} uniProps={foregroundMutedColorMapping} />
+              )}
+            </View>
+          </Pressable>
+        </View>
+      </View>
+      {paneContent}
     </View>
   );
 }
@@ -1696,6 +1751,7 @@ const styles = StyleSheet.create((theme) => ({
     color: theme.colors.foregroundMuted,
   },
   headerActions: {
+    marginLeft: "auto",
     flexDirection: "row",
     alignItems: "center",
     gap: theme.spacing[1],

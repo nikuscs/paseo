@@ -1646,6 +1646,8 @@ export class VoiceAssistantWebSocketServer {
         fsEntryDuplicate: true,
         // COMPAT(checkoutDiscardChanges): added in v0.3.0, remove gate after 2027-02-08.
         checkoutDiscardChanges: true,
+        // COMPAT(fileContentSearch): added in v0.3.0, remove gate after 2027-02-10.
+        fileContentSearch: true,
       },
     };
   }
