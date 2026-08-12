@@ -729,7 +729,6 @@ function StatusWorkspaceRowInner({
         });
         const workspaceRowStyle = getStatusWorkspaceRowStyle({
           isPressed,
-          selected,
           isHovered,
           inStatusGroup,
           compact: compactSidebarRows,
@@ -877,13 +876,11 @@ function StatusWorkspaceActionSlot({
 
 function getStatusWorkspaceRowStyle({
   isPressed,
-  selected,
   isHovered,
   inStatusGroup,
   compact,
 }: {
   isPressed: boolean;
-  selected: boolean;
   isHovered: boolean;
   inStatusGroup: boolean;
   compact: boolean;
@@ -892,7 +889,6 @@ function getStatusWorkspaceRowStyle({
     styles.workspaceRow,
     compact && styles.workspaceRowCompact,
     inStatusGroup && sidebarWorkspaceRowStyles.rowIndented,
-    selected && styles.sidebarRowSelected,
     isHovered && styles.workspaceRowHovered,
     isPressed && styles.workspaceRowPressed,
   ];
@@ -990,8 +986,5 @@ const styles = StyleSheet.create((theme) => ({
   },
   workspaceRowPressed: {
     backgroundColor: theme.colors.surface2,
-  },
-  sidebarRowSelected: {
-    backgroundColor: theme.colors.surfaceSidebarHover,
   },
 }));

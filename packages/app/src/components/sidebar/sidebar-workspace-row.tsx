@@ -313,7 +313,6 @@ function WorkspaceRowBody({
         const workspaceRowStyle = getWorkspaceRowStyle({
           isDragging,
           isPressed,
-          selected,
           isHovered,
           compact: compactSidebarRows,
         });
@@ -483,20 +482,17 @@ function WorkspaceRowTrailingActions({
 function getWorkspaceRowStyle({
   isDragging,
   isPressed,
-  selected,
   isHovered,
   compact,
 }: {
   isDragging: boolean;
   isPressed: boolean;
-  selected: boolean;
   isHovered: boolean;
   compact: boolean;
 }) {
   return [
     styles.workspaceRow,
     compact && styles.workspaceRowCompact,
-    selected && styles.sidebarRowSelected,
     isHovered && styles.workspaceRowHovered,
     isDragging && styles.workspaceRowDragging,
     isPressed && styles.workspaceRowPressed,
@@ -535,9 +531,6 @@ const styles = StyleSheet.create((theme) => ({
     transform: [{ scale: 1.02 }],
     zIndex: 3,
     ...theme.shadow.md,
-  },
-  sidebarRowSelected: {
-    backgroundColor: theme.colors.surfaceSidebarHover,
   },
   workspaceCreatingText: {
     color: theme.colors.foregroundMuted,

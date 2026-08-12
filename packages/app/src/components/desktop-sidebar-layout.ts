@@ -1,3 +1,4 @@
+import type { SidebarSide } from "@/components/sidebar-sides";
 import { SETTINGS_DESKTOP_SPLIT_MIN_WIDTH } from "@/constants/layout";
 import {
   MAX_EXPLORER_SIDEBAR_WIDTH,
@@ -28,8 +29,15 @@ export function resolveDesktopAppChromeLayout(input: {
   desktopSidebarRendered: boolean;
   hasTopLeftWindowControls: boolean;
   sidebarControlsEnabled: boolean;
+  /** Defaults to the left, which is where the sidebar sits unless the user moved it. */
+  agentListSide?: SidebarSide;
 }) {
-  const sidebarOwnsTopLeft = input.desktopSidebarRendered && input.hasTopLeftWindowControls;
+  // Only the pane against the window's left edge can own the traffic lights. Park the sidebar on
+  // the right and that pane is the content.
+  const sidebarOwnsTopLeft =
+    input.desktopSidebarRendered &&
+    input.hasTopLeftWindowControls &&
+    input.agentListSide !== "right";
   let sidebarToggleOwner: "none" | "window" | "content" = "none";
   if (input.sidebarControlsEnabled) {
     sidebarToggleOwner = input.hasTopLeftWindowControls ? "window" : "content";

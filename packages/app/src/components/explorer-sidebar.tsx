@@ -35,6 +35,12 @@ import { useHasOwnedWindowChromeObstruction, WindowChromeSafeArea } from "@/util
 import { TitlebarDragRegion } from "@/components/desktop/titlebar-drag-region";
 import { RetainedPanelActivity } from "@/components/retained-panel";
 import { SidebarResizeHandle } from "@/components/sidebar-resize-handle";
+import {
+  resolveSidebarResizeDirection,
+  resolveSidebarResizeEdge,
+  resolveSidebarSides,
+} from "@/components/sidebar-sides";
+import { useAppSettings } from "@/hooks/use-settings";
 import { buildWorkspaceAttachmentScopeKey } from "@/attachments/workspace-attachments-store";
 import { resolveDesktopExplorerWidth } from "@/components/desktop-sidebar-layout";
 import {
@@ -173,6 +179,9 @@ export function ExplorerSidebar({
   const startWidthRef = useRef(visibleExplorerWidth);
   const resizeWidth = useSharedValue(visibleExplorerWidth);
   const [resizePressed, setResizePressed] = useState(false);
+  const { settings } = useAppSettings();
+  const side = resolveSidebarSides(settings.agentListSide).explorer;
+  const resizeDirection = resolveSidebarResizeDirection(side);
   const showResizeGrip = useCallback(() => setResizePressed(true), []);
   const hideResizeGrip = useCallback(() => setResizePressed(false), []);
 
@@ -201,11 +210,11 @@ export function ExplorerSidebar({
         .activeOffsetX([-SIDEBAR_RESIZE_ACTIVATION_OFFSET, SIDEBAR_RESIZE_ACTIVATION_OFFSET])
         .failOffsetY([-SIDEBAR_RESIZE_FAIL_OFFSET, SIDEBAR_RESIZE_FAIL_OFFSET])
         .onStart((event) => {
-          startWidthRef.current = visibleExplorerWidth + event.translationX;
+          startWidthRef.current = visibleExplorerWidth - resizeDirection * event.translationX;
           resizeWidth.value = visibleExplorerWidth;
         })
         .onUpdate((event) => {
-          const newWidth = startWidthRef.current - event.translationX;
+          const newWidth = startWidthRef.current + resizeDirection * event.translationX;
           resizeWidth.value = resolveDesktopExplorerWidth({
             requestedWidth: newWidth,
             viewportWidth,
@@ -219,6 +228,7 @@ export function ExplorerSidebar({
         }),
     [
       hideResizeGrip,
+      resizeDirection,
       resizeWidth,
       setExplorerWidth,
       showResizeGrip,
@@ -243,7 +253,7 @@ export function ExplorerSidebar({
     <Animated.View style={desktopSidebarStyle}>
       <View style={[styles.desktopSidebarBorder, { flex: 1 }]}>
         <SidebarResizeHandle
-          edge="left"
+          edge={resolveSidebarResizeEdge(side)}
           gesture={resizeGesture}
           pressed={resizePressed}
           testID="explorer-sidebar-resize-handle"

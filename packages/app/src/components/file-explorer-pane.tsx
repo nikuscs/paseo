@@ -38,7 +38,7 @@ import {
   RotateCw,
   Search,
 } from "lucide-react-native";
-import { MaterialFileIcon } from "@/components/material-file-icon";
+import { MaterialFileIcon, MaterialFolderIcon } from "@/components/material-file-icon";
 import {
   TreeChevron,
   TreeIndentGuides,
@@ -230,7 +230,11 @@ function EntryNameInputRow({
         </View>
         <View style={styles.entryIcon}>
           {kind === "directory" ? (
-            <ThemedFolder size={WORKSPACE_TREE_ICON_SIZE} uniProps={foregroundMutedColorMapping} />
+            <MaterialFolderIcon
+              folderName={name}
+              expanded={false}
+              size={WORKSPACE_TREE_ICON_SIZE}
+            />
           ) : (
             <MaterialFileIcon fileName={name || "untitled"} size={WORKSPACE_TREE_ICON_SIZE} />
           )}
@@ -398,9 +402,10 @@ function TreeRowItem({
           </View>
           <View style={styles.entryIcon}>
             {isDirectory ? (
-              <ThemedFolder
+              <MaterialFolderIcon
+                folderName={entry.name}
+                expanded={isExpanded}
                 size={WORKSPACE_TREE_ICON_SIZE}
-                uniProps={foregroundMutedColorMapping}
               />
             ) : (
               <MaterialFileIcon fileName={entry.name} size={WORKSPACE_TREE_ICON_SIZE} />

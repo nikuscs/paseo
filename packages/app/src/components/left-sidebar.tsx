@@ -36,6 +36,12 @@ import { SidebarHeaderRow } from "@/components/sidebar/sidebar-header-row";
 import { SidebarDisplayPreferencesMenu } from "@/components/sidebar/display-preferences/menu";
 import { SidebarHelpMenu } from "@/components/sidebar/sidebar-help-menu";
 import { SidebarResizeHandle } from "@/components/sidebar-resize-handle";
+import {
+  resolveSidebarResizeDirection,
+  resolveSidebarResizeEdge,
+  resolveSidebarSides,
+} from "@/components/sidebar-sides";
+import { useAppSettings } from "@/hooks/use-settings";
 import { Shortcut } from "@/components/ui/shortcut";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { HEADER_INNER_HEIGHT, useIsCompactFormFactor } from "@/constants/layout";
@@ -761,8 +767,12 @@ function DesktopSidebar({
   handleViewMore,
   handleViewSchedules,
 }: DesktopSidebarProps) {
-  const ownsTopLeft = useOwnsWindowChromeCorner("top-left");
   const pathname = usePathname();
+  const { settings } = useAppSettings();
+  const side = resolveSidebarSides(settings.agentListSide).agentList;
+  // The sidebar reserves titlebar space for whichever window corner it now covers.
+  const ownsChromeCorner = useOwnsWindowChromeCorner(side === "right" ? "top-right" : "top-left");
+  const resizeDirection = resolveSidebarResizeDirection(side);
   const hasActiveHostFilter = useSidebarViewStore((state) => state.hostFilters.length > 0);
   const isSessionsActive = pathname.includes("/sessions");
   const isSchedulesActive = pathname.includes("/schedules");
@@ -797,12 +807,13 @@ function DesktopSidebar({
         .activeOffsetX([-SIDEBAR_RESIZE_ACTIVATION_OFFSET, SIDEBAR_RESIZE_ACTIVATION_OFFSET])
         .failOffsetY([-SIDEBAR_RESIZE_FAIL_OFFSET, SIDEBAR_RESIZE_FAIL_OFFSET])
         .onStart((event) => {
-          startWidthRef.current = visibleSidebarWidth - event.translationX;
+          startWidthRef.current = visibleSidebarWidth - resizeDirection * event.translationX;
           resizeWidth.value = visibleSidebarWidth;
         })
         .onUpdate((event) => {
-          // Dragging right (positive translationX) increases width
-          const newWidth = startWidthRef.current + event.translationX;
+          // Dragging away from the sidebar's own window edge increases width, so a sidebar
+          // parked on the right reads the drag backwards.
+          const newWidth = startWidthRef.current + resizeDirection * event.translationX;
           resizeWidth.value = resolveDesktopSidebarWidth({
             requestedWidth: newWidth,
             viewportWidth,
@@ -816,12 +827,18 @@ function DesktopSidebar({
         }),
     [
       hideResizeGrip,
+      resizeDirection,
       resizeWidth,
       setSidebarWidth,
       showResizeGrip,
       viewportWidth,
       visibleSidebarWidth,
     ],
+  );
+
+  const chromeRowStyle = useMemo(
+    () => [styles.desktopChromeRow, side === "right" ? styles.desktopChromeRowTrailing : null],
+    [side],
   );
 
   const resizeAnimatedStyle = useAnimatedStyle(() => ({
@@ -841,8 +858,8 @@ function DesktopSidebar({
     [insetsTop],
   );
   const sidebarHeaderGroupStyle = useMemo(
-    () => [styles.sidebarHeaderGroup, ownsTopLeft && styles.sidebarHeaderGroupBelowChrome],
-    [ownsTopLeft],
+    () => [styles.sidebarHeaderGroup, ownsChromeCorner && styles.sidebarHeaderGroupBelowChrome],
+    [ownsChromeCorner],
   );
   return (
     <Animated.View
@@ -853,8 +870,8 @@ function DesktopSidebar({
     >
       <View style={desktopSidebarBorderStyle}>
         <View style={styles.sidebarDragArea}>
-          {ownsTopLeft ? (
-            <View style={styles.desktopChromeRow}>
+          {ownsChromeCorner ? (
+            <View style={chromeRowStyle}>
               <TitlebarDragRegion />
             </View>
           ) : (
@@ -918,7 +935,7 @@ function DesktopSidebar({
         />
 
         <SidebarResizeHandle
-          edge="right"
+          edge={resolveSidebarResizeEdge(side)}
           gesture={resizeGesture}
           pressed={resizePressed}
           testID="left-sidebar-resize-handle"
@@ -1074,6 +1091,10 @@ const styles = StyleSheet.create((theme) => ({
   },
   sidebarDragArea: {
     position: "relative",
+  },
+  desktopChromeRowTrailing: {
+    // Window controls sit on the far side now, so the badge swaps ends with them.
+    justifyContent: "flex-start",
   },
   desktopChromeRow: {
     position: "relative",

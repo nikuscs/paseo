@@ -1964,6 +1964,16 @@ export const ru: TranslationResources = {
       detailLevel: {
         title: "Уровень детализации",
       },
+      layout: {
+        title: "Макет",
+        sidebarSide: {
+          title: "Боковая панель рабочих пространств",
+          description:
+            "С какой стороны находятся рабочие пространства и агенты. Файловый проводник займёт другую.",
+          left: "Слева",
+          right: "Справа",
+        },
+      },
       chatOutline: {
         title: "Структура чата",
         description: "Показывать структуру для перехода между запросами",

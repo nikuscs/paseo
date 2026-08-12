@@ -89,9 +89,26 @@ export function identityForeground(name: IdentityColorName, colorScheme: "light"
   return colorScheme === "light" ? IDENTITY_FOREGROUND_LIGHT[name] : IDENTITY_FOREGROUND_DARK[name];
 }
 
-/** The same hue at 10% alpha, for fills that sit behind text of the full-strength color. */
-export function identityTint(name: IdentityColorName): string {
-  return `${IDENTITY_COLORS[name]}1a`;
+/**
+ * The same hue as a translucent fill, at three strengths.
+ *
+ * Alpha rather than three more tables because these fills sit on the sidebar in every theme, and
+ * a hex picked against one background goes muddy on the next. Staying on the same hue across the
+ * strengths is the point: a project row that turned grey on hover would drop its identity exactly
+ * while being pointed at.
+ *
+ * `soft` sits behind text of the full-strength colour. `medium` is a fill that carries the row on
+ * its own; `strong` is that fill's hover and pressed step.
+ */
+const IDENTITY_TINT_ALPHA = { soft: "1a", medium: "38", strong: "52" } as const;
+
+export type IdentityTintStrength = keyof typeof IDENTITY_TINT_ALPHA;
+
+export function identityTint(
+  name: IdentityColorName,
+  strength: IdentityTintStrength = "soft",
+): string {
+  return `${IDENTITY_COLORS[name]}${IDENTITY_TINT_ALPHA[strength]}`;
 }
 
 function hashIdentityKey(key: string): number {

@@ -27,6 +27,8 @@ export type WorkspaceTitleSource = "title" | "branch";
 /** What a sidebar workspace row shows in the space to the right of its title. */
 export type SidebarWorkspaceTrailing = "diff" | "timestamp" | "none";
 export type ToolCallDetailLevel = "overview" | "detailed";
+/** Side of the window the workspace sidebar sits on; the file explorer takes the other. */
+export type AgentListSide = "left" | "right";
 
 const VALID_THEMES = new Set<string>([...Object.keys(THEME_TO_UNISTYLES), "auto"]);
 const VALID_SERVICE_URL_BEHAVIORS = new Set<ServiceUrlBehavior>(["ask", "in-app", "external"]);
@@ -37,6 +39,7 @@ const VALID_SIDEBAR_WORKSPACE_TRAILINGS = new Set<SidebarWorkspaceTrailing>([
   "none",
 ]);
 const VALID_TOOL_CALL_DETAIL_LEVELS = new Set<ToolCallDetailLevel>(["overview", "detailed"]);
+const VALID_AGENT_LIST_SIDES = new Set<AgentListSide>(["left", "right"]);
 export const DEFAULT_TERMINAL_SCROLLBACK_LINES = 10_000;
 export const MIN_TERMINAL_SCROLLBACK_LINES = 0;
 export const MAX_TERMINAL_SCROLLBACK_LINES = 1_000_000;
@@ -75,6 +78,7 @@ export interface AppSettings {
   toolCallDetailLevel: ToolCallDetailLevel;
   chatOutlineEnabled: boolean;
   vimKeybindings: boolean;
+  agentListSide: AgentListSide;
 }
 
 export interface Settings extends AppSettings {
@@ -128,6 +132,7 @@ export const DEFAULT_CLIENT_SETTINGS: AppSettings = {
   toolCallDetailLevel: "detailed",
   chatOutlineEnabled: true,
   vimKeybindings: false,
+  agentListSide: "left",
 };
 
 export const DEFAULT_APP_SETTINGS: Settings = {
@@ -349,6 +354,12 @@ function pickEnumAppSettings(stored: StoredAppSettings): Partial<AppSettings> {
     VALID_SIDEBAR_WORKSPACE_TRAILINGS.has(stored.sidebarWorkspaceTrailing)
   ) {
     result.sidebarWorkspaceTrailing = stored.sidebarWorkspaceTrailing;
+  }
+  if (
+    typeof stored.agentListSide === "string" &&
+    VALID_AGENT_LIST_SIDES.has(stored.agentListSide)
+  ) {
+    result.agentListSide = stored.agentListSide;
   }
   return result;
 }

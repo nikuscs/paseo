@@ -57,6 +57,21 @@ describe("desktop sidebar layout", () => {
     });
   });
 
+  it("hands the traffic lights to the content when the sidebar moves right", () => {
+    expect(
+      resolveDesktopAppChromeLayout({
+        desktopSidebarRendered: true,
+        hasTopLeftWindowControls: true,
+        sidebarControlsEnabled: true,
+        agentListSide: "right",
+      }),
+    ).toEqual({
+      sidebarCorners: "none",
+      contentCorners: "both",
+      sidebarToggleOwner: "window",
+    });
+  });
+
   it("hides the window-owned sidebar toggle when app chrome is suppressed", () => {
     expect(
       resolveDesktopAppChromeLayout({

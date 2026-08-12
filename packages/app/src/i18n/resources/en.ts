@@ -1938,6 +1938,15 @@ export const en = {
       detailLevel: {
         title: "Detail level",
       },
+      layout: {
+        title: "Layout",
+        sidebarSide: {
+          title: "Workspace sidebar",
+          description: "Which side holds workspaces and agents. The file explorer takes the other.",
+          left: "Left",
+          right: "Right",
+        },
+      },
       chatOutline: {
         title: "Chat outline",
         description: "Show an outline for jumping between prompts",

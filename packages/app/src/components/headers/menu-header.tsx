@@ -2,7 +2,7 @@ import { useCallback, useMemo, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { View, type StyleProp, type ViewStyle } from "react-native";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
-import { PanelLeft } from "lucide-react-native";
+import { PanelLeft, PanelRight } from "lucide-react-native";
 import { ScreenHeader } from "./screen-header";
 import { ScreenTitle } from "./screen-title";
 import { HeaderToggleButton, headerIconSlotStyle } from "./header-toggle-button";
@@ -10,6 +10,14 @@ import { selectIsAgentListOpen, usePanelStore } from "@/stores/panel-store";
 import { useIsCompactFormFactor } from "@/constants/layout";
 import { getShortcutOs } from "@/utils/shortcut-platform";
 import { useHasWindowChromeObstruction, useOwnsWindowChromeCorner } from "@/utils/desktop-window";
+import { resolveSidebarSides, type SidebarSide } from "@/components/sidebar-sides";
+import { useAppSettings } from "@/hooks/use-settings";
+
+/** The side the workspace sidebar — and therefore its toggle — currently lives on. */
+export function useAgentListSide(): SidebarSide {
+  const { settings } = useAppSettings();
+  return resolveSidebarSides(settings.agentListSide).agentList;
+}
 
 interface MenuHeaderProps {
   title?: string;
@@ -47,6 +55,7 @@ function SidebarMenuToggleButton({
   isMobile,
   extraMutedIdleIcon = false,
   resolvedStyle,
+  side,
   tooltipSide = "right",
   testID = "menu-button",
   nativeID = "menu-button",
@@ -54,6 +63,7 @@ function SidebarMenuToggleButton({
   isMobile: boolean;
   extraMutedIdleIcon?: boolean;
   resolvedStyle: StyleProp<ViewStyle>;
+  side: SidebarSide;
 }) {
   const { theme } = useUnistyles();
   const { t } = useTranslation();
@@ -91,8 +101,12 @@ function SidebarMenuToggleButton({
         if (hovered || pressed) {
           color = theme.colors.foreground;
         }
-        return isMobile ? (
-          <MobileMenuIcon color={color} />
+        if (isMobile) {
+          return <MobileMenuIcon color={color} />;
+        }
+        // The glyph points at the panel it opens, so it has to follow the panel.
+        return side === "right" ? (
+          <PanelRight size={theme.iconSize.md} color={color} />
         ) : (
           <PanelLeft size={theme.iconSize.md} color={color} />
         );
@@ -103,19 +117,24 @@ function SidebarMenuToggleButton({
 
 export function SidebarMenuToggle({ style, ...props }: SidebarMenuToggleProps = {}) {
   const isMobile = useIsCompactFormFactor();
-  const ownsTopLeft = useOwnsWindowChromeCorner("top-left");
-  const hasTopLeftWindowControls = useHasWindowChromeObstruction("top-left");
-  const resolvedStyle = useMemo(() => [styles.leadingToggle, style], [style]);
+  const side = useAgentListSide();
+  const corner = side === "right" ? "top-right" : "top-left";
+  const ownsCorner = useOwnsWindowChromeCorner(corner);
+  const hasWindowControls = useHasWindowChromeObstruction(corner);
+  const resolvedStyle = useMemo(
+    () => [side === "right" ? styles.trailingToggle : styles.leadingToggle, style],
+    [side, style],
+  );
   const placeholderStyle = useMemo(
     () => [headerIconSlotStyle.slot, resolvedStyle],
     [resolvedStyle],
   );
 
-  if (!isMobile && !ownsTopLeft) {
+  if (!isMobile && !ownsCorner) {
     return null;
   }
 
-  if (!isMobile && hasTopLeftWindowControls) {
+  if (!isMobile && hasWindowControls) {
     return (
       <View pointerEvents="none" style={placeholderStyle}>
         <View style={styles.desktopMenuIconSpace} />
@@ -123,19 +142,58 @@ export function SidebarMenuToggle({ style, ...props }: SidebarMenuToggleProps = 
     );
   }
 
-  return <SidebarMenuToggleButton {...props} isMobile={isMobile} resolvedStyle={resolvedStyle} />;
+  return (
+    <SidebarMenuToggleButton
+      {...props}
+      isMobile={isMobile}
+      side={side}
+      resolvedStyle={resolvedStyle}
+    />
+  );
 }
 
 export function WindowSidebarMenuToggle({ style, ...props }: SidebarMenuToggleProps = {}) {
-  const resolvedStyle = useMemo(() => [styles.leadingToggle, style], [style]);
+  const side = useAgentListSide();
+  const resolvedStyle = useMemo(
+    () => [side === "right" ? styles.trailingToggle : styles.leadingToggle, style],
+    [side, style],
+  );
   return (
     <SidebarMenuToggleButton
       {...props}
       isMobile={false}
+      side={side}
       extraMutedIdleIcon
       resolvedStyle={resolvedStyle}
     />
   );
+}
+
+/**
+ * Renders its children only in the header cluster on the workspace sidebar's side. Both clusters
+ * mount one; exactly one draws. Keeps callers free of layout branching.
+ */
+export function AgentListSideSlot({
+  placement,
+  children,
+}: {
+  placement: SidebarSide;
+  children: ReactNode;
+}): ReactNode {
+  const side = useAgentListSide();
+  return side === placement ? children : null;
+}
+
+/**
+ * The sidebar toggle, rendered only in the header slot that matches the side its sidebar is on.
+ * Both slots can mount one; at most one of them draws anything. Callers stay branch-free.
+ */
+export function AgentListToggleSlot({ placement }: { placement: SidebarSide }) {
+  const side = useAgentListSide();
+  if (side !== placement) {
+    return null;
+  }
+  return <SidebarMenuToggle tooltipSide={placement === "right" ? "left" : "right"} />;
 }
 
 export function MenuHeader({ title, rightContent, borderless }: MenuHeaderProps) {
@@ -143,11 +201,16 @@ export function MenuHeader({ title, rightContent, borderless }: MenuHeaderProps)
     <ScreenHeader
       left={
         <>
-          <SidebarMenuToggle />
+          <AgentListToggleSlot placement="left" />
           {title && <ScreenTitle>{title}</ScreenTitle>}
         </>
       }
-      right={rightContent}
+      right={
+        <>
+          {rightContent}
+          <AgentListToggleSlot placement="right" />
+        </>
+      }
       leftStyle={styles.left}
       borderless={borderless}
     />
@@ -157,6 +220,12 @@ export function MenuHeader({ title, rightContent, borderless }: MenuHeaderProps)
 const styles = StyleSheet.create((theme) => ({
   leadingToggle: {
     marginLeft: {
+      xs: 0,
+      md: -theme.spacing[2],
+    },
+  },
+  trailingToggle: {
+    marginRight: {
       xs: 0,
       md: -theme.spacing[2],
     },

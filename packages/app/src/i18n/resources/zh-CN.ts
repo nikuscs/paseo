@@ -1907,6 +1907,15 @@ export const zhCN: TranslationResources = {
       detailLevel: {
         title: "详细程度",
       },
+      layout: {
+        title: "布局",
+        sidebarSide: {
+          title: "工作区侧边栏",
+          description: "工作区和智能体所在的一侧。文件浏览器位于另一侧。",
+          left: "左侧",
+          right: "右侧",
+        },
+      },
       chatOutline: {
         title: "聊天大纲",
         description: "显示用于在提示词之间跳转的大纲",

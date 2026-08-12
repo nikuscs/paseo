@@ -33,6 +33,7 @@ import {
 } from "@/stores/navigation-active-workspace-store";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import type { Theme } from "@/styles/theme";
+import { deriveIdentityColorName, identityTint } from "@/styles/identity-colors";
 import { getSidebarRowBackdrop } from "@/components/sidebar/sidebar-row-backdrop";
 import { type GestureType } from "react-native-gesture-handler";
 import * as Clipboard from "expo-clipboard";
@@ -385,20 +386,17 @@ function projectKebabStyle({
 function getProjectWorkspaceRowStyle({
   isDragging,
   isPressed,
-  selected,
   isHovered,
   compact,
 }: {
   isDragging: boolean;
   isPressed: boolean;
-  selected: boolean;
   isHovered: boolean;
   compact: boolean;
 }) {
   return [
     styles.workspaceRow,
     compact && styles.workspaceRowCompact,
-    selected && styles.sidebarRowSelected,
     isHovered && styles.workspaceRowHovered,
     isDragging && styles.workspaceRowDragging,
     isPressed && styles.workspaceRowPressed,
@@ -945,16 +943,36 @@ function ProjectHeaderRow({
     interaction.handlePressOut();
   }, [interaction]);
 
+  // A project row is tinted with its own identity colour — the same hue as its icon — so a folder
+  // reads as a folder at a glance and the worktrees nested under it stay transparent. The tint is
+  // alpha over whatever the sidebar is painting, so it holds up in every theme, and hover and
+  // press deepen the same hue rather than replacing it with grey.
+  const identityName = deriveIdentityColorName(project.viewKey);
+  const projectRowTint = useMemo(
+    () => ({ backgroundColor: identityTint(identityName, "medium") }),
+    [identityName],
+  );
+  const projectRowTintStrong = useMemo(
+    () => ({ backgroundColor: identityTint(identityName, "strong") }),
+    [identityName],
+  );
+
   const projectRowStyle = useCallback(
     ({ pressed }: PressableStateCallbackType) => [
       styles.projectRow,
       compactSidebarRows && styles.projectRowCompact,
+      projectRowTint,
       isDragging && styles.projectRowDragging,
-      selected && styles.sidebarRowSelected,
-      isHovered && styles.projectRowHovered,
-      pressed && styles.projectRowPressed,
+      (selected || isHovered || pressed) && projectRowTintStrong,
     ],
-    [compactSidebarRows, isDragging, selected, isHovered],
+    [
+      compactSidebarRows,
+      isDragging,
+      selected,
+      isHovered,
+      projectRowTint,
+      projectRowTintStrong,
+    ],
   );
 
   const rowChildren = (
@@ -1135,7 +1153,6 @@ function WorkspaceRowInner({
         const workspaceRowStyle = getProjectWorkspaceRowStyle({
           isDragging,
           isPressed,
-          selected,
           isHovered,
           compact: compactSidebarRows,
         });
@@ -2701,9 +2718,6 @@ const styles = StyleSheet.create((theme) => ({
     transform: [{ scale: 1.02 }],
     zIndex: 3,
     ...theme.shadow.md,
-  },
-  sidebarRowSelected: {
-    backgroundColor: theme.colors.surfaceSidebarHover,
   },
   workspaceRowContainer: {
     position: "relative",

@@ -33,6 +33,7 @@ import { QuittingOverlay } from "@/components/quitting-overlay";
 import { KeyboardShortcutsDialog } from "@/components/keyboard-shortcuts-dialog";
 import { AppDiagnosticHost } from "@/components/app-diagnostic-host";
 import { LeftSidebar } from "@/components/left-sidebar";
+import { resolveSidebarSides } from "@/components/sidebar-sides";
 import { WindowSidebarMenuToggle } from "@/components/headers/menu-header";
 import { SidebarModelProvider } from "@/components/sidebar/sidebar-model";
 import { useRecentlyDoneRecency } from "@/components/sidebar/use-recently-done-recency";
@@ -432,6 +433,7 @@ const WINDOW_SIDEBAR_TOGGLE_HORIZONTAL_PADDING = 12;
 function AppContainer({ children, chromeEnabled: chromeEnabledOverride }: AppContainerProps) {
   const daemons = useHosts();
   const { settings, updateSettings } = useAppSettings();
+  const agentListSide = resolveSidebarSides(settings.agentListSide).agentList;
   const toggleMobileAgentList = usePanelStore((state) => state.toggleMobileAgentList);
   const toggleDesktopAgentList = usePanelStore((state) => state.toggleDesktopAgentList);
   const openDesktopAgentList = usePanelStore((state) => state.openDesktopAgentList);
@@ -516,6 +518,7 @@ function AppContainer({ children, chromeEnabled: chromeEnabledOverride }: AppCon
     desktopSidebarRendered: desktopSidebarVisible,
     hasTopLeftWindowControls,
     sidebarControlsEnabled: chromeEnabled && !isWorkspaceFocusModeEnabled,
+    agentListSide,
   });
   const sidebarChrome = (
     <SidebarChrome
@@ -524,23 +527,34 @@ function AppContainer({ children, chromeEnabled: chromeEnabledOverride }: AppCon
       keyboardShortcutsEnabled={keyboardShortcutsEnabled}
     />
   );
+  const desktopSidebarRegion = !isCompactLayout ? (
+    <WindowChromeRegion corners={appChromeLayout.sidebarCorners}>
+      {sidebarChrome}
+    </WindowChromeRegion>
+  ) : null;
+  const contentRegion = isCompactLayout ? (
+    <CompactExplorerSidebarHost enabled={chromeEnabled}>
+      <WindowChromeRegion corners={chromeEnabled ? "both" : appChromeLayout.contentCorners}>
+        <View style={flexStyle}>{children}</View>
+      </WindowChromeRegion>
+    </CompactExplorerSidebarHost>
+  ) : (
+    <WindowChromeRegion corners={appChromeLayout.contentCorners}>
+      <View style={flexStyle}>{children}</View>
+    </WindowChromeRegion>
+  );
   const workspaceChrome = (
     <View style={rowStyle}>
-      {!isCompactLayout ? (
-        <WindowChromeRegion corners={appChromeLayout.sidebarCorners}>
-          {sidebarChrome}
-        </WindowChromeRegion>
-      ) : null}
-      {isCompactLayout ? (
-        <CompactExplorerSidebarHost enabled={chromeEnabled}>
-          <WindowChromeRegion corners={chromeEnabled ? "both" : appChromeLayout.contentCorners}>
-            <View style={flexStyle}>{children}</View>
-          </WindowChromeRegion>
-        </CompactExplorerSidebarHost>
+      {agentListSide === "right" ? (
+        <>
+          {contentRegion}
+          {desktopSidebarRegion}
+        </>
       ) : (
-        <WindowChromeRegion corners={appChromeLayout.contentCorners}>
-          <View style={flexStyle}>{children}</View>
-        </WindowChromeRegion>
+        <>
+          {desktopSidebarRegion}
+          {contentRegion}
+        </>
       )}
     </View>
   );
@@ -549,12 +563,16 @@ function AppContainer({ children, chromeEnabled: chromeEnabledOverride }: AppCon
     <View style={layoutStyles.surfaceFill}>
       {workspaceChrome}
       {!isCompactLayout && appChromeLayout.sidebarToggleOwner === "window" ? (
-        <WindowChromeRegion corners="top-left">
+        <WindowChromeRegion corners={agentListSide === "right" ? "top-right" : "top-left"}>
           <WindowChromeSafeArea
             placement="inline"
             horizontalPadding={WINDOW_SIDEBAR_TOGGLE_HORIZONTAL_PADDING}
             pointerEvents="box-none"
-            style={layoutStyles.windowSidebarToggle}
+            style={
+              agentListSide === "right"
+                ? layoutStyles.windowSidebarToggleTrailing
+                : layoutStyles.windowSidebarToggle
+            }
           >
             <WindowSidebarMenuToggle />
           </WindowChromeSafeArea>
@@ -1030,6 +1048,17 @@ const layoutStyles = StyleSheet.create((theme) => ({
     position: "absolute",
     top: 1,
     left: 0,
+    zIndex: 20,
+    height: HEADER_INNER_HEIGHT,
+    flexDirection: "row",
+    alignItems: "center",
+    borderBottomWidth: theme.borderWidth[1],
+    borderBottomColor: "transparent",
+  },
+  windowSidebarToggleTrailing: {
+    position: "absolute",
+    top: 1,
+    right: 0,
     zIndex: 20,
     height: HEADER_INNER_HEIGHT,
     flexDirection: "row",
