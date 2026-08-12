@@ -84,6 +84,7 @@ const SORT_OPTIONS: { value: SortOption }[] = [
 ];
 
 const ThemedLoadingSpinner = withUnistyles(LoadingSpinner);
+const ThemedFolder = withUnistyles(Folder);
 const foregroundMutedColorMapping = (theme: Theme) => ({
   color: theme.colors.foregroundMuted,
 });
@@ -209,9 +210,12 @@ function EntryNameInputRow({
   return (
     <View style={[workspaceTreeRowStyles.row, { paddingLeft: treeRowPaddingLeft(depth) }]}>
       <View style={styles.entryInfo}>
+        <View style={styles.entryChevron}>
+          {kind === "directory" ? <TreeChevron expanded={false} /> : null}
+        </View>
         <View style={styles.entryIcon}>
           {kind === "directory" ? (
-            <TreeChevron expanded={false} />
+            <ThemedFolder size={WORKSPACE_TREE_ICON_SIZE} uniProps={foregroundMutedColorMapping} />
           ) : (
             <MaterialFileIcon fileName={name || "untitled"} size={WORKSPACE_TREE_ICON_SIZE} />
           )}
@@ -379,9 +383,15 @@ function TreeRowItem({
         testID={testID}
       >
         <View ref={dragSourceRef} style={styles.entryInfo}>
+          <View style={styles.entryChevron}>
+            {isDirectory ? <DirectoryChevronIcon loading={loading} expanded={isExpanded} /> : null}
+          </View>
           <View style={styles.entryIcon}>
             {isDirectory ? (
-              <DirectoryChevronIcon loading={loading} expanded={isExpanded} />
+              <ThemedFolder
+                size={WORKSPACE_TREE_ICON_SIZE}
+                uniProps={foregroundMutedColorMapping}
+              />
             ) : (
               <MaterialFileIcon fileName={entry.name} size={WORKSPACE_TREE_ICON_SIZE} />
             )}
@@ -1783,6 +1793,13 @@ const styles = StyleSheet.create((theme) => ({
     alignItems: "center",
     gap: WORKSPACE_TREE_ICON_LABEL_GAP,
     minWidth: 0,
+  },
+  entryChevron: {
+    width: WORKSPACE_TREE_ICON_SIZE,
+    height: WORKSPACE_TREE_ICON_SIZE,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
   },
   entryIcon: {
     width: WORKSPACE_TREE_ICON_SIZE,
