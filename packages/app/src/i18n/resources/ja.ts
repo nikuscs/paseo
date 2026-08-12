@@ -1943,6 +1943,16 @@ export const ja: TranslationResources = {
       detailLevel: {
         title: "詳細レベル",
       },
+      layout: {
+        title: "レイアウト",
+        sidebarSide: {
+          title: "ワークスペースサイドバー",
+          description:
+            "ワークスペースとエージェントを表示する側。ファイルエクスプローラーは反対側になります。",
+          left: "左",
+          right: "右",
+        },
+      },
       chatOutline: {
         title: "チャットのアウトライン",
         description: "プロンプト間を移動するためのアウトラインを表示します",

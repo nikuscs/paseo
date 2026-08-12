@@ -4,16 +4,25 @@ The file explorer uses colored SVG icons from [`material-icon-theme`](https://gi
 
 ## How it works
 
-Two files:
+Three files:
 
 - `packages/app/src/components/material-file-icons.ts` — the vendor table. `SVG_ICONS` maps icon
   names to SVG strings copied verbatim from the theme, `EXTENSION_TO_ICON` maps extensions to icon
   names, and `getRawFileIconSvg(fileName)` looks one up with a generic fallback. Keep it a faithful
   copy so re-copying an icon stays a mechanical edit.
-- `packages/app/src/components/file-icon-svg.ts` — `getFileIconSvg(fileName)`, the only thing
-  anyone should import. It desaturates the vendor colours and caches the result.
+- `packages/app/src/components/material-folder-icons.ts` — the same table for directories.
+  `getRawFolderIconSvg(folderName, expanded)` matches the name case-insensitively and falls back to
+  the plain folder. Every icon ships with its `-open` twin because the tree swaps them on expand.
+- `packages/app/src/components/file-icon-svg.ts` — `getFileIconSvg(fileName)` and
+  `getFolderIconSvg(folderName, expanded)`, the only things anyone should import. They desaturate
+  the vendor colours and cache the result.
 
-Render with `<MaterialFileIcon fileName size />` rather than reaching for `SvgXml` yourself.
+Render with `<MaterialFileIcon fileName size />` or `<MaterialFolderIcon folderName expanded size />`
+rather than reaching for `SvgXml` yourself.
+
+The folder table covers ~77 directory names, not the theme's 4518. The rest fall back to the plain
+folder, which is the right answer for a folder nobody has a mental image of; add a name when you
+have actually wanted it in a tree.
 
 ## Why the colours are toned down
 
@@ -60,6 +69,21 @@ cat node_modules/material-icon-theme/icons/ICON_NAME.svg
      ```
 
 4. Run `npm run typecheck` to verify.
+
+## Adding a new folder icon
+
+Same shape, in `material-folder-icons.ts`. Look the name up in the theme's own map, then copy both
+SVGs — a folder without its `-open` twin renders the closed icon while expanded, which reads as a
+bug:
+
+```bash
+node -e "
+const m = require('./node_modules/material-icon-theme/dist/material-icons.json');
+console.log(m.folderNames['YOUR_FOLDER']);
+"
+cat node_modules/material-icon-theme/icons/ICON_NAME.svg
+cat node_modules/material-icon-theme/icons/ICON_NAME-open.svg
+```
 
 ## Currently included icons
 

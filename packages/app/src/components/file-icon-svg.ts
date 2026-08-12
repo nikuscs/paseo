@@ -1,4 +1,5 @@
 import { getRawFileIconSvg } from "@/components/material-file-icons";
+import { getRawFolderIconSvg } from "@/components/material-folder-icons";
 import { desaturateHexColor } from "@/utils/color";
 
 /**
@@ -29,7 +30,18 @@ function toneSvg(svg: string): string {
  * table costs at most one pass per icon for the life of the process.
  */
 export function getFileIconSvg(fileName: string): string {
-  const raw = getRawFileIconSvg(fileName);
+  return tonedSvg(getRawFileIconSvg(fileName));
+}
+
+/**
+ * The SVG for a folder, ready to render. `expanded` picks the open twin, which is the only cue
+ * that survives when the row is scrolled away from its chevron.
+ */
+export function getFolderIconSvg(folderName: string, expanded: boolean): string {
+  return tonedSvg(getRawFolderIconSvg(folderName, expanded));
+}
+
+function tonedSvg(raw: string): string {
   const cached = toned.get(raw);
   if (cached !== undefined) return cached;
 

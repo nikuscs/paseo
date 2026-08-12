@@ -1939,6 +1939,16 @@ export const ko: TranslationResources = {
       detailLevel: {
         title: "세부 수준",
       },
+      layout: {
+        title: "레이아웃",
+        sidebarSide: {
+          title: "워크스페이스 사이드바",
+          description:
+            "워크스페이스와 에이전트를 표시할 쪽입니다. 파일 탐색기는 반대쪽에 표시됩니다.",
+          left: "왼쪽",
+          right: "오른쪽",
+        },
+      },
       chatOutline: {
         title: "채팅 개요",
         description: "프롬프트 사이를 이동하기 위한 개요 표시",

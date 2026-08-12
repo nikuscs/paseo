@@ -1928,6 +1928,16 @@ export const ar: TranslationResources = {
       detailLevel: {
         title: "مستوى التفاصيل",
       },
+      layout: {
+        title: "التخطيط",
+        sidebarSide: {
+          title: "الشريط الجانبي لمساحات العمل",
+          description:
+            "الجانب الذي تظهر فيه مساحات العمل والوكلاء. يأخذ مستكشف الملفات الجانب الآخر.",
+          left: "يسار",
+          right: "يمين",
+        },
+      },
       chatOutline: {
         title: "مخطط المحادثة",
         description: "عرض مخطط للتنقل بين المطالبات",

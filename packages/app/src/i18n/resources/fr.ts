@@ -1978,6 +1978,16 @@ export const fr: TranslationResources = {
       detailLevel: {
         title: "Niveau de détail",
       },
+      layout: {
+        title: "Disposition",
+        sidebarSide: {
+          title: "Barre latérale des espaces de travail",
+          description:
+            "De quel côté se trouvent les espaces de travail et les agents. L'explorateur de fichiers prend l'autre.",
+          left: "Gauche",
+          right: "Droite",
+        },
+      },
       chatOutline: {
         title: "Plan de la discussion",
         description: "Afficher un plan pour passer d’une requête à l’autre",

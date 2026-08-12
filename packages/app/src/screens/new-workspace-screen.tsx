@@ -25,8 +25,11 @@ import { ComboboxTrigger } from "@/components/ui/combobox-trigger";
 import { Shortcut } from "@/components/ui/shortcut";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { TitlebarDragRegion } from "@/components/desktop/titlebar-drag-region";
-import { SidebarMenuToggle } from "@/components/headers/menu-header";
+import { AgentListToggleSlot } from "@/components/headers/menu-header";
 import { ScreenHeader } from "@/components/headers/screen-header";
+
+const NEW_WORKSPACE_HEADER_LEADING_TOGGLE = <AgentListToggleSlot placement="left" />;
+const NEW_WORKSPACE_HEADER_TRAILING_TOGGLE = <AgentListToggleSlot placement="right" />;
 import { HEADER_INNER_HEIGHT, MAX_CONTENT_WIDTH, useIsCompactFormFactor } from "@/constants/layout";
 import { useToast } from "@/contexts/toast-context";
 import { useAgentInputDraft } from "@/composer/draft/input-draft";
@@ -2278,11 +2281,13 @@ export function NewWorkspaceScreen({
     },
   });
 
-  const screenHeaderLeft = useMemo(() => <SidebarMenuToggle />, []);
-
   return (
     <FileDropZone style={styles.container}>
-      <ScreenHeader left={screenHeaderLeft} borderless />
+      <ScreenHeader
+        left={NEW_WORKSPACE_HEADER_LEADING_TOGGLE}
+        right={NEW_WORKSPACE_HEADER_TRAILING_TOGGLE}
+        borderless
+      />
       <View style={contentStyle}>
         <TitlebarDragRegion />
         <ReanimatedAnimated.View style={centeredStyle}>

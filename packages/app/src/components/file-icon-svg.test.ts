@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { getFileIconSvg } from "./file-icon-svg";
+import { getFileIconSvg, getFolderIconSvg } from "./file-icon-svg";
 import { getRawFileIconSvg } from "./material-file-icons";
+import { getRawFolderIconSvg } from "./material-folder-icons";
 
 function hexColors(svg: string): string[] {
   return svg.match(/#[0-9a-fA-F]{6}/g) ?? [];
@@ -42,5 +43,30 @@ describe("getFileIconSvg", () => {
 
   it("falls back to the default icon for unknown extensions", () => {
     expect(getFileIconSvg("thing.qqq")).toBe(getFileIconSvg("thing"));
+  });
+});
+
+describe("getFolderIconSvg", () => {
+  it("tones folder colours the same way it tones file colours", () => {
+    const raw = getRawFolderIconSvg("src", false);
+    const toned = getFolderIconSvg("src", false);
+    expect(toned).not.toBe(raw);
+    expect(toned.replace(/#[0-9a-fA-F]{6}/g, "#")).toBe(raw.replace(/#[0-9a-fA-F]{6}/g, "#"));
+    for (const [index, hex] of hexColors(toned).entries()) {
+      expect(channelSpread(hex)).toBeLessThan(channelSpread(hexColors(raw)[index]));
+    }
+  });
+
+  it("swaps to the open twin when expanded", () => {
+    expect(getFolderIconSvg("src", true)).not.toBe(getFolderIconSvg("src", false));
+  });
+
+  it("matches folder names case-insensitively", () => {
+    expect(getFolderIconSvg("Components", false)).toBe(getFolderIconSvg("components", false));
+  });
+
+  it("falls back to the plain folder for unknown names", () => {
+    expect(getFolderIconSvg("zzz-unknown", false)).toBe(getFolderIconSvg("folder", false));
+    expect(getFolderIconSvg("zzz-unknown", true)).toBe(getFolderIconSvg("folder", true));
   });
 });

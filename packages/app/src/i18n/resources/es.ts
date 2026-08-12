@@ -1975,6 +1975,16 @@ export const es: TranslationResources = {
       detailLevel: {
         title: "Nivel de detalle",
       },
+      layout: {
+        title: "Diseño",
+        sidebarSide: {
+          title: "Barra lateral de espacios de trabajo",
+          description:
+            "En qué lado están los espacios de trabajo y los agentes. El explorador de archivos ocupa el otro.",
+          left: "Izquierda",
+          right: "Derecha",
+        },
+      },
       chatOutline: {
         title: "Esquema del chat",
         description: "Muestra un esquema para saltar entre instrucciones",

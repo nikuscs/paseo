@@ -1959,6 +1959,16 @@ export const ptBR: TranslationResources = {
       detailLevel: {
         title: "Nível de detalhe",
       },
+      layout: {
+        title: "Layout",
+        sidebarSide: {
+          title: "Barra lateral de workspaces",
+          description:
+            "De que lado ficam os workspaces e agentes. O explorador de ficheiros fica do outro.",
+          left: "Esquerda",
+          right: "Direita",
+        },
+      },
       chatOutline: {
         title: "Estrutura do chat",
         description: "Mostrar uma estrutura para navegar entre prompts",

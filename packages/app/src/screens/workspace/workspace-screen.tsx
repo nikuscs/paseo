@@ -13,7 +13,15 @@ import {
 } from "react";
 import { useStoreWithEqualityFn } from "zustand/traditional";
 import { useIsFocused } from "@react-navigation/native";
-import { BackHandler, Keyboard, Pressable, Text, View } from "react-native";
+import {
+  BackHandler,
+  Keyboard,
+  Pressable,
+  Text,
+  View,
+  type StyleProp,
+  type ViewStyle,
+} from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter, type Href } from "expo-router";
 import * as Clipboard from "expo-clipboard";
@@ -25,6 +33,7 @@ import {
   Ellipsis,
   Globe,
   Import as ImportIcon,
+  PanelLeft,
   PanelRight,
   Settings,
   SquarePen,
@@ -34,7 +43,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import type { Theme } from "@/styles/theme";
 import invariant from "tiny-invariant";
-import { SidebarMenuToggle } from "@/components/headers/menu-header";
+import { AgentListSideSlot, AgentListToggleSlot } from "@/components/headers/menu-header";
 import { HeaderToggleButton } from "@/components/headers/header-toggle-button";
 import { ScreenHeader } from "@/components/headers/screen-header";
 import { ScreenTitle } from "@/components/headers/screen-title";
@@ -57,6 +66,8 @@ import {
   FloatingPanelPortalHostNameProvider,
 } from "@/components/ui/floating-panel-portal";
 import { ExplorerSidebar } from "@/components/explorer-sidebar";
+import { resolveSidebarSides, type SidebarSide } from "@/components/sidebar-sides";
+import { useAppSettings } from "@/hooks/use-settings";
 import { SplitContainer } from "@/components/split-container";
 import { RetainedPanel } from "@/components/retained-panel";
 import { WindowChromeRegion } from "@/utils/desktop-window";
@@ -251,6 +262,7 @@ const ThemedGlobe = withUnistyles(Globe);
 const ThemedImport = withUnistyles(ImportIcon);
 const ThemedSettings = withUnistyles(Settings);
 const ThemedPanelRight = withUnistyles(PanelRight);
+const ThemedPanelLeft = withUnistyles(PanelLeft);
 const ThemedSourceControlPanelIcon = withUnistyles(SourceControlPanelIcon);
 
 interface DynamicProviderIconProps {
@@ -280,7 +292,8 @@ const MENU_NEW_BROWSER_ICON = <ThemedGlobe size={16} uniProps={mutedColorMapping
 const MENU_IMPORT_ICON = <ThemedImport size={16} uniProps={mutedColorMapping} />;
 const MENU_COPY_ICON = <ThemedCopy size={16} uniProps={mutedColorMapping} />;
 const MENU_SETTINGS_ICON = <ThemedSettings size={16} uniProps={mutedColorMapping} />;
-const GATED_WORKSPACE_HEADER_LEFT = <SidebarMenuToggle />;
+const GATED_WORKSPACE_HEADER_LEFT = <AgentListToggleSlot placement="left" />;
+const GATED_WORKSPACE_HEADER_RIGHT = <AgentListToggleSlot placement="right" />;
 
 interface WorkspaceScreenProps {
   serverId: string;
@@ -1524,7 +1537,7 @@ function shouldInspectWorkspaceRecovery(
 function WorkspaceScreenGateFrame({ children }: { children: ReactNode }) {
   return (
     <>
-      <ScreenHeader left={GATED_WORKSPACE_HEADER_LEFT} />
+      <ScreenHeader left={GATED_WORKSPACE_HEADER_LEFT} right={GATED_WORKSPACE_HEADER_RIGHT} />
       <View style={styles.centerContent}>{children}</View>
     </>
   );
@@ -1604,6 +1617,111 @@ interface WorkspaceChromeRowProps extends Omit<
   workspaceRoot: string | null;
 }
 
+interface WorkspaceExplorerToggleSlotProps {
+  /** Header cluster asking to draw it. Only the one matching the explorer's side does. */
+  placement: SidebarSide;
+  explorerSide: SidebarSide;
+  isGitCheckout: boolean;
+  workspaceDirectory: string | null;
+  workspaceDescriptor: WorkspaceDescriptor | null;
+  onToggle: () => void;
+  toggleLabel: string;
+  accessibilityState: { expanded: boolean };
+  buttonStyle: (state: { hovered?: boolean; pressed?: boolean }) => StyleProp<ViewStyle>;
+}
+
+/**
+ * The desktop explorer toggle, drawn in whichever header cluster sits on the explorer's side.
+ * In a Git checkout the toggle is the diff-stat badge, so this moves the `+n -n` counter too.
+ */
+function WorkspaceExplorerToggleSlot({
+  placement,
+  explorerSide,
+  isGitCheckout,
+  workspaceDirectory,
+  workspaceDescriptor,
+  onToggle,
+  toggleLabel,
+  accessibilityState,
+  buttonStyle,
+}: WorkspaceExplorerToggleSlotProps) {
+  const { t } = useTranslation();
+  const tooltipSide = placement === "left" ? "right" : "left";
+
+  if (placement !== explorerSide) {
+    return null;
+  }
+
+  if (isGitCheckout) {
+    if (!workspaceDirectory) {
+      return null;
+    }
+    const diffStat = workspaceDescriptor?.diffStat;
+    return (
+      <Tooltip delayDuration={0} enabledOnDesktop enabledOnMobile={false}>
+        <TooltipTrigger asChild>
+          <Pressable
+            testID="workspace-explorer-toggle"
+            onPress={onToggle}
+            accessibilityRole="button"
+            accessibilityLabel={toggleLabel}
+            accessibilityState={accessibilityState}
+            style={buttonStyle}
+          >
+            {({ hovered, pressed }) => {
+              const colorMapping =
+                hovered || pressed ? foregroundColorMapping : extraMutedColorMapping;
+              return (
+                <>
+                  <ThemedSourceControlPanelIcon size={16} uniProps={colorMapping} />
+                  {diffStat ? (
+                    <DiffStat additions={diffStat.additions} deletions={diffStat.deletions} />
+                  ) : null}
+                </>
+              );
+            }}
+          </Pressable>
+        </TooltipTrigger>
+        <TooltipContent
+          testID="workspace-explorer-toggle-tooltip"
+          side={tooltipSide}
+          align="center"
+          offset={8}
+        >
+          <View style={styles.explorerTooltipRow}>
+            <Text style={styles.explorerTooltipText}>{t("workspace.tabs.explorer.toggle")}</Text>
+            <Shortcut keys={EXPLORER_TOGGLE_KEYS} style={styles.explorerTooltipShortcut} />
+          </View>
+        </TooltipContent>
+      </Tooltip>
+    );
+  }
+
+  return (
+    <HeaderToggleButton
+      testID="workspace-explorer-toggle"
+      onPress={onToggle}
+      tooltipLabel={t("workspace.tabs.explorer.toggle")}
+      tooltipKeys={EXPLORER_TOGGLE_KEYS}
+      tooltipSide={tooltipSide}
+      style={[styles.compactHeaderActionButton, styles.explorerPanelButton]}
+      accessible
+      accessibilityRole="button"
+      accessibilityLabel={toggleLabel}
+      accessibilityState={accessibilityState}
+    >
+      {({ hovered, pressed }) => {
+        const colorMapping = hovered || pressed ? foregroundColorMapping : extraMutedColorMapping;
+        return placement === "left" ? (
+          <ThemedPanelLeft size={16} uniProps={colorMapping} />
+        ) : (
+          <ThemedPanelRight size={16} uniProps={colorMapping} />
+        );
+      }}
+    </HeaderToggleButton>
+  );
+}
+
 function WorkspaceChromeRow({
   children,
   explorerOpen,
@@ -1613,22 +1731,38 @@ function WorkspaceChromeRow({
   ...explorerProps
 }: WorkspaceChromeRowProps) {
   const explorerRendered = showExplorerSidebar && explorerOpen && workspaceRoot !== null;
+  const { settings } = useAppSettings();
+  const explorerSide = resolveSidebarSides(settings.agentListSide).explorer;
+  const explorerOnLeft = explorerSide === "left";
+
+  // With the explorer beside it, the content only owns the corner the explorer does not.
+  let contentCorners: "top-left" | "top-right" | "both" = "both";
+  if (explorerRendered) {
+    contentCorners = explorerOnLeft ? "top-right" : "top-left";
+  }
+
+  const contentRegion = (
+    <WindowChromeRegion corners={contentCorners}>
+      <FloatingPanelPortalHostNameProvider hostName={portalHostName}>
+        {children}
+      </FloatingPanelPortalHostNameProvider>
+    </WindowChromeRegion>
+  );
+  const explorerRegion =
+    showExplorerSidebar && workspaceRoot ? (
+      <WindowChromeRegion corners={explorerOnLeft ? "top-left" : "top-right"}>
+        <ExplorerSidebar {...explorerProps} workspaceRoot={workspaceRoot} />
+      </WindowChromeRegion>
+    ) : null;
 
   return (
     <View style={styles.threePaneRow}>
-      <WindowChromeRegion corners={explorerRendered ? "top-left" : "both"}>
-        <FloatingPanelPortalHostNameProvider hostName={portalHostName}>
-          {children}
-        </FloatingPanelPortalHostNameProvider>
-      </WindowChromeRegion>
+      {explorerOnLeft ? explorerRegion : null}
+      {contentRegion}
 
       <FloatingPanelPortalHost name={portalHostName} />
 
-      {showExplorerSidebar && workspaceRoot ? (
-        <WindowChromeRegion corners="top-right">
-          <ExplorerSidebar {...explorerProps} workspaceRoot={workspaceRoot} />
-        </WindowChromeRegion>
-      ) : null}
+      {explorerOnLeft ? null : explorerRegion}
     </View>
   );
 }
@@ -3486,6 +3620,39 @@ function WorkspaceScreenContent({
     workspaceKey: persistenceKey,
   });
 
+  const { settings: appSettings } = useAppSettings();
+  const explorerSide = resolveSidebarSides(appSettings.agentListSide).explorer;
+  const explorerToggleSlotProps = useMemo(
+    () => ({
+      explorerSide,
+      isGitCheckout,
+      workspaceDirectory,
+      workspaceDescriptor,
+      onToggle: handleToggleExplorer,
+      toggleLabel: explorerToggleLabel,
+      accessibilityState: explorerToggleAccessibilityState,
+      buttonStyle: explorerToggleStyle,
+    }),
+    [
+      explorerSide,
+      explorerToggleAccessibilityState,
+      explorerToggleLabel,
+      explorerToggleStyle,
+      handleToggleExplorer,
+      isGitCheckout,
+      workspaceDescriptor,
+      workspaceDirectory,
+    ],
+  );
+  const explorerToggleSlotLeft = useMemo(
+    () => <WorkspaceExplorerToggleSlot placement="left" {...explorerToggleSlotProps} />,
+    [explorerToggleSlotProps],
+  );
+  const explorerToggleSlotRight = useMemo(
+    () => <WorkspaceExplorerToggleSlot placement="right" {...explorerToggleSlotProps} />,
+    [explorerToggleSlotProps],
+  );
+
   const headerRight = useMemo(
     () => (
       <View style={styles.headerRight}>
@@ -3510,77 +3677,13 @@ function WorkspaceScreenContent({
           />
         ) : null}
         {!isMobile && workspaceDirectory ? (
-          <>
-            <WorkspaceActions
-              serverId={normalizedServerId}
-              cwd={workspaceDirectory}
-              hideLabels={showCompactButtonLabels}
-            />
-            {isGitCheckout ? (
-              <Tooltip delayDuration={0} enabledOnDesktop enabledOnMobile={false}>
-                <TooltipTrigger asChild>
-                  <Pressable
-                    testID="workspace-explorer-toggle"
-                    onPress={handleToggleExplorer}
-                    accessibilityRole="button"
-                    accessibilityLabel={explorerToggleLabel}
-                    accessibilityState={explorerToggleAccessibilityState}
-                    style={explorerToggleStyle}
-                  >
-                    {({ hovered, pressed }) => {
-                      const active = hovered || pressed;
-                      const colorMapping = active ? foregroundColorMapping : extraMutedColorMapping;
-                      return (
-                        <>
-                          <ThemedSourceControlPanelIcon size={16} uniProps={colorMapping} />
-                          {workspaceDescriptor?.diffStat ? (
-                            <DiffStat
-                              additions={workspaceDescriptor.diffStat.additions}
-                              deletions={workspaceDescriptor.diffStat.deletions}
-                            />
-                          ) : null}
-                        </>
-                      );
-                    }}
-                  </Pressable>
-                </TooltipTrigger>
-                <TooltipContent
-                  testID="workspace-explorer-toggle-tooltip"
-                  side="left"
-                  align="center"
-                  offset={8}
-                >
-                  <View style={styles.explorerTooltipRow}>
-                    <Text style={styles.explorerTooltipText}>
-                      {t("workspace.tabs.explorer.toggle")}
-                    </Text>
-                    <Shortcut keys={EXPLORER_TOGGLE_KEYS} style={styles.explorerTooltipShortcut} />
-                  </View>
-                </TooltipContent>
-              </Tooltip>
-            ) : null}
-          </>
+          <WorkspaceActions
+            serverId={normalizedServerId}
+            cwd={workspaceDirectory}
+            hideLabels={showCompactButtonLabels}
+          />
         ) : null}
-        {!isMobile && !isGitCheckout ? (
-          <HeaderToggleButton
-            testID="workspace-explorer-toggle"
-            onPress={handleToggleExplorer}
-            tooltipLabel={t("workspace.tabs.explorer.toggle")}
-            tooltipKeys={EXPLORER_TOGGLE_KEYS}
-            tooltipSide="left"
-            style={[styles.compactHeaderActionButton, styles.explorerPanelButton]}
-            accessible
-            accessibilityRole="button"
-            accessibilityLabel={explorerToggleLabel}
-            accessibilityState={explorerToggleAccessibilityState}
-          >
-            {({ hovered, pressed }) => {
-              const colorMapping =
-                hovered || pressed ? foregroundColorMapping : extraMutedColorMapping;
-              return <ThemedPanelRight size={16} uniProps={colorMapping} />;
-            }}
-          </HeaderToggleButton>
-        ) : null}
+        {isMobile ? null : explorerToggleSlotRight}
         {isMobile ? (
           <HeaderToggleButton
             testID="workspace-explorer-toggle"
@@ -3597,21 +3700,23 @@ function WorkspaceScreenContent({
             {({ hovered }) => {
               const colorMapping =
                 isExplorerOpen || hovered ? foregroundColorMapping : mutedColorMapping;
-              return isGitCheckout ? (
-                <ThemedSourceControlPanelIcon
-                  size={20}
-                  uniProps={colorMapping}
-                  {...sourceControlPanelStrokeWidth15}
-                />
-              ) : (
-                <ThemedPanelRight size={20} uniProps={colorMapping} />
-              );
+              if (isGitCheckout) {
+                return (
+                  <ThemedSourceControlPanelIcon
+                    size={20}
+                    uniProps={colorMapping}
+                    {...sourceControlPanelStrokeWidth15}
+                  />
+                );
+              }
+              return <ThemedPanelRight size={20} uniProps={colorMapping} />;
             }}
           </HeaderToggleButton>
         ) : null}
       </View>
     ),
     [
+      explorerToggleSlotRight,
       isMobile,
       workspaceDescriptor,
       normalizedServerId,
@@ -3628,7 +3733,6 @@ function WorkspaceScreenContent({
       isExplorerOpen,
       explorerToggleLabel,
       explorerToggleAccessibilityState,
-      explorerToggleStyle,
       t,
     ],
   );
@@ -3740,6 +3844,43 @@ function WorkspaceScreenContent({
   ]);
   const desktopContent = desktopSplitContent ?? content;
 
+  const workspaceTitleBar = (
+    <WorkspaceHeaderTitleBar
+      isLoading={isWorkspaceHeaderLoading}
+      title={workspaceHeaderTitle}
+      subtitle={workspaceHeaderSubtitle}
+      isSubtitleDistinct={isWorkspaceHeaderSubtitleDistinct}
+      currentBranchName={currentBranchName}
+      normalizedServerId={normalizedServerId}
+      normalizedWorkspaceId={normalizedWorkspaceId}
+      workspaceScripts={workspaceScripts}
+      liveTerminalIds={liveTerminalIds}
+      showWorkspaceSetup={showWorkspaceSetup}
+      showCreateBrowserTab={showCreateBrowserTab}
+      isMobile={isMobile}
+      createTerminalDisabled={createTerminalDisabled}
+      importAgentDisabled={!canOpenImportSheet}
+      copyPathDisabled={!workspaceDirectory}
+      menuNewAgentIcon={menuNewAgentIcon}
+      menuNewTerminalIcon={menuNewTerminalIcon}
+      menuNewBrowserIcon={MENU_NEW_BROWSER_ICON}
+      menuImportIcon={MENU_IMPORT_ICON}
+      menuCopyIcon={menuCopyIcon}
+      menuSettingsIcon={menuSettingsIcon}
+      onCreateDraftTab={handleCreateDraftTab}
+      onCreateTerminal={handleCreateTerminal}
+      onCreateTerminalWithProfile={handleCreateTerminalWithProfile}
+      onCreateBrowser={handleCreateBrowserTab}
+      onOpenImportSheet={openImportSheet}
+      onCopyWorkspacePath={handleCopyWorkspacePath}
+      onCopyBranchName={handleCopyBranchName}
+      onOpenSetupTab={handleOpenSetupTab}
+      onScriptTerminalStarted={handleScriptTerminalStarted}
+      onViewScriptTerminal={handleViewScriptTerminal}
+      onOpenUrlInBrowserTab={handleOpenUrlInBrowserTab}
+    />
+  );
+
   const workspaceCenterColumn = (
     <View style={styles.centerColumn}>
       {showScreenHeader && (
@@ -3747,44 +3888,18 @@ function WorkspaceScreenContent({
           onRowLayout={onHeaderLayout}
           left={
             <>
-              <SidebarMenuToggle />
-              <WorkspaceHeaderTitleBar
-                isLoading={isWorkspaceHeaderLoading}
-                title={workspaceHeaderTitle}
-                subtitle={workspaceHeaderSubtitle}
-                isSubtitleDistinct={isWorkspaceHeaderSubtitleDistinct}
-                currentBranchName={currentBranchName}
-                normalizedServerId={normalizedServerId}
-                normalizedWorkspaceId={normalizedWorkspaceId}
-                workspaceScripts={workspaceScripts}
-                liveTerminalIds={liveTerminalIds}
-                showWorkspaceSetup={showWorkspaceSetup}
-                showCreateBrowserTab={showCreateBrowserTab}
-                isMobile={isMobile}
-                createTerminalDisabled={createTerminalDisabled}
-                importAgentDisabled={!canOpenImportSheet}
-                copyPathDisabled={!workspaceDirectory}
-                menuNewAgentIcon={menuNewAgentIcon}
-                menuNewTerminalIcon={menuNewTerminalIcon}
-                menuNewBrowserIcon={MENU_NEW_BROWSER_ICON}
-                menuImportIcon={MENU_IMPORT_ICON}
-                menuCopyIcon={menuCopyIcon}
-                menuSettingsIcon={menuSettingsIcon}
-                onCreateDraftTab={handleCreateDraftTab}
-                onCreateTerminal={handleCreateTerminal}
-                onCreateTerminalWithProfile={handleCreateTerminalWithProfile}
-                onCreateBrowser={handleCreateBrowserTab}
-                onOpenImportSheet={openImportSheet}
-                onCopyWorkspacePath={handleCopyWorkspacePath}
-                onCopyBranchName={handleCopyBranchName}
-                onOpenSetupTab={handleOpenSetupTab}
-                onScriptTerminalStarted={handleScriptTerminalStarted}
-                onViewScriptTerminal={handleViewScriptTerminal}
-                onOpenUrlInBrowserTab={handleOpenUrlInBrowserTab}
-              />
+              <AgentListToggleSlot placement="left" />
+              {explorerToggleSlotLeft}
+              <AgentListSideSlot placement="left">{workspaceTitleBar}</AgentListSideSlot>
             </>
           }
-          right={headerRight}
+          right={
+            <>
+              {headerRight}
+              <AgentListSideSlot placement="right">{workspaceTitleBar}</AgentListSideSlot>
+              <AgentListToggleSlot placement="right" />
+            </>
+          }
         />
       )}
 

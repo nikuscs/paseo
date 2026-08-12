@@ -17,6 +17,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Switch } from "@/components/ui/switch";
+import { SegmentedControl } from "@/components/ui/segmented-control";
+import { useIsCompactFormFactor } from "@/constants/layout";
 import { SettingsSection } from "@/screens/settings/settings-section";
 import {
   MAX_CODE_FONT_SIZE,
@@ -230,6 +232,40 @@ function AutoExpandReasoningRow({ value, onChange }: AutoExpandReasoningRowProps
         </Text>
       </View>
       <Switch value={value} onValueChange={onChange} />
+    </View>
+  );
+}
+
+interface SidebarSideRowProps {
+  value: AppSettings["agentListSide"];
+  onChange: (value: AppSettings["agentListSide"]) => void;
+}
+
+function SidebarSideRow({ value, onChange }: SidebarSideRowProps) {
+  const { t } = useTranslation();
+  const options = useMemo(
+    () => [
+      { value: "left" as const, label: t("settings.appearance.layout.sidebarSide.left") },
+      { value: "right" as const, label: t("settings.appearance.layout.sidebarSide.right") },
+    ],
+    [t],
+  );
+  return (
+    <View style={settingsStyles.row}>
+      <View style={settingsStyles.rowContent}>
+        <Text style={settingsStyles.rowTitle}>
+          {t("settings.appearance.layout.sidebarSide.title")}
+        </Text>
+        <Text style={settingsStyles.rowHint}>
+          {t("settings.appearance.layout.sidebarSide.description")}
+        </Text>
+      </View>
+      <SegmentedControl
+        options={options}
+        value={value}
+        onValueChange={onChange}
+        testID="sidebar-side-control"
+      />
     </View>
   );
 }
@@ -561,6 +597,15 @@ export function AppearanceSection() {
     [updateSettings],
   );
 
+  const isCompactLayout = useIsCompactFormFactor();
+
+  const handleAgentListSideChange = useCallback(
+    (agentListSide: AppSettings["agentListSide"]) => {
+      void updateSettings({ agentListSide });
+    },
+    [updateSettings],
+  );
+
   const commitUiFontFamily = useCallback(
     (value: string) => {
       const sanitized = sanitizeFontFamily(value);
@@ -649,6 +694,13 @@ export function AppearanceSection() {
           />
         </View>
       </SettingsSection>
+      {isCompactLayout ? null : (
+        <SettingsSection title={t("settings.appearance.layout.title")}>
+          <View style={settingsStyles.card}>
+            <SidebarSideRow value={settings.agentListSide} onChange={handleAgentListSideChange} />
+          </View>
+        </SettingsSection>
+      )}
       <SettingsSection title={t("settings.appearance.detailLevel.title")}>
         <View style={settingsStyles.card}>
           <AutoExpandReasoningRow
