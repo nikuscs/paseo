@@ -487,7 +487,7 @@ const styles = StyleSheet.create((theme) => ({
   },
   workspaceRow: {
     minHeight: density.rowHeight,
-    marginBottom: theme.spacing[1],
+    marginBottom: theme.spacing[0.5],
     paddingVertical: theme.spacing[2],
     paddingLeft: theme.spacing[2],
     paddingRight: theme.spacing[3],
