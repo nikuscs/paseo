@@ -1,7 +1,7 @@
 import { ActivityIndicator, View, type ViewStyle } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
-import { ChevronDown, ChevronRight, CircleAlert } from "lucide-react-native";
+import { CircleAlert } from "lucide-react-native";
 import { ProjectIconView } from "@/components/project-icon-view";
 import { getStatusBucketLabel } from "@/hooks/sidebar-status-view-model";
 import { ICON_SIZE, type Theme } from "@/styles/theme";
@@ -60,8 +60,6 @@ export function ProjectLeadingVisual({
   statusBucket,
   projectViewKey,
   backdrop,
-  chevron = null,
-  showChevron = false,
   isArchiving = false,
 }: {
   displayName: string;
@@ -71,18 +69,8 @@ export function ProjectLeadingVisual({
   projectViewKey: string;
   /** The row's current background, so the status badge can knock out of it. */
   backdrop: SidebarSurfaceBackdrop;
-  chevron?: "expand" | "collapse" | null;
-  showChevron?: boolean;
   isArchiving?: boolean;
 }) {
-  if (showChevron && chevron !== null) {
-    return (
-      <View style={styles.projectLeadingVisualSlot}>
-        <ProjectInlineChevron chevron={chevron} />
-      </View>
-    );
-  }
-
   if (isArchiving) {
     return (
       <View style={styles.projectLeadingVisualSlot} testID="project-status-indicator-archiving">
@@ -238,16 +226,6 @@ function ProjectIcon({
       textStyle={styles.projectIconFallbackText}
     />
   );
-}
-
-function ProjectInlineChevron({ chevron }: { chevron: "expand" | "collapse" | null }) {
-  if (chevron === null) {
-    return null;
-  }
-  if (chevron === "collapse") {
-    return <ChevronDown size={14} color="#9ca3af" />;
-  }
-  return <ChevronRight size={14} color="#9ca3af" />;
 }
 
 function getStatusDotColorStyle(bucket: ProjectStatusBadgeDotBucket): ViewStyle {
