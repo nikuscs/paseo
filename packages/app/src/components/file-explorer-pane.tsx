@@ -43,6 +43,7 @@ import {
   TreeChevron,
   treeRowPaddingLeft,
   workspaceTreeRowStyles,
+  WORKSPACE_TREE_FOLDER_ICON_SIZE,
   WORKSPACE_TREE_ICON_LABEL_GAP,
   WORKSPACE_TREE_ICON_SIZE,
   WORKSPACE_TREE_LOADING_ICON_SIZE,
@@ -214,7 +215,10 @@ function EntryNameInputRow({
         </View>
         <View style={styles.entryIcon}>
           {kind === "directory" ? (
-            <ThemedFolder size={WORKSPACE_TREE_ICON_SIZE} uniProps={foregroundMutedColorMapping} />
+            <ThemedFolder
+              size={WORKSPACE_TREE_FOLDER_ICON_SIZE}
+              uniProps={foregroundMutedColorMapping}
+            />
           ) : (
             <MaterialFileIcon fileName={name || "untitled"} size={WORKSPACE_TREE_ICON_SIZE} />
           )}
@@ -374,7 +378,7 @@ function TreeRowItem({
           <View style={styles.entryIcon}>
             {isDirectory ? (
               <ThemedFolder
-                size={WORKSPACE_TREE_ICON_SIZE}
+                size={WORKSPACE_TREE_FOLDER_ICON_SIZE}
                 uniProps={foregroundMutedColorMapping}
               />
             ) : (
