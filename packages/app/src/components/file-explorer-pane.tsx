@@ -28,7 +28,7 @@ import type { DaemonClient } from "@getpaseo/client/internal/daemon-client";
 import { useIsCompactFormFactor } from "@/constants/layout";
 import { isWeb } from "@/constants/platform";
 import * as Clipboard from "expo-clipboard";
-import { ChevronDown, Eye, EyeOff, FilePlus, FolderPlus, RotateCw, Search } from "lucide-react-native";
+import { ChevronDown, Eye, EyeOff, FilePlus, Folder, FolderPlus, RotateCw, Search } from "lucide-react-native";
 import { MaterialFileIcon } from "@/components/material-file-icon";
 import {
   TreeChevron,
@@ -1277,7 +1277,7 @@ function FileExplorerPaneContent(props: FileExplorerPaneContentProps) {
   } else {
     paneContent = (
       <>
-        {treeRows.length === 0 ? (
+        {listRows.length === 0 ? (
           <View style={styles.centerState}>
             <Text style={styles.emptyText}>{emptyLabel}</Text>
           </View>
@@ -1285,9 +1285,9 @@ function FileExplorerPaneContent(props: FileExplorerPaneContentProps) {
           <FlatList
             ref={treeListRef}
             style={styles.treeList}
-            data={treeRows}
+            data={listRows}
             renderItem={renderTreeRow}
-            keyExtractor={treeRowKeyExtractor}
+            keyExtractor={listRowKeyExtractor}
             testID="file-explorer-tree-scroll"
             contentContainerStyle={styles.entriesContent}
             onLayout={scrollbar.onLayout}
@@ -1300,7 +1300,7 @@ function FileExplorerPaneContent(props: FileExplorerPaneContentProps) {
             windowSize={12}
           />
         )}
-        {treeRows.length > 0 ? scrollbar.overlay : null}
+        {listRows.length > 0 ? scrollbar.overlay : null}
       </>
     );
   }
