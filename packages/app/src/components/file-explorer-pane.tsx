@@ -526,17 +526,10 @@ export function FileExplorerPane({
         entry,
         workspaceStateKey,
         expandedPaths,
-        directories,
         requestDirectoryListing,
         setExpandedPathsForWorkspace,
       }),
-    [
-      workspaceStateKey,
-      expandedPaths,
-      directories,
-      requestDirectoryListing,
-      setExpandedPathsForWorkspace,
-    ],
+    [workspaceStateKey, expandedPaths, requestDirectoryListing, setExpandedPathsForWorkspace],
   );
 
   // Selection is intentionally separate from opening/expansion so future keyboard actions
@@ -1403,14 +1396,12 @@ function toggleDirectory({
   entry,
   workspaceStateKey,
   expandedPaths,
-  directories,
   requestDirectoryListing,
   setExpandedPathsForWorkspace,
 }: {
   entry: ExplorerEntry;
   workspaceStateKey: string | null;
   expandedPaths: Set<string>;
-  directories: Map<string, ExplorerDirectory>;
   requestDirectoryListing: (
     path: string,
     opts?: { recordHistory?: boolean; setCurrentPath?: boolean },
@@ -1428,7 +1419,7 @@ function toggleDirectory({
       expanded: !isExpanded,
     }),
   );
-  if (!isExpanded && !directories.has(entry.path)) {
+  if (!isExpanded) {
     void requestDirectoryListing(entry.path, {
       recordHistory: false,
       setCurrentPath: false,
