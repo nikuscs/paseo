@@ -1011,7 +1011,8 @@ export function normalizeLayout(layout: unknown): WorkspaceLayout {
       ? null
       : ((focusedPaneId && findPaneById(root, focusedPaneId)?.id) ??
         collectAllPanes(root)[0]?.id ??
-        DEFAULT_PANE_ID);
+        collectAllPanesIncludingHidden(root)[0]?.id ??
+        null);
 
   const normalizedLayout = {
     root,
@@ -1073,11 +1074,19 @@ export function collectAllTabs(root: SplitNode): WorkspaceTab[] {
 }
 
 export function collectAllPanes(root: SplitNode): SplitPane[] {
+  return collectPanes(root, { includeHidden: false });
+}
+
+function collectAllPanesIncludingHidden(root: SplitNode): SplitPane[] {
+  return collectPanes(root, { includeHidden: true });
+}
+
+function collectPanes(root: SplitNode, input: { includeHidden: boolean }): SplitPane[] {
   const internalRoot = asInternalNode(root);
   if (internalRoot.kind === "pane") {
-    return internalRoot.pane.hidden === true ? [] : [internalRoot.pane];
+    return internalRoot.pane.hidden === true && !input.includeHidden ? [] : [internalRoot.pane];
   }
-  return internalRoot.group.children.flatMap((child) => collectAllPanes(child));
+  return internalRoot.group.children.flatMap((child) => collectPanes(child, input));
 }
 
 function isEphemeralTab(tab: WorkspaceTab): boolean {
@@ -1235,6 +1244,59 @@ const SIDE_PANEL_EXCLUDED_TAB_KINDS: ReadonlySet<WorkspaceTabTarget["kind"]> = n
   "setup",
 ]);
 
+const MAX_TREE_DEPTH = 5;
+
+export function ensureVisibleWorkingLayout(input: {
+  layout: WorkspaceLayout;
+  sidePanelPaneId: string | null;
+}): WorkspaceLayout {
+  if (collectAllPanes(input.layout.root).length > 0) {
+    return input.layout;
+  }
+
+  const hiddenPanes = collectAllPanesIncludingHidden(input.layout.root);
+  const hiddenWorkingPane = hiddenPanes.find((pane) => pane.id !== input.sidePanelPaneId);
+  if (hiddenWorkingPane) {
+    return (
+      setPaneHiddenInLayout({
+        layout: input.layout,
+        paneId: hiddenWorkingPane.id,
+        hidden: false,
+      }) ?? input.layout
+    );
+  }
+
+  const hiddenSidePanel = hiddenPanes[0];
+  if (!hiddenSidePanel) {
+    return createWorkspaceLayoutWithSidePanel();
+  }
+
+  const split = splitPaneEmptyInLayout({
+    layout: input.layout,
+    targetPaneId: hiddenSidePanel.id,
+    position: "left",
+    createNodeId: (prefix) =>
+      prefix === "pane" && !findPaneById(input.layout.root, DEFAULT_PANE_ID)
+        ? DEFAULT_PANE_ID
+        : defaultWorkspaceLayoutIds.createNodeId(prefix),
+    maxTreeDepth: MAX_TREE_DEPTH,
+  });
+  if (split) {
+    return {
+      ...split.layout,
+      focusedPaneId: split.paneId,
+    };
+  }
+
+  return (
+    setPaneHiddenInLayout({
+      layout: input.layout,
+      paneId: hiddenSidePanel.id,
+      hidden: false,
+    }) ?? createWorkspaceLayoutWithSidePanel()
+  );
+}
+
 function resolvePlacementPane(input: {
   layout: { root: SplitNodeInternal; focusedPaneId: string | null };
   target: WorkspaceTabTarget;
@@ -1255,7 +1317,7 @@ function resolvePlacementPane(input: {
   const focusedPane =
     (focusedCandidate?.hidden === true ? null : focusedCandidate) ??
     collectAllPanes(input.layout.root)[0] ??
-    findPaneById(createDefaultLayout().root, DEFAULT_PANE_ID);
+    collectAllPanesIncludingHidden(input.layout.root)[0];
   invariant(focusedPane, "Workspace layout must always have a pane");
   if (
     (input.placement.mode !== "ambient" && input.placement.mode !== "prefer") ||
@@ -1277,7 +1339,11 @@ function resolvePlacementPane(input: {
 function insertNewTabIntoPane(
   input: CreateTabInLayoutInput & { focus: boolean },
 ): OpenTabInLayoutResult {
-  const layout = asInternalLayout(input.layout);
+  const layoutWithVisiblePane = ensureVisibleWorkingLayout({
+    layout: input.layout,
+    sidePanelPaneId: input.sidePanelPaneId,
+  });
+  const layout = asInternalLayout(layoutWithVisiblePane);
   const targetPane = resolvePlacementPane({
     layout,
     target: input.target,
@@ -1321,7 +1387,7 @@ function insertNewTabIntoPane(
         focusTabId: input.focus ? tabId : preservedFocusTabId,
       }),
       focusedPaneId: input.focus ? targetPane.id : layout.focusedPaneId,
-      parentTabIdByTabId: input.layout.parentTabIdByTabId,
+      parentTabIdByTabId: layoutWithVisiblePane.parentTabIdByTabId,
     }),
   };
 }
