@@ -2090,7 +2090,11 @@ function WorkspaceScreenContent({
   ]);
 
   const handleOpenFileFromChat = useCallback(
-    (location: WorkspaceFileLocation, parentTabId?: string | null) => {
+    (
+      location: WorkspaceFileLocation,
+      parentTabId?: string | null,
+      placement: WorkspaceTabPlacement = FOCUSED_PANE_PLACEMENT,
+    ) => {
       const normalizedLocation = normalizeWorkspaceFileLocation(location);
       if (!normalizedLocation) {
         return;
@@ -2103,8 +2107,8 @@ function WorkspaceScreenContent({
       }
       const target = createWorkspaceFileTabTarget(normalizedLocation);
       const tabId = parentTabId
-        ? revealWorkspaceChildTab(persistenceKey, target, parentTabId, FOCUSED_PANE_PLACEMENT)
-        : openWorkspaceTabFocused(persistenceKey, target, FOCUSED_PANE_PLACEMENT);
+        ? revealWorkspaceChildTab(persistenceKey, target, parentTabId, placement)
+        : openWorkspaceTabFocused(persistenceKey, target, placement);
       if (tabId) {
         requestFileNavigation(tabId);
         navigateToTabId(tabId);
@@ -2177,7 +2181,11 @@ function WorkspaceScreenContent({
       });
       return;
     }
-    handleOpenFileFromChat(request.location, parentTabId);
+    const isSidePanelSource = Boolean(sidePanelPaneId) && paneId === sidePanelPaneId;
+    const placement: WorkspaceTabPlacement = isSidePanelSource
+      ? { mode: "prefer", paneId: DEFAULT_PANE_ID }
+      : FOCUSED_PANE_PLACEMENT;
+    handleOpenFileFromChat(request.location, parentTabId, placement);
   });
 
   const [hoveredCloseTabKey, setHoveredCloseTabKey] = useState<string | null>(null);
