@@ -22,6 +22,7 @@ import {
   DEFAULT_PANE_ID,
   AMBIENT_PLACEMENT,
   createWorkspaceLayoutWithSidePanel,
+  ensureVisibleWorkingLayout,
   FOCUSED_PANE_PLACEMENT,
   SIDE_PANEL_PANE_ID,
   findPaneById,
@@ -260,7 +261,7 @@ const WorkspaceLayoutPersistedStateSchema = z.strictObject({
   layoutByWorkspace: z.record(z.string(), WorkspaceLayoutStorageSchema),
   splitSizesByWorkspace: z.record(z.string(), z.record(z.string(), z.array(z.number()))).optional(),
   // The persisted keys keep their pre-rename spelling: the schema is strict, so a
-  // rename here would fail every existing blob and wipe the layout it describes.
+  // rename here would fail every existing blob and discard the layout it describes.
   explorerPaneIdByWorkspace: z.record(z.string(), z.string().nullable()).optional(),
   // COMPAT(pullRequestAutoAdd): PR detection stopped opening a tab in v0.5; accepted
   // and ignored so upgrading does not discard the layout. Remove after 2027-08-20.
@@ -374,7 +375,13 @@ function ensurePersistedSidePanelPane(input: {
 }): { layout: WorkspaceLayout; paneId: string } | null {
   const existingPaneId = resolveSidePanelPaneId(input.layout, input.registeredPaneId);
   if (existingPaneId) {
-    return { layout: input.layout, paneId: existingPaneId };
+    return {
+      layout: ensureVisibleWorkingLayout({
+        layout: input.layout,
+        sidePanelPaneId: existingPaneId,
+      }),
+      paneId: existingPaneId,
+    };
   }
   const targetPaneId =
     findPaneById(input.layout.root, input.layout.focusedPaneId)?.id ??
@@ -397,7 +404,14 @@ function ensurePersistedSidePanelPane(input: {
     paneId: split.paneId,
     hidden: true,
   });
-  return { layout: hiddenLayout ?? split.layout, paneId: split.paneId };
+  const explorerLayout = hiddenLayout ?? split.layout;
+  return {
+    layout: ensureVisibleWorkingLayout({
+      layout: explorerLayout,
+      sidePanelPaneId: split.paneId,
+    }),
+    paneId: split.paneId,
+  };
 }
 
 function getOpenTabPlacement(
