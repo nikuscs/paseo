@@ -32,13 +32,17 @@ function useFilesPanelDescriptor() {
 
 function FilesPanel() {
   const { t } = useTranslation();
-  const { serverId, workspaceId, target, retargetCurrentTab } = usePaneContext();
+  const { serverId, workspaceId, target, openFileInWorkspace } = usePaneContext();
   const workspaceRoot = useWorkspaceDirectory(serverId, workspaceId);
   const { addFile, canAddToChat } = useAddFileToChat({ serverId, workspaceId });
   invariant(target.kind === "files", "FilesPanel requires files target");
   const onOpenFile = useCallback(
-    (path: string) => retargetCurrentTab({ kind: "file", path }),
-    [retargetCurrentTab],
+    (path: string) =>
+      openFileInWorkspace({
+        location: { path },
+        disposition: "main",
+      }),
+    [openFileInWorkspace],
   );
   if (!workspaceRoot) {
     return (
