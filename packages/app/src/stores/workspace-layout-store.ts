@@ -22,6 +22,7 @@ import {
   DEFAULT_PANE_ID,
   AMBIENT_PLACEMENT,
   createWorkspaceLayoutWithExplorerSidebar,
+  ensureVisibleWorkingLayout,
   FOCUSED_PANE_PLACEMENT,
   EXPLORER_SIDEBAR_PANE_ID,
   findPaneById,
@@ -277,7 +278,7 @@ const WorkspaceLayoutPersistedStateSchema = z.strictObject({
   // COMPAT(explorerSidebarNaming): accepted from builds that called this dock the Side panel.
   sidePanelRatioByWorkspace: z.record(z.string(), z.number()).optional(),
   // The persisted keys keep their pre-rename spelling: the schema is strict, so a
-  // rename here would fail every existing blob and wipe the layout it describes.
+  // rename here would fail every existing blob and discard the layout it describes.
   explorerPaneIdByWorkspace: z.record(z.string(), z.string().nullable()).optional(),
   sidePaneIdByWorkspace: z.record(z.string(), z.string().nullable()).optional(),
   // COMPAT(pullRequestAutoAdd): PR detection stopped opening a tab in v0.5; accepted
@@ -437,11 +438,14 @@ function ensurePersistedExplorerSidebarPane(input: {
       existingPaneId,
     );
     return {
-      layout: keepWorkspaceFocusOutOfExplorerSidebar(
-        migratedLayout,
-        existingPaneId,
-        input.layout.focusedPaneId,
-      ),
+      layout: ensureVisibleWorkingLayout({
+        layout: keepWorkspaceFocusOutOfExplorerSidebar(
+          migratedLayout,
+          existingPaneId,
+          input.layout.focusedPaneId,
+        ),
+        explorerSidebarPaneId: existingPaneId,
+      }),
       paneId: existingPaneId,
     };
   }

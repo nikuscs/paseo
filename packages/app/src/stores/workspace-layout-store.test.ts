@@ -902,6 +902,35 @@ describe("workspace-layout-store actions", () => {
     expect(state.explorerSidebarPaneIdByWorkspace.renamed).toBe("explorer");
   });
 
+  it("opens a tab when persistence left only a hidden explorer and stale main focus", () => {
+    const workspaceKey = createWorkspaceKey();
+    const explorerSidebarPaneId = "pane_13874538-41de-44fc-abd2-3399aff43f96";
+    workspaceLayoutStore.setState({
+      layoutByWorkspace: {
+        [workspaceKey]: {
+          root: createPane({ id: explorerSidebarPaneId, tabIds: [], hidden: true }),
+          focusedPaneId: "main",
+        },
+      },
+      explorerSidebarPaneIdByWorkspace: {
+        [workspaceKey]: explorerSidebarPaneId,
+      },
+    });
+
+    const tabId = workspaceLayoutStore.getState().openTab({
+      workspaceKey,
+      target: { kind: "draft", draftId: "draft-1" },
+      intent: "reveal",
+    });
+
+    const layout = workspaceLayoutStore.getState().layoutByWorkspace[workspaceKey];
+    expect(tabId).toBe("draft-1");
+    expect(findPaneContainingTab(layout.root, "draft-1")?.id).toBe("main");
+    expect(findPaneById(layout.root, "main")?.hidden).toBeUndefined();
+    expect(findPaneById(layout.root, explorerSidebarPaneId)?.hidden).toBe(true);
+    expect(layout.focusedPaneId).toBe("main");
+  });
+
   it("persists first-class pane targets, visibility, and focus", async () => {
     await AsyncStorage.removeItem("workspace-layout-state");
     const workspaceKey = createWorkspaceKey();
