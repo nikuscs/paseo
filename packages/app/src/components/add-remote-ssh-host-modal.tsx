@@ -175,7 +175,6 @@ export function AddRemoteSshHostModal({
           testID="remote-ssh-host-input"
           initialValue={draft.host}
           resetKey={`remote-ssh-host-${resetKey}`}
-          value={draft.host}
           onChangeText={handleHostChange}
           placeholder="user@example.com"
           style={styles.input}
@@ -192,7 +191,6 @@ export function AddRemoteSshHostModal({
           testID="remote-ssh-port-input"
           initialValue={draft.port}
           resetKey={`remote-ssh-port-${resetKey}`}
-          value={draft.port}
           onChangeText={handlePortChange}
           placeholder={t("pairing.remoteSsh.fields.optional")}
           style={styles.input}
@@ -210,7 +208,6 @@ export function AddRemoteSshHostModal({
           testID="remote-ssh-identity-input"
           initialValue={draft.identityFile}
           resetKey={`remote-ssh-identity-${resetKey}`}
-          value={draft.identityFile}
           onChangeText={handleIdentityFileChange}
           placeholder={t("pairing.remoteSsh.fields.optional")}
           style={styles.input}
