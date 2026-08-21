@@ -10,6 +10,7 @@ import { useTranslation } from "react-i18next";
 import { View, type PressableStateCallbackType } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import {
+  ArrowDownAZ,
   Captions,
   Circle,
   CircleCheck,
@@ -21,6 +22,7 @@ import {
   GitBranch,
   GitPullRequest,
   Globe,
+  GripVertical,
   Plus,
   Rows3,
   Server,
@@ -51,6 +53,7 @@ import {
   hasActiveSidebarLabelFilter,
   SIDEBAR_UNLABELLED_LABEL_KEY,
   type SidebarGroupMode,
+  type SidebarSortMode,
 } from "@/stores/sidebar-view-store";
 import { workspaceLabelKey, type WorkspaceLabelColor } from "@getpaseo/protocol/workspace-labels";
 import {
@@ -97,6 +100,12 @@ const GROUPING_ICONS: Record<SidebarGroupMode, OptionIcon> = {
   status: withUnistyles(CircleDashed),
 };
 
+const SORTING_ICONS: Record<SidebarSortMode, OptionIcon> = {
+  manual: withUnistyles(GripVertical),
+  name: withUnistyles(ArrowDownAZ),
+  activity: withUnistyles(Clock),
+};
+
 const TITLE_SOURCE_ICONS: Record<WorkspaceTitleSource, OptionIcon> = {
   title: withUnistyles(Type),
   branch: withUnistyles(GitBranch),
@@ -127,6 +136,7 @@ const TRAILING_ICONS: Record<SidebarTrailingChoice, OptionIcon> = {
 };
 
 const GROUPING_MODES: readonly SidebarGroupMode[] = ["project", "status"];
+const SORTING_MODES: readonly SidebarSortMode[] = ["manual", "name", "activity"];
 const TITLE_SOURCES: readonly WorkspaceTitleSource[] = ["title", "branch"];
 const TRAILING_CHOICES: readonly SidebarTrailingChoice[] = ["diff", "timestamp"];
 const LAYOUT_TOGGLES = ["compactRows", "newWorkspaceRow"] as const;
@@ -135,6 +145,12 @@ type LayoutToggle = (typeof LAYOUT_TOGGLES)[number];
 const GROUPING_LABEL_KEYS: Record<SidebarGroupMode, string> = {
   project: "sidebar.display.grouping.project",
   status: "sidebar.display.grouping.status",
+};
+
+const SORTING_LABEL_KEYS: Record<SidebarSortMode, string> = {
+  manual: "sidebar.display.sorting.manual",
+  name: "sidebar.display.sorting.name",
+  activity: "sidebar.display.sorting.activity",
 };
 
 const TITLE_SOURCE_LABEL_KEYS: Record<WorkspaceTitleSource, string> = {
@@ -220,6 +236,20 @@ export function SidebarDisplayPreferencesMenu(): ReactElement {
             selectedValue={preferences.grouping}
             onSelect={preferences.setGrouping}
             testIDPrefix="sidebar-grouping"
+          />
+        ),
+      },
+      {
+        id: "sorting",
+        title: t("sidebar.display.sorting.label"),
+        content: (
+          <OptionList
+            values={SORTING_MODES}
+            icons={SORTING_ICONS}
+            labelKeys={SORTING_LABEL_KEYS}
+            selectedValue={preferences.sorting}
+            onSelect={preferences.setSorting}
+            testIDPrefix="sidebar-sort"
           />
         ),
       },
@@ -331,6 +361,15 @@ export function SidebarDisplayPreferencesMenu(): ReactElement {
           >
             {t("sidebar.display.grouping.label")}
           </MenuSubTrigger>
+          {preferences.grouping === "project" ? (
+            <MenuSubTrigger
+              id="sorting"
+              value={t(SORTING_LABEL_KEYS[preferences.sorting])}
+              testID="sidebar-display-sorting"
+            >
+              {t("sidebar.display.sorting.label")}
+            </MenuSubTrigger>
+          ) : null}
           <MenuSubTrigger
             id="titleSource"
             value={t(TITLE_SOURCE_LABEL_KEYS[preferences.titleSource])}

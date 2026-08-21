@@ -621,8 +621,15 @@ function SidebarChrome({
   );
   const active = visible && isOpen;
   const recency = useRecentlyDoneRecency(active);
+  const {
+    settings: { workspaceTitleSource },
+  } = useAppSettings();
   return (
-    <SidebarModelProvider active={active} recency={recency}>
+    <SidebarModelProvider
+      active={active}
+      recency={recency}
+      workspaceTitleSource={workspaceTitleSource}
+    >
       {mounted ? <LeftSidebar active={active} /> : null}
       <WorkspaceShortcutTargetsSubscriber enabled={keyboardShortcutsEnabled} />
     </SidebarModelProvider>
