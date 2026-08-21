@@ -51,8 +51,9 @@ const needsInputColorMapping = (theme: Theme) => ({
 });
 
 /**
- * Leading slot of a sidebar project row: chevron on hover, archive spinner while removing,
- * otherwise the project icon carrying the project's aggregate workspace status.
+ * Leading slot of a sidebar project row: archive spinner while removing, otherwise the project
+ * icon carrying the project's aggregate workspace status. The icon stays put on hover so rows
+ * don't change identity under the cursor.
  */
 export function ProjectLeadingVisual({
   displayName,
