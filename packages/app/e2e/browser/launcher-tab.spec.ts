@@ -241,7 +241,11 @@ test.describe("Tab creation", () => {
     await page.setViewportSize({ width: 1600, height: 900 });
     await gotoWorkspace(page, workspace.workspaceId);
 
-    await page.getByTestId("workspace-empty-tab-strip").click({ button: "right" });
+    await page
+      .getByTestId("workspace-pane-main")
+      .filter({ visible: true })
+      .getByTestId("workspace-empty-tab-strip")
+      .click({ button: "right" });
 
     await expect(page.getByTestId("workspace-empty-tab-menu-agent")).toBeVisible();
     await expect(page.getByTestId("workspace-empty-tab-menu-terminal")).toBeVisible();
