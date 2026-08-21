@@ -85,7 +85,8 @@ function WorkingDiffPanel() {
   invariant(target.kind === "working_diff", "WorkingDiffPanel requires working_diff target");
 
   const handleOpenFile = useCallback(
-    (path: string) => openFileInWorkspace({ location: { path }, disposition: "side" }),
+    // LOCAL-DESKTOP: Open file from Changes goes to a main file tab, not the explorer rail.
+    (path: string) => openFileInWorkspace({ location: { path }, disposition: "main" }),
     [openFileInWorkspace],
   );
 
@@ -174,12 +175,14 @@ function CommitDiffPanel() {
   );
 }
 
-function useWorkingDiffPanelDescriptor(): PanelDescriptor {
+function useWorkingDiffPanelDescriptor(
+  target: Extract<WorkspaceTabTarget, { kind: "working_diff" }>,
+): PanelDescriptor {
   const { t } = useTranslation();
   return {
     label: t("panels.diff.changesLabel"),
-    subtitle: t("panels.diff.changesSubtitle"),
-    tooltip: t("panels.diff.changesSubtitle"),
+    subtitle: target.focusPath ?? t("panels.diff.changesSubtitle"),
+    tooltip: target.focusPath ?? t("panels.diff.changesSubtitle"),
     titleState: "ready",
     icon: ThemedFileDiff,
     statusBucket: null,
@@ -204,7 +207,7 @@ export const workingDiffPanelRegistration: PanelRegistration<"working_diff"> = {
   kind: "working_diff",
   component: WorkingDiffPanel,
   useDescriptor: useWorkingDiffPanelDescriptor,
-  resourceKey: () => "working_diff",
+  resourceKey: (target) => (target.focusPath ? "working_diff_focused" : "working_diff"),
 };
 
 export const commitDiffPanelRegistration: PanelRegistration<"commit_diff"> = {
