@@ -926,6 +926,7 @@ describe("sidebar display preferences", () => {
 
     expect(result.sidebarWorkspaceTrailing).toBe("none");
     expect(result.sidebarRowItems).toEqual({
+      ...DEFAULT_CLIENT_SETTINGS.sidebarRowItems,
       host: false,
       changeRequest: false,
       services: false,
