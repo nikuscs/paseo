@@ -3546,7 +3546,10 @@ function WorkspaceScreenContent({
           if (!persistenceKey) {
             return;
           }
-          replaceWorkspaceTabTarget(persistenceKey, input.tab.tabId, target);
+          const tabId = replaceWorkspaceTabTarget(persistenceKey, input.tab.tabId, target);
+          if (target.kind === "file" && tabId) {
+            requestFileNavigation(tabId);
+          }
         },
         onSetCurrentTabState: (state) => {
           if (persistenceKey) {
