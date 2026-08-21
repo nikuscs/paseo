@@ -70,7 +70,7 @@ async function selectWorkspaceTab(tab: Locator): Promise<void> {
   await expect(tab).toHaveAttribute("aria-selected", "true");
 }
 
-/** Reveal the Side panel. It opens empty; the caller decides what goes in it. */
+/** Reveal the Side panel. Revealing it seeds Changes and Files. */
 export async function ensureSidePanel(page: Page): Promise<Locator> {
   const toggle = page.getByTestId("workspace-explorer-toggle").first();
   await expect(toggle).toBeVisible({ timeout: 30_000 });
@@ -83,8 +83,8 @@ export async function ensureSidePanel(page: Page): Promise<Locator> {
 }
 
 /**
- * Reveals the Side panel and brings one of its views up in it. Goes through the
- * pane's own `+` menu, which is there whether the pane is empty or already loaded.
+ * Reveals the Side panel and brings one of its views up in it. A seeded view is
+ * already there to select; anything else goes through the pane's own `+` menu.
  */
 async function openSidePanelView(
   page: Page,

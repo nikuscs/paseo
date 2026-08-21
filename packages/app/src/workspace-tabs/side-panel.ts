@@ -41,6 +41,9 @@ const SIDE_PANEL_VIEW_TARGETS: Record<ExplorerTab, WorkspaceTabTarget> = {
   pr: { kind: "pull_request" },
 };
 
+/** Views a revealed side panel starts with, in tab order. The last one gets focus. */
+const SEEDED_SIDE_PANEL_VIEWS: readonly ExplorerTab[] = ["changes", "files"];
+
 export interface SidePanelQuery {
   isCompact: boolean;
   workspaceKey: string | null;
@@ -225,6 +228,36 @@ export function toggleSidePanel(input: SidePanelInput): void {
     return;
   }
   showSidePanel(input);
+  seedSidePanelViews(input);
+}
+
+/**
+ * Opening the side panel brings Changes and Files up in it. Only a view that is not
+ * open anywhere gets seeded — one the user already parked in another pane stays put,
+ * so this never yanks a tab out from under them.
+ */
+function seedSidePanelViews(input: SidePanelQuery): void {
+  const workspaceKey = input.workspaceKey;
+  if (!workspaceKey) {
+    return;
+  }
+  const layout = useWorkspaceLayoutStore.getState().layoutByWorkspace[workspaceKey];
+  const openKinds = new Set(
+    layout ? collectAllTabs(layout.root).map((tab) => tab.target.kind) : [],
+  );
+  for (const view of SEEDED_SIDE_PANEL_VIEWS) {
+    const target = SIDE_PANEL_VIEW_TARGETS[view];
+    if (openKinds.has(target.kind)) {
+      continue;
+    }
+    openSupportingTab({
+      isCompact: input.isCompact,
+      workspaceKey,
+      supportsPaneSplits: input.supportsPaneSplits,
+      target,
+      openInSidePanelByDefault: true,
+    });
+  }
 }
 
 /** Reactive "is the side panel showing" for the surface this layout uses. */

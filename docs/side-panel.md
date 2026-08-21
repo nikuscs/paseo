@@ -56,9 +56,9 @@ it empties or the user dismisses it:
 
 - **Close pane** on the side panel **hides** it; its tabs are waiting on the next reveal.
 - **Close pane** on any other pane **removes** it.
-- Closing the Side panel's final tab hides the pane. Revealing it returns the empty launcher.
-  This is close-only: claiming or dragging that tab to another pane leaves the empty Side panel
-  visible.
+- Closing the Side panel's final tab hides the pane. The header toggle reveals it seeded
+  again; every other reveal returns the empty launcher. This is close-only: claiming or
+  dragging that tab to another pane leaves the empty Side panel visible.
 - Nothing takes the last visible pane away. `closePane` will not remove it, and
   neither `closePane` nor `hideSidePanel` will hide it — including the header toggle
   reaching `hideSidePanel` after every other pane is gone. The gate is one check in
@@ -70,12 +70,21 @@ does not decide what it means.
 Dragging a pane's last tab into another pane collapses the source pane — except the
 side panel, which the user summons and expects to find again, split size and all.
 
-## What the side panel never does
+## Seeding
 
-It does not seed itself. Revealing it opens an empty pane with the launcher; the user
-picks what goes in. Detecting a pull request makes the launcher's card available and
-opens nothing. A failed workspace setup adds a background tab to the main pane.
-Running and successful setup never seed tabs.
+The header toggle seeds Changes and Files, in that order, and leaves Files focused.
+Only a view that is open nowhere is seeded, so one the user parked in another pane
+stays there. `SEEDED_SIDE_PANEL_VIEWS` in `side-panel.ts` is the list.
+
+Nothing else seeds. Revealing the panel any other way — `showSidePanel`, a supporting
+open, the compact overlay — leaves it as it was, so an empty panel still shows the
+launcher. Detecting a pull request makes the launcher's card available and opens
+nothing. A failed workspace setup adds a background tab to the main pane. Running and
+successful setup never seed tabs.
+
+The two non-split renderings keep their own behaviour: compact toggles the overlay,
+which has its own view switcher, and a tablet's toggle produces a single Changes tab
+because a second seeded tab would just be another tab in the pane the user is in.
 
 ## Routing preference
 

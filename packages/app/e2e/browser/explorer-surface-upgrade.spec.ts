@@ -29,6 +29,15 @@ function sidePanel(page: Page): Locator {
   return visible(page, "workspace-side-panel");
 }
 
+async function expectSeededSidePanel(page: Page): Promise<void> {
+  const panel = sidePanel(page);
+  await expect(panel.getByTestId("workspace-tab-working_diff")).toBeVisible();
+  const filesTab = panel.getByTestId("workspace-tab-files");
+  await expect(filesTab).toBeVisible();
+  await expect(filesTab).toHaveAttribute("aria-selected", "true");
+  await expect(panel.getByTestId("workspace-pane-empty-state")).toHaveCount(0);
+}
+
 /** Seed exactly what a pre-pane build wrote after the user opened the sidebar once. */
 async function seedRetiredSidebarState(page: Page): Promise<void> {
   await page.addInitScript(() => {
@@ -71,7 +80,7 @@ test.describe("explorer surface after upgrading from the docked sidebar", () => 
         const toggle = visible(page, "workspace-explorer-toggle").first();
         await toggle.click();
         await expect(sidePanel(page)).toHaveCount(1, { timeout: 15_000 });
-        await expect(sidePanel(page).getByTestId("workspace-pane-empty-state")).toBeVisible();
+        await expectSeededSidePanel(page);
         await expect(dockedSidebar(page)).toHaveCount(0);
 
         await toggle.click();
@@ -108,7 +117,7 @@ test.describe("explorer surface after upgrading from the docked sidebar", () => 
       await test.step("open the explorer so both sides are showing", async () => {
         await toggle.click();
         await expect(sidePanel(page)).toHaveCount(1, { timeout: 15_000 });
-        await expect(sidePanel(page).getByTestId("workspace-pane-empty-state")).toBeVisible();
+        await expectSeededSidePanel(page);
         await expect(agentList).toHaveCount(1);
       });
 
@@ -122,7 +131,7 @@ test.describe("explorer surface after upgrading from the docked sidebar", () => 
         await page.keyboard.press(`${modifier}+.`);
         await expect(agentList).toHaveCount(1, { timeout: 15_000 });
         await expect(sidePanel(page)).toHaveCount(1, { timeout: 15_000 });
-        await expect(sidePanel(page).getByTestId("workspace-pane-empty-state")).toBeVisible();
+        await expectSeededSidePanel(page);
       });
     } finally {
       await workspace.cleanup();
