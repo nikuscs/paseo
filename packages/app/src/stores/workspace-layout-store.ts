@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { z } from "zod";
@@ -1344,21 +1344,18 @@ export function createWorkspaceLayoutStore(
 
 export const useWorkspaceLayoutStore = createWorkspaceLayoutStore();
 
+function subscribeToWorkspaceLayoutHydration(onStoreChange: () => void): () => void {
+  return useWorkspaceLayoutStore.persist.onFinishHydration(onStoreChange);
+}
+
+function getIsWorkspaceLayoutStoreHydrated(): boolean {
+  return useWorkspaceLayoutStore.persist.hasHydrated();
+}
+
 export function useWorkspaceLayoutStoreHydrated(): boolean {
-  const [hasHydrated, setHasHydrated] = useState(() =>
-    useWorkspaceLayoutStore.persist.hasHydrated(),
+  return useSyncExternalStore(
+    subscribeToWorkspaceLayoutHydration,
+    getIsWorkspaceLayoutStoreHydrated,
+    getIsWorkspaceLayoutStoreHydrated,
   );
-
-  useEffect(() => {
-    if (useWorkspaceLayoutStore.persist.hasHydrated()) {
-      setHasHydrated(true);
-      return;
-    }
-
-    return useWorkspaceLayoutStore.persist.onFinishHydration(() => {
-      setHasHydrated(true);
-    });
-  }, []);
-
-  return hasHydrated;
 }
