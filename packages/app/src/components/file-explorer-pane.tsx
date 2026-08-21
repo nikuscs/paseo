@@ -1193,8 +1193,17 @@ function FileExplorerPaneContent(props: FileExplorerPaneContentProps) {
     ? t("workspace.fileExplorer.empty.noFiles")
     : t("workspace.fileExplorer.empty.noVisibleFiles");
 
-  if (error) {
-    return (
+  let stateContent: ReactNode = null;
+  if (isSearchMode) {
+    stateContent = (
+      <FileSearchPane
+        client={client}
+        workspaceRoot={workspaceRoot}
+        onOpenMatch={handleOpenSearchMatch}
+      />
+    );
+  } else if (error) {
+    stateContent = (
       <View style={styles.centerState}>
         <Text style={styles.errorText}>{error}</Text>
         <View style={styles.errorActions}>
@@ -1209,10 +1218,8 @@ function FileExplorerPaneContent(props: FileExplorerPaneContentProps) {
         </View>
       </View>
     );
-  }
-
-  if (showInitialLoading) {
-    return (
+  } else if (showInitialLoading) {
+    stateContent = (
       <View style={styles.centerState}>
         <ThemedLoadingSpinner size="small" uniProps={foregroundMutedColorMapping} />
         <Text style={styles.loadingText}>{t("workspace.fileExplorer.states.loading")}</Text>
@@ -1335,13 +1342,7 @@ function FileExplorerPaneContent(props: FileExplorerPaneContentProps) {
           </ToolbarButton>
         </ToolbarControls>
       </PaneContentToolbar>
-      {isSearchMode ? (
-        <FileSearchPane
-          client={client}
-          workspaceRoot={workspaceRoot}
-          onOpenMatch={handleOpenSearchMatch}
-        />
-      ) : (
+      {stateContent ?? (
         <ContextMenu>
           <RootCreationContextTarget enabled={Boolean(onNewEntryAtRoot)}>
             {listRows.length === 0 ? (
