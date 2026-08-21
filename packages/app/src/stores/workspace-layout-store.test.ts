@@ -747,6 +747,41 @@ describe("workspace-layout-store actions", () => {
     expect(state.sidePanelPaneIdByWorkspace.renamed).toBe("explorer");
   });
 
+  it("repairs a persisted hidden-only side panel before opening a tab", async () => {
+    const workspaceKey = createWorkspaceKey();
+    const sidePanelPaneId = "pane_13874538-41de-44fc-abd2-3399aff43f96";
+    await AsyncStorage.setItem(
+      "workspace-layout-state",
+      JSON.stringify({
+        state: {
+          layoutByWorkspace: {
+            [workspaceKey]: {
+              root: createPane({ id: sidePanelPaneId, tabIds: [], hidden: true }),
+              focusedPaneId: "main",
+            },
+          },
+          explorerPaneIdByWorkspace: { [workspaceKey]: sidePanelPaneId },
+        },
+        version: 1,
+      }),
+    );
+    const restored = createWorkspaceLayoutStore(createDeterministicWorkspaceLayoutIds());
+
+    await restored.persist.rehydrate();
+    const tabId = restored.getState().openTab({
+      workspaceKey,
+      target: { kind: "draft", draftId: "draft-1" },
+      intent: "reveal",
+    });
+
+    const layout = restored.getState().layoutByWorkspace[workspaceKey];
+    expect(tabId).toBe("draft-1");
+    expect(findPaneContainingTab(layout.root, "draft-1")?.id).toBe("main");
+    expect(findPaneById(layout.root, "main")?.hidden).toBeUndefined();
+    expect(findPaneById(layout.root, sidePanelPaneId)?.hidden).toBe(true);
+    expect(layout.focusedPaneId).toBe("main");
+  });
+
   it("persists first-class pane targets, visibility, and focus", async () => {
     await AsyncStorage.removeItem("workspace-layout-state");
     const workspaceKey = createWorkspaceKey();
