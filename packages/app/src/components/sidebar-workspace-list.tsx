@@ -280,7 +280,6 @@ interface ProjectHeaderRowProps {
   iconDataUri: string | null;
   statusBucket: SidebarStateBucket | null;
   selected?: boolean;
-  chevron: "expand" | "collapse" | null;
   onPress: () => void;
   worktreeTarget: SidebarProjectHostTarget | null;
   isProjectActive?: boolean;
@@ -889,7 +888,6 @@ function ProjectHeaderRow({
   iconDataUri,
   statusBucket,
   selected = false,
-  chevron,
   onPress,
   worktreeTarget,
   isProjectActive = false,
@@ -987,8 +985,6 @@ function ProjectHeaderRow({
           statusBucket={statusBucket}
           projectViewKey={project.viewKey}
           backdrop={getSidebarRowBackdrop({ isDragging, isPressed, selected, isHovered })}
-          chevron={chevron}
-          showChevron={isHovered && chevron !== null}
           isArchiving={isArchiving}
         />
 
@@ -1869,7 +1865,6 @@ function ProjectBlock({
         iconDataUri={iconDataUri}
         statusBucket={aggregateStatusBucket}
         selected={false}
-        chevron={rowModel.chevron}
         onPress={handleToggleCollapsed}
         worktreeTarget={
           rowModel.trailingAction.kind === "new_workspace" ? rowModel.trailingAction.target : null
