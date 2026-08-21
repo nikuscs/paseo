@@ -233,6 +233,7 @@ describe("sidebar view store", () => {
     ).toEqual({
       showBackground: false,
       groupMode: "project",
+      sortMode: "manual",
       hostFilters: ["host-a"],
       projectFilters: ["project-a", "project-b"],
       labelFilter: { labels: [] },
@@ -243,6 +244,7 @@ describe("sidebar view store", () => {
     expect(migrateSidebarViewState({ projectFilters: "project-a" })).toEqual({
       showBackground: false,
       groupMode: "project",
+      sortMode: "manual",
       hostFilters: [],
       projectFilters: [],
       labelFilter: { labels: [] },
@@ -259,6 +261,8 @@ describe("sidebar view store", () => {
       groupMode: "project",
       sortMode: "manual",
       hostFilters: [],
+      projectFilters: [],
+      labelFilter: { labels: [] },
     });
   });
 
