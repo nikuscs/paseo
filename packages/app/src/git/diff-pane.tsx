@@ -75,7 +75,15 @@ import {
   paneContentToolbarIconSize,
   paneContentToolbarIconButtonStyle,
 } from "@/components/ui/pane-content-toolbar";
-import { FOCUSED_PANE_PLACEMENT, useWorkspaceLayoutStore } from "@/stores/workspace-layout-store";
+import {
+  collectAllPanes,
+  collectAllTabs,
+  DEFAULT_PANE_ID,
+  findPaneById,
+  FOCUSED_PANE_PLACEMENT,
+  selectSidePanelPaneId,
+  useWorkspaceLayoutStore,
+} from "@/stores/workspace-layout-store";
 import type { WorkspaceTabPlacement } from "@/stores/workspace-layout-actions";
 import type { WorkspaceTabTarget } from "@/workspace-tabs/model";
 import { buildWorkspaceTabPersistenceKey } from "@/workspace-tabs/model";
@@ -267,10 +275,10 @@ function resolveChangesTabOpen(host: "explorer" | "panel", changesTabOpen: boole
 }
 
 function resolveChangesFilePress(
-  host: "explorer" | "panel",
+  focusPath: string | undefined,
   onChangesFilePress: ((path?: string) => void) | undefined,
 ): ((path?: string) => void) | undefined {
-  return host === "explorer" ? onChangesFilePress : undefined;
+  return focusPath ? undefined : onChangesFilePress;
 }
 
 interface DiffModeMenuProps {
@@ -999,23 +1007,45 @@ function useDiffTabNavigation({
       openTab({ workspaceKey, target, intent: "reveal", placement }),
     [openTab],
   );
+  const closeWorkspaceTab = useWorkspaceLayoutStore((state) => state.closeTab);
   const persistenceKey = useMemo(
     () => buildWorkspaceTabPersistenceKey({ serverId, workspaceId: workspaceId ?? cwd }),
     [cwd, serverId, workspaceId],
   );
-  const changesTabOpen = false;
+  const changesTabId = useWorkspaceLayoutStore((state) => {
+    if (!persistenceKey) {
+      return null;
+    }
+    const layout = state.layoutByWorkspace[persistenceKey];
+    return (
+      layout &&
+      collectAllTabs(layout.root).find(
+        (tab) => tab.target.kind === "working_diff" && !tab.target.focusPath,
+      )?.tabId
+    );
+  });
+  const changesTabOpen = !isMobile && Boolean(changesTabId);
   const openChanges = useCallback(
     (path?: string) => {
       if (!persistenceKey || isMobile) {
         return;
       }
+      const store = useWorkspaceLayoutStore.getState();
+      const layout = store.layoutByWorkspace[persistenceKey];
+      const sidePanelPaneId = selectSidePanelPaneId(store, persistenceKey);
+      const mainPane =
+        layout &&
+        (findPaneById(layout.root, DEFAULT_PANE_ID) ??
+          collectAllPanes(layout.root).find(
+            (pane) => pane.id !== sidePanelPaneId && pane.hidden !== true,
+          ));
       openWorkspaceTabInFocusedPane(
         persistenceKey,
         {
           kind: "working_diff",
           ...(path ? { focusPath: path, focusRequestId: Date.now() } : {}),
         },
-        FOCUSED_PANE_PLACEMENT,
+        mainPane ? { mode: "pane", paneId: mainPane.id } : FOCUSED_PANE_PLACEMENT,
       );
     },
     [isMobile, openWorkspaceTabInFocusedPane, persistenceKey],
@@ -1024,8 +1054,12 @@ function useDiffTabNavigation({
     if (!persistenceKey || isMobile) {
       return;
     }
+    if (changesTabId) {
+      closeWorkspaceTab(persistenceKey, changesTabId);
+      return;
+    }
     openChanges();
-  }, [isMobile, openChanges, persistenceKey]);
+  }, [changesTabId, closeWorkspaceTab, isMobile, openChanges, persistenceKey]);
   const openCommit = useCallback(
     (sha: string) => {
       if (persistenceKey) {
@@ -1118,7 +1152,7 @@ export function ChangesSurface({
     onChangesFilePress: workspaceOnChangesFilePress,
   } = useDiffTabNavigation({ serverId, workspaceId, cwd, isMobile });
   const changesTabOpen = resolveChangesTabOpen(host, workspaceChangesTabOpen);
-  const onChangesFilePress = resolveChangesFilePress(host, workspaceOnChangesFilePress);
+  const onChangesFilePress = resolveChangesFilePress(focusPath, workspaceOnChangesFilePress);
   const refreshSupported = useSessionStore(
     (s) => s.sessions[serverId]?.serverInfo?.features?.checkoutRefresh === true,
   );
@@ -1288,12 +1322,19 @@ export function ChangesSurface({
     (!externalFocusRequest || localFocusRequest.revision >= externalFocusRequest.revision)
       ? localFocusRequest
       : externalFocusRequest;
-  const handleSelectTreeFile = useCallback((path: string) => {
-    setLocalFocusRequest((current) => ({
-      path,
-      revision: Math.max(Date.now(), (current?.revision ?? 0) + 1),
-    }));
-  }, []);
+  const handleSelectTreeFile = useCallback(
+    (path: string) => {
+      if (!focusPath && onChangesFilePress) {
+        onChangesFilePress(path);
+        return;
+      }
+      setLocalFocusRequest((current) => ({
+        path,
+        revision: Math.max(Date.now(), (current?.revision ?? 0) + 1),
+      }));
+    },
+    [focusPath, onChangesFilePress],
+  );
   const workingMode = useMemo(
     () => ({
       kind: "working" as const,

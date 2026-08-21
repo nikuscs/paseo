@@ -213,7 +213,8 @@ export function buildDeterministicWorkspaceTabId(target: WorkspaceTabTarget): st
     return `commit_diff_${target.sha}`;
   }
   if (target.kind === "working_diff") {
-    return "working_diff";
+    // LOCAL-DESKTOP: a focused Changes tab is distinct from the Side panel Changes tab.
+    return target.focusPath ? "working_diff_focused" : "working_diff";
   }
   if (target.kind === "files" || target.kind === "pull_request") {
     return target.kind;

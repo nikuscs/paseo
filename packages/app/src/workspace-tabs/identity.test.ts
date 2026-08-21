@@ -72,10 +72,11 @@ describe("working diff tab identity", () => {
     ).toEqual(target);
   });
 
-  it("treats focus as navigation state rather than tab identity", () => {
+  it("keys focused Changes separately from the Side panel Changes tab", () => {
     expect(workspaceTabTargetsEqual(target, target)).toBe(true);
     expect(workspaceTabTargetsEqual(target, { ...target, focusPath: "src/other.ts" })).toBe(false);
     expect(workspaceTabTargetsEqual(target, { ...target, focusRequestId: 2 })).toBe(false);
+    const listId = buildDeterministicWorkspaceTabId({ kind: "working_diff" });
     const workingDiffId = buildDeterministicWorkspaceTabId(target);
     const otherFocusId = buildDeterministicWorkspaceTabId({
       ...target,
@@ -86,7 +87,8 @@ describe("working diff tab identity", () => {
       path: target.focusPath,
     });
 
-    expect(workingDiffId).toBe("working_diff");
+    expect(listId).toBe("working_diff");
+    expect(workingDiffId).toBe("working_diff_focused");
     expect(workingDiffId).toBe(otherFocusId);
     expect(workingDiffId).not.toBe(fileId);
   });

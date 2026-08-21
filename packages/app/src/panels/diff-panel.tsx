@@ -207,7 +207,7 @@ export const workingDiffPanelRegistration: PanelRegistration<"working_diff"> = {
   kind: "working_diff",
   component: WorkingDiffPanel,
   useDescriptor: useWorkingDiffPanelDescriptor,
-  resourceKey: () => "working_diff",
+  resourceKey: (target) => (target.focusPath ? "working_diff_focused" : "working_diff"),
 };
 
 export const commitDiffPanelRegistration: PanelRegistration<"commit_diff"> = {
