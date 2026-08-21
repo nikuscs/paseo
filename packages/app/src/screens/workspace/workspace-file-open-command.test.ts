@@ -1,10 +1,11 @@
 import { describe, expect, test, vi } from "vitest";
 import { openWorkspaceFileFromExplorer } from "./workspace-file-open-command";
+import { FOCUSED_PANE_PLACEMENT } from "@/stores/workspace-layout-store";
 
 describe("openWorkspaceFileFromExplorer", () => {
   test("opens a search match with its target line", () => {
     const showMobileAgent = vi.fn();
-    const openWorkspaceTabFocused = vi.fn(() => "tab-file");
+    const openWorkspaceTabInFocusedPane = vi.fn(() => "tab-file");
     const focusWorkspaceTab = vi.fn();
 
     openWorkspaceFileFromExplorer({
@@ -13,17 +14,21 @@ describe("openWorkspaceFileFromExplorer", () => {
       lineEnd: 42,
       persistenceKey: "server:workspace",
       showMobileAgent,
-      openWorkspaceTabFocused,
+      openWorkspaceTabInFocusedPane,
       focusWorkspaceTab,
     });
 
     expect(showMobileAgent).toHaveBeenCalledTimes(1);
-    expect(openWorkspaceTabFocused).toHaveBeenCalledWith("server:workspace", {
-      kind: "file",
-      path: "src/search.ts",
-      lineStart: 42,
-      lineEnd: 42,
-    });
+    expect(openWorkspaceTabInFocusedPane).toHaveBeenCalledWith(
+      "server:workspace",
+      {
+        kind: "file",
+        path: "src/search.ts",
+        lineStart: 42,
+        lineEnd: 42,
+      },
+      FOCUSED_PANE_PLACEMENT,
+    );
     expect(focusWorkspaceTab).toHaveBeenCalledWith("server:workspace", "tab-file");
   });
 });
