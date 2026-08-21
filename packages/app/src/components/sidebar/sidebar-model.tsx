@@ -155,7 +155,7 @@ export function SidebarModelProvider({
         workspaceKey,
         resolveSidebarWorkspacePrimaryLabel({ workspace: entry, workspaceTitleSource }),
       );
-      activityByKey.set(workspaceKey, entry.statusEnteredAt?.getTime() ?? 0);
+      activityByKey.set(workspaceKey, entry.activityAt?.getTime() ?? 0);
     }
     return { labelByKey, activityByKey };
   }, [filteredWorkspaceEntriesByKey, workspaceTitleSource]);
