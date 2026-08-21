@@ -3141,15 +3141,19 @@ function WorkspaceScreenContent({
           if (!persistenceKey) {
             return;
           }
+          let tabId: string | null;
           if (target.kind === "file" && input.tab.target.kind === "files") {
-            replaceWorkspaceTabTarget(
+            tabId = replaceWorkspaceTabTarget(
               persistenceKey,
               input.tab.tabId,
               target,
               fileStateForFilesView,
             );
           } else {
-            replaceWorkspaceTabTarget(persistenceKey, input.tab.tabId, target);
+            tabId = replaceWorkspaceTabTarget(persistenceKey, input.tab.tabId, target);
+          }
+          if (target.kind === "file" && tabId) {
+            requestFileNavigation(tabId);
           }
         },
         onSetCurrentTabState: (state) => {
@@ -3178,6 +3182,7 @@ function WorkspaceScreenContent({
       revealWorkspaceChildTab,
       persistenceKey,
       replaceWorkspaceTabTarget,
+      requestFileNavigation,
       setWorkspaceTabState,
     ],
   );
