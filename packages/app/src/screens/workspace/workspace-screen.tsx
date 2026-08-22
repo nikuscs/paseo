@@ -59,7 +59,6 @@ import { traceInstant } from "@/performance/native-trace";
 import { useSessionStore, type WorkspaceDescriptor } from "@/stores/session-store";
 import {
   canDismissPaneInLayout,
-  collectAllPanes,
   collectAllTabs,
   DEFAULT_PANE_ID,
   findPaneById,
@@ -1364,37 +1363,6 @@ function paneLocalPlacement(paneId: string | null | undefined): WorkspaceTabPlac
   return paneId ? { mode: "pane", paneId } : FOCUSED_PANE_PLACEMENT;
 }
 
-/**
- * LOCAL-DESKTOP: a "main" open asked for by a side panel view — the Changes list, the
- * Files tree — belongs in the main pane. Focusing the acting pane would drop the file
- * tab next to the view that asked for it, which is what "side" is for.
- */
-function focusMainPaneForSidePanelOpen(input: {
-  persistenceKey: string;
-  paneId: string | null | undefined;
-  focusPane: (persistenceKey: string, paneId: string) => void;
-}): boolean {
-  const store = useWorkspaceLayoutStore.getState();
-  const sidePanelPaneId = selectSidePanelPaneId(store, input.persistenceKey);
-  if (!input.paneId || input.paneId !== sidePanelPaneId) {
-    return false;
-  }
-  const layout = store.layoutByWorkspace[input.persistenceKey];
-  if (!layout) {
-    return false;
-  }
-  const mainPane =
-    findPaneById(layout.root, DEFAULT_PANE_ID) ??
-    collectAllPanes(layout.root).find(
-      (pane) => pane.id !== sidePanelPaneId && pane.hidden !== true,
-    );
-  if (!mainPane) {
-    return false;
-  }
-  input.focusPane(input.persistenceKey, mainPane.id);
-  return true;
-}
-
 function canDetectPullRequest(
   isRouteFocused: boolean,
   isGitCheckout: boolean,
@@ -2199,15 +2167,7 @@ function WorkspaceScreenContent({
     parentTabId: string;
     focusPaneBeforeOpen?: boolean;
   }) {
-    const routedToMainPane =
-      request.disposition === "main" && persistenceKey
-        ? focusMainPaneForSidePanelOpen({
-            persistenceKey,
-            paneId,
-            focusPane: focusWorkspacePane,
-          })
-        : false;
-    if (!routedToMainPane && focusPaneBeforeOpen && paneId && persistenceKey) {
+    if (focusPaneBeforeOpen && paneId && persistenceKey) {
       focusWorkspacePane(persistenceKey, paneId);
     }
     if (request.disposition === "side") {
