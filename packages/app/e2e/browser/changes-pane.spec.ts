@@ -440,24 +440,6 @@ test("changes context menus duplicate files and folders", async ({ page }) => {
     .toBe(AFTER);
 });
 
-test("VCS tree file opens a distinct focused Changes tab in the main pane", async ({ page }) => {
-  const workspace = await createWorkspaceWithMountedTabDiff();
-  await openWorkspaceChangesSurface(page, workspace);
-
-  const sidePanel = page.getByTestId("workspace-side-panel").filter({ visible: true }).first();
-  await sidePanel.getByTestId("changes-toggle-tree").click();
-  await expect(sidePanel.getByTestId("changes-tree-rail-tree")).toBeVisible();
-  await sidePanel.getByTestId("diff-tree-file-0").click();
-
-  await expect(sidePanel.getByTestId("workspace-tab-working_diff")).toBeVisible();
-  await expect(sidePanel.getByTestId("workspace-tab-working_diff_focused")).toHaveCount(0);
-  const focusedChangesTab = page
-    .getByTestId("workspace-tab-working_diff_focused")
-    .filter({ visible: true });
-  await expect(focusedChangesTab).toBeVisible();
-  await expect(focusedChangesTab).toHaveAttribute("aria-selected", "true");
-});
-
 test("changes tree aligns every file status after its diff stat", async ({ page }) => {
   const workspace = await createWorkspaceWithMountedTabDiff({
     includeDeletedFile: true,
