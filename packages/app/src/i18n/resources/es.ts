@@ -586,6 +586,7 @@ export const es: TranslationResources = {
         closeLeft: "Cerca de la izquierda",
         closeRight: "Cerca de la derecha",
         closeOthers: "Cerrar otras pestañas",
+        closeEditorTabs: "Cerrar pestañas del editor",
         reloadAgent: "Recargar agente",
         reloadAgentTooltip:
           "Vuelva a cargar el agente para actualizar habilidades, MCP o estado de inicio de sesión.",
@@ -652,6 +653,7 @@ export const es: TranslationResources = {
         closeTabsLeftTitle: "¿Cerrar pestañas a la izquierda?",
         closeTabsRightTitle: "¿Cerrar pestañas a la derecha?",
         closeOtherTabsTitle: "¿Cerrar otras pestañas?",
+        closeEditorTabsTitle: "¿Cerrar pestañas del editor?",
         bulk: {
           all: "Esto archivará los agentes{{agents}}, cerrará los terminales{{terminals}}y cerrará las pestañas{{tabs}}. Cualquier proceso en ejecución en una terminal cerrada se detendrá inmediatamente.",
           agentsAndTerminals:
@@ -1053,6 +1055,12 @@ export const es: TranslationResources = {
         status: "Estado",
         labels: "Etiquetas",
       },
+      sorting: {
+        label: "Ordenar",
+        manual: "Manual",
+        name: "Nombre",
+        activity: "Actividad reciente",
+      },
       titleSource: {
         label: "Título",
         title: "Título",
@@ -1069,6 +1077,16 @@ export const es: TranslationResources = {
         labels: "Etiquetas",
         diff: "Estadísticas de cambios",
         timestamp: "Última actividad",
+        compactRows: "Filas compactas",
+        newWorkspaceRow: "Fila Nuevo espacio de trabajo",
+      },
+      recentlyDone: {
+        label: "Hecho recientemente",
+        options: {
+          off: "Desactivado",
+          minutes: "{{minutes}} min",
+          hour: "1 hora",
+        },
       },
       checks: {
         iconAndText: "Icono y texto",
@@ -1573,6 +1591,10 @@ export const es: TranslationResources = {
         title: "Conexión directa",
         description: "Red local o VPN.",
       },
+      remoteSsh: {
+        title: "SSH remoto",
+        description: "Conéctate mediante el cliente SSH de escritorio.",
+      },
       scanQr: {
         title: "Escanea el códigoQR",
         description: "Conexión de retransmisión cifrada.",
@@ -1623,6 +1645,27 @@ export const es: TranslationResources = {
         unableToConnect:
           "No se puede conectar. Verifique el host/porty que se pueda acceder al demonio.",
         details: "Detalles:{{detail}}",
+      },
+    },
+    remoteSsh: {
+      title: "SSH remoto",
+      helper: "Conéctate a un daemon de Paseo en el host remoto.",
+      fields: {
+        host: "Host",
+        port: "Puerto SSH",
+        identityFile: "Ruta del archivo de identidad",
+        optional: "Opcional",
+      },
+      actions: {
+        cancel: "Cancelar",
+        connect: "Conectar",
+        connecting: "Conectando...",
+      },
+      errors: {
+        hostRequired: "El host es obligatorio",
+        invalidHost: "Introduce un host SSH válido",
+        invalidPort: "El puerto SSH debe estar entre 1 y 65535",
+        failedToConnect: "No se pudo conectar por SSH. {{detail}}",
       },
     },
     link: {
@@ -2269,6 +2312,7 @@ export const es: TranslationResources = {
       badges: {
         relay: "Relé",
         local: "Local",
+        remoteSsh: "SSH remoto",
       },
       connections: {
         title: "Conexiones",

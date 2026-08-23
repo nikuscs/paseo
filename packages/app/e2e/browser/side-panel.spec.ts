@@ -22,12 +22,6 @@ function newTabPanel(scope: Locator): Locator {
   return scope.getByTestId("workspace-new-tab-panel");
 }
 
-async function launcherButtonLabels(launcher: Locator): Promise<(string | null)[]> {
-  return launcher
-    .getByRole("button")
-    .evaluateAll((buttons) => buttons.map((button) => button.getAttribute("aria-label")));
-}
-
 function sidePanelToggle(page: Page): Locator {
   return page.getByTestId("workspace-explorer-toggle").first();
 }
@@ -50,7 +44,7 @@ async function splitTabOutOfMainPane(page: Page, chip: Locator): Promise<void> {
 }
 
 test.describe("Side panel", () => {
-  test("reveals empty, launches a view, and hides back out of the way", async ({
+  test("reveals seeded with Changes and Files, and hides back out of the way", async ({
     page,
   }, testInfo) => {
     const workspace = await seedWorkspace({ repoPrefix: "side-panel-reveal-" });
@@ -60,35 +54,32 @@ test.describe("Side panel", () => {
       await waitForWorkspaceTabsVisible(page);
       await expect(sidePanel(page)).toHaveCount(0);
 
-      await test.step("revealing the Side panel seeds nothing", async () => {
+      await test.step("revealing the Side panel seeds Changes and Files", async () => {
         await sidePanelToggle(page).click();
         await expect(sidePanel(page)).toBeVisible({ timeout: 30_000 });
-        const launcher = newTabPanel(sidePanel(page));
-        await expect(launcher).toBeVisible();
-        expect((await launcherButtonLabels(launcher)).slice(0, 4)).toEqual([
-          "Changes",
-          "Files",
-          "Terminal",
-          "Agent",
-        ]);
-        await expect(page.getByTestId("workspace-tab-working_diff")).toHaveCount(0);
-        await capture(page, testInfo, "01-side-panel-reveals-empty");
-      });
-
-      await test.step("Changes opens in the Side panel that offered it", async () => {
-        await newTabPanel(sidePanel(page)).getByRole("button", { name: "Changes" }).click();
         await expect(sidePanel(page).getByTestId("workspace-tab-working_diff")).toBeVisible({
           timeout: 30_000,
         });
-        await expect(page.getByTestId("working-diff-panel").filter({ visible: true })).toBeVisible({
-          timeout: 30_000,
-        });
-        await capture(page, testInfo, "02-changes-opens-in-side-panel");
+        await expect(sidePanel(page).getByTestId("workspace-tab-files")).toBeVisible();
+        await expect(newTabPanel(sidePanel(page))).toHaveCount(0);
+        await capture(page, testInfo, "01-side-panel-reveals-seeded");
       });
 
-      await test.step("closing its final tab hides the Side panel, and it reopens empty", async () => {
-        const changesTab = sidePanel(page).getByTestId("workspace-tab-working_diff");
-        await changesTab.hover();
+      await test.step("Files is the view the reveal leaves up", async () => {
+        await expect(sidePanel(page).getByTestId("workspace-tab-files")).toHaveAttribute(
+          "aria-selected",
+          "true",
+        );
+        await expect(
+          page.getByTestId("file-explorer-tree-scroll").filter({ visible: true }).first(),
+        ).toBeVisible({ timeout: 30_000 });
+        await capture(page, testInfo, "02-files-up-in-side-panel");
+      });
+
+      await test.step("closing its final tabs hides the Side panel, and it reopens seeded", async () => {
+        await sidePanel(page).getByTestId("workspace-tab-files").hover();
+        await page.getByTestId("workspace-files-close").filter({ visible: true }).click();
+        await sidePanel(page).getByTestId("workspace-tab-working_diff").hover();
         await page
           .locator('[data-testid^="workspace-working-diff-close-"]')
           .filter({ visible: true })
@@ -98,8 +89,9 @@ test.describe("Side panel", () => {
 
         await sidePanelToggle(page).click();
         await expect(sidePanel(page)).toBeVisible({ timeout: 15_000 });
-        await expect(newTabPanel(sidePanel(page))).toBeVisible();
-        await capture(page, testInfo, "04-side-panel-revealed-empty");
+        await expect(sidePanel(page).getByTestId("workspace-tab-working_diff")).toBeVisible();
+        await expect(sidePanel(page).getByTestId("workspace-tab-files")).toBeVisible();
+        await capture(page, testInfo, "04-side-panel-revealed-seeded");
       });
     } finally {
       await workspace.cleanup();
@@ -158,13 +150,10 @@ test.describe("Side panel", () => {
       await gotoWorkspace(page, workspace.workspaceId);
       await waitForWorkspaceTabsVisible(page);
 
-      // Park a tab in the Side panel, then put the panel away. The workspace still
-      // holds that tab, so emptying Main does not look like an empty workspace and
-      // nothing reseeds a draft into it.
+      // Reveal the Side panel, then put it away. The workspace still holds its seeded
+      // tabs, so emptying Main does not look like an empty workspace and nothing
+      // reseeds a draft into it.
       await ensureSidePanel(page);
-      await newTabPanel(sidePanel(page))
-        .getByRole("button", { name: "Files", exact: true })
-        .click();
       await expect(sidePanel(page).getByTestId("workspace-tab-files")).toBeVisible({
         timeout: 30_000,
       });
@@ -211,7 +200,6 @@ test.describe("Side panel", () => {
       await gotoWorkspace(page, workspace.workspaceId);
       await waitForWorkspaceTabsVisible(page);
       await ensureSidePanel(page);
-      await newTabPanel(sidePanel(page)).getByRole("button", { name: "Changes" }).click();
       await expect(sidePanel(page).getByTestId("workspace-tab-working_diff")).toBeVisible({
         timeout: 30_000,
       });

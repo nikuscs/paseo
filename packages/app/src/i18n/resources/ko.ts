@@ -583,6 +583,7 @@ export const ko: TranslationResources = {
         closeLeft: "왼쪽 탭 닫기",
         closeRight: "오른쪽 탭 닫기",
         closeOthers: "다른 탭 닫기",
+        closeEditorTabs: "편집기 탭 닫기",
         reloadAgent: "에이전트 다시 로드",
         reloadAgentTooltip:
           "스킬, MCP 또는 로그인 상태를 업데이트하려면 에이전트를 다시 로드하세요.",
@@ -647,6 +648,7 @@ export const ko: TranslationResources = {
         closeTabsLeftTitle: "왼쪽 탭을 닫을까요?",
         closeTabsRightTitle: "오른쪽 탭을 닫을까요?",
         closeOtherTabsTitle: "다른 탭을 닫을까요?",
+        closeEditorTabsTitle: "편집기 탭을 닫을까요?",
         bulk: {
           all: "에이전트 {{agents}}개를 보관하고, 터미널 {{terminals}}개를 닫고, 탭 {{tabs}}개를 닫습니다. 닫히는 터미널에서 실행 중인 프로세스는 즉시 중지됩니다.",
           agentsAndTerminals:
@@ -1026,6 +1028,12 @@ export const ko: TranslationResources = {
         status: "상태",
         labels: "레이블",
       },
+      sorting: {
+        label: "정렬",
+        manual: "수동",
+        name: "이름",
+        activity: "최근 활동",
+      },
       titleSource: {
         label: "제목",
         title: "제목",
@@ -1042,6 +1050,16 @@ export const ko: TranslationResources = {
         labels: "레이블",
         diff: "Diff 통계",
         timestamp: "마지막 활동",
+        compactRows: "행 간격 좁게",
+        newWorkspaceRow: "새 워크스페이스 행",
+      },
+      recentlyDone: {
+        label: "최근 완료",
+        options: {
+          off: "끔",
+          minutes: "{{minutes}}분",
+          hour: "1시간",
+        },
       },
       checks: {
         iconAndText: "아이콘 및 텍스트",
@@ -1539,6 +1557,10 @@ export const ko: TranslationResources = {
         title: "직접 연결",
         description: "로컬 네트워크 또는 VPN.",
       },
+      remoteSsh: {
+        title: "원격 SSH",
+        description: "데스크톱 SSH 클라이언트를 통해 연결합니다.",
+      },
       scanQr: {
         title: "QR 코드 스캔",
         description: "암호화된 릴레이 연결.",
@@ -1587,6 +1609,27 @@ export const ko: TranslationResources = {
         tlsError: "TLS 오류. 직접 연결은 데몬 앞에 TLS 종단 장치가 있을 때만 SSL을 사용합니다.",
         unableToConnect: "연결할 수 없습니다. 호스트/포트와 데몬에 접근 가능한지 확인하세요.",
         details: "세부 정보: {{detail}}",
+      },
+    },
+    remoteSsh: {
+      title: "원격 SSH",
+      helper: "원격 호스트에서 실행 중인 Paseo 데몬에 연결합니다.",
+      fields: {
+        host: "호스트",
+        port: "SSH 포트",
+        identityFile: "ID 파일 경로",
+        optional: "선택 사항",
+      },
+      actions: {
+        cancel: "취소",
+        connect: "연결",
+        connecting: "연결 중...",
+      },
+      errors: {
+        hostRequired: "호스트가 필요합니다",
+        invalidHost: "유효한 SSH 호스트를 입력하세요",
+        invalidPort: "SSH 포트는 1에서 65535 사이여야 합니다",
+        failedToConnect: "SSH로 연결할 수 없습니다. {{detail}}",
       },
     },
     link: {
@@ -2228,6 +2271,7 @@ export const ko: TranslationResources = {
       badges: {
         relay: "릴레이",
         local: "로컬",
+        remoteSsh: "원격 SSH",
       },
       connections: {
         title: "연결",
