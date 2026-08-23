@@ -580,6 +580,7 @@ export const en = {
         closeLeft: "Close to the left",
         closeRight: "Close to the right",
         closeOthers: "Close other tabs",
+        closeEditorTabs: "Close editor tabs",
         reloadAgent: "Reload agent",
         reloadAgentTooltip: "Reload agent to update skills, MCPs or login status.",
         close: "Close",
@@ -643,6 +644,7 @@ export const en = {
         closeTabsLeftTitle: "Close tabs to the left?",
         closeTabsRightTitle: "Close tabs to the right?",
         closeOtherTabsTitle: "Close other tabs?",
+        closeEditorTabsTitle: "Close editor tabs?",
         bulk: {
           all: "This will archive {{agents}} agent(s), close {{terminals}} terminal(s), and close {{tabs}} tab(s). Any running process in a closed terminal will be stopped immediately.",
           agentsAndTerminals:
@@ -1028,6 +1030,12 @@ export const en = {
         status: "Status",
         labels: "Labels",
       },
+      sorting: {
+        label: "Sorting",
+        manual: "Manual",
+        name: "Name",
+        activity: "Recent activity",
+      },
       titleSource: {
         label: "Title",
         title: "Title",
@@ -1044,6 +1052,16 @@ export const en = {
         labels: "Labels",
         diff: "Diff stats",
         timestamp: "Last activity",
+        compactRows: "Compact rows",
+        newWorkspaceRow: "New workspace row",
+      },
+      recentlyDone: {
+        label: "Recently done",
+        options: {
+          off: "Off",
+          minutes: "{{minutes}} min",
+          hour: "1 hour",
+        },
       },
       checks: {
         iconAndText: "Icon and text",
@@ -1539,6 +1557,10 @@ export const en = {
         title: "Direct connection",
         description: "Local network or VPN.",
       },
+      remoteSsh: {
+        title: "Remote SSH",
+        description: "Connect through the desktop SSH client.",
+      },
       scanQr: {
         title: "Scan QR code",
         description: "Encrypted relay connection.",
@@ -1588,6 +1610,27 @@ export const en = {
           "TLS error. Direct connections use SSL only when a TLS terminator is in front of the daemon.",
         unableToConnect: "Unable to connect. Check the host/port and that the daemon is reachable.",
         details: "Details: {{detail}}",
+      },
+    },
+    remoteSsh: {
+      title: "Remote SSH",
+      helper: "Connect to a Paseo daemon running on the remote host.",
+      fields: {
+        host: "Host",
+        port: "SSH port",
+        identityFile: "Identity file path",
+        optional: "Optional",
+      },
+      actions: {
+        cancel: "Cancel",
+        connect: "Connect",
+        connecting: "Connecting...",
+      },
+      errors: {
+        hostRequired: "Host is required",
+        invalidHost: "Enter a valid SSH host",
+        invalidPort: "SSH port must be between 1 and 65535",
+        failedToConnect: "Unable to connect over SSH. {{detail}}",
       },
     },
     link: {
@@ -2279,6 +2322,7 @@ export const en = {
       badges: {
         relay: "Relay",
         local: "Local",
+        remoteSsh: "Remote SSH",
       },
       connections: {
         title: "Connections",

@@ -582,6 +582,7 @@ export const ar: TranslationResources = {
         closeLeft: "بالقرب من اليسار",
         closeRight: "قريب من اليمين",
         closeOthers: "أغلق علامات التبويب الأخرى",
+        closeEditorTabs: "إغلاق علامات تبويب المحرر",
         reloadAgent: "إعادة تحميل الوكيل",
         reloadAgentTooltip: "قم بإعادة تحميل الوكيل لتحديث المهارات أو MCPs أو حالة تسجيل الدخول.",
         close: "يغلق",
@@ -646,6 +647,7 @@ export const ar: TranslationResources = {
         closeTabsLeftTitle: "هل تريد إغلاق علامات التبويب على اليسار؟",
         closeTabsRightTitle: "هل تريد إغلاق علامات التبويب على اليمين؟",
         closeOtherTabsTitle: "هل تريد إغلاق علامات التبويب الأخرى؟",
+        closeEditorTabsTitle: "هل تريد إغلاق علامات تبويب المحرر؟",
         bulk: {
           all: "سيؤدي هذا إلى أرشفة وكيل (وكلاء){{agents}}، وإغلاق محطة (محطات){{terminals}}، وإغلاق علامة (علامات) تبويب{{tabs}}. سيتم إيقاف أي عملية جارية في محطة مغلقة على الفور.",
           agentsAndTerminals:
@@ -1019,6 +1021,12 @@ export const ar: TranslationResources = {
         status: "الحالة",
         labels: "التسميات",
       },
+      sorting: {
+        label: "الترتيب",
+        manual: "يدوي",
+        name: "الاسم",
+        activity: "النشاط الأخير",
+      },
       titleSource: {
         label: "العنوان",
         title: "العنوان",
@@ -1035,6 +1043,16 @@ export const ar: TranslationResources = {
         labels: "التسميات",
         diff: "إحصائيات الفروق",
         timestamp: "آخر نشاط",
+        compactRows: "صفوف مضغوطة",
+        newWorkspaceRow: "صف مساحة عمل جديدة",
+      },
+      recentlyDone: {
+        label: "تم مؤخرًا",
+        options: {
+          off: "إيقاف",
+          minutes: "{{minutes}} د",
+          hour: "ساعة واحدة",
+        },
       },
       checks: {
         iconAndText: "أيقونة ونص",
@@ -1529,6 +1547,10 @@ export const ar: TranslationResources = {
         title: "اتصال مباشر",
         description: "الشبكة المحلية أو VPN.",
       },
+      remoteSsh: {
+        title: "SSH عن بُعد",
+        description: "الاتصال عبر عميل SSH لسطح المكتب.",
+      },
       scanQr: {
         title: "مسح رمز QR",
         description: "اتصال التتابع المشفر.",
@@ -1579,6 +1601,27 @@ export const ar: TranslationResources = {
         unableToConnect:
           "غير قادر على الاتصال. تحقق من المضيف /port ومن إمكانية الوصول إلى البرنامج الخفي.",
         details: "التفاصيل:{{detail}}",
+      },
+    },
+    remoteSsh: {
+      title: "SSH عن بُعد",
+      helper: "الاتصال بخادم Paseo يعمل على المضيف البعيد.",
+      fields: {
+        host: "المضيف",
+        port: "منفذ SSH",
+        identityFile: "مسار ملف الهوية",
+        optional: "اختياري",
+      },
+      actions: {
+        cancel: "إلغاء",
+        connect: "اتصال",
+        connecting: "جارٍ الاتصال...",
+      },
+      errors: {
+        hostRequired: "المضيف مطلوب",
+        invalidHost: "أدخل مضيف SSH صالحًا",
+        invalidPort: "يجب أن يكون منفذ SSH بين 1 و65535",
+        failedToConnect: "تعذر الاتصال عبر SSH. {{detail}}",
       },
     },
     link: {
@@ -2216,6 +2259,7 @@ export const ar: TranslationResources = {
       badges: {
         relay: "تتابع",
         local: "محلي",
+        remoteSsh: "SSH عن بُعد",
       },
       connections: {
         title: "اتصالات",

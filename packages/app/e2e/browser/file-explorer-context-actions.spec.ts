@@ -2,7 +2,11 @@ import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { expect, type Page } from "@playwright/test";
 import { test } from "../support/fixtures";
-import { openFileExplorer } from "../support/helpers/file-explorer";
+import {
+  expectFileTabOpen,
+  openFileExplorer,
+  openFileFromExplorer,
+} from "../support/helpers/file-explorer";
 import { openChangesPanel } from "../support/helpers/workspace-tabs";
 import { gotoWorkspace } from "../support/helpers/launcher";
 import { daemonWsRoutePattern } from "../support/helpers/daemon-port";
@@ -124,6 +128,19 @@ test("file explorer rows share the workspace title opacity treatment", async ({ 
   await expect(name).toHaveCSS("opacity", "0.76");
   await row.hover();
   await expect(name).toHaveCSS("opacity", "1");
+});
+
+test("opening a file preserves the Files tab", async ({ page }) => {
+  await gotoWorkspace(page, workspace.workspaceId);
+  await openFileExplorer(page);
+
+  const filesTab = page.getByTestId("workspace-tab-files").filter({ visible: true });
+  await openFileFromExplorer(page, "README.md");
+
+  await expect(filesTab).toBeVisible();
+  await expect(filesTab).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByTestId("file-explorer-tree-scroll")).toBeVisible();
+  await expectFileTabOpen(page, "README.md");
 });
 
 test("creates, renames, copies, and deletes entries through the file explorer", async ({
