@@ -35,7 +35,7 @@ async function expectSeededSidePanel(page: Page): Promise<void> {
   const filesTab = panel.getByTestId("workspace-tab-files");
   await expect(filesTab).toBeVisible();
   await expect(filesTab).toHaveAttribute("aria-selected", "true");
-  await expect(panel.getByTestId("workspace-pane-empty-state")).toHaveCount(0);
+  await expect(panel.getByTestId("workspace-new-tab-panel")).toHaveCount(0);
 }
 
 /** Seed exactly what a pre-pane build wrote after the user opened the sidebar once. */

@@ -18,16 +18,12 @@ function mainPane(page: Page): Locator {
   return page.getByTestId("workspace-pane-main").filter({ visible: true });
 }
 
-function emptyState(scope: Locator): Locator {
-  return scope.getByTestId("workspace-pane-empty-state");
+function newTabPanel(scope: Locator): Locator {
+  return scope.getByTestId("workspace-new-tab-panel");
 }
 
 function sidePanelToggle(page: Page): Locator {
   return page.getByTestId("workspace-explorer-toggle").first();
-}
-
-function closePaneButton(page: Page): Locator {
-  return page.getByRole("button", { name: "Close pane" });
 }
 
 /** Drags the pane's only tab into the left edge of its own pane, splitting it out. */
@@ -65,7 +61,7 @@ test.describe("Side panel", () => {
           timeout: 30_000,
         });
         await expect(sidePanel(page).getByTestId("workspace-tab-files")).toBeVisible();
-        await expect(emptyState(sidePanel(page))).toHaveCount(0);
+        await expect(newTabPanel(sidePanel(page))).toHaveCount(0);
         await capture(page, testInfo, "01-side-panel-reveals-seeded");
       });
 
@@ -78,10 +74,6 @@ test.describe("Side panel", () => {
           page.getByTestId("file-explorer-tree-scroll").filter({ visible: true }).first(),
         ).toBeVisible({ timeout: 30_000 });
         await capture(page, testInfo, "02-files-up-in-side-panel");
-      });
-
-      await test.step("a loaded pane offers no one-tap close", async () => {
-        await expect(closePaneButton(page)).toHaveCount(0);
       });
 
       await test.step("closing its final tabs hides the Side panel, and it reopens seeded", async () => {
@@ -128,23 +120,30 @@ test.describe("Side panel", () => {
         .first();
       await expect(draftPane).toBeVisible({ timeout: 15_000 });
 
-      const emptyMain = emptyState(mainPane(page));
+      const emptyMain = newTabPanel(mainPane(page));
       await expect(emptyMain).toBeVisible({ timeout: 15_000 });
       await capture(page, testInfo, "06-empty-main-pane-launcher");
 
-      await emptyMain.getByRole("button", { name: "Close pane" }).click();
+      const newTabChip = mainPane(page)
+        .locator('[data-testid^="workspace-tab-tab_"]')
+        .filter({ hasText: "New tab" });
+      await newTabChip.hover();
+      await mainPane(page)
+        .locator('[data-testid^="workspace-new-tab-close-"]')
+        .filter({ visible: true })
+        .click();
 
       // Gone for good, unlike the Side panel beside it, which is still only hidden away.
       await expect(mainPane(page)).toHaveCount(0, { timeout: 30_000 });
       await expect(sidePanel(page)).toBeVisible();
-      await expect(draftPane.getByTestId("workspace-pane-empty-state")).toHaveCount(0);
+      await expect(draftPane.getByTestId("workspace-new-tab-panel")).toHaveCount(0);
       await capture(page, testInfo, "07-empty-main-pane-removed");
     } finally {
       await workspace.cleanup();
     }
   });
 
-  test("the last pane on screen offers no Close pane", async ({ page }, testInfo) => {
+  test("closing New cannot remove the last visible pane", async ({ page }, testInfo) => {
     const workspace = await seedWorkspace({ repoPrefix: "side-panel-final-pane-" });
 
     try {
@@ -172,13 +171,20 @@ test.describe("Side panel", () => {
         .first()
         .click();
 
-      // Main is now empty and the only pane the user can see. Taking it away would
-      // leave nowhere to look, so the launcher appears without a Close pane.
-      const lastPane = emptyState(mainPane(page));
+      // Main now contains New and is the only pane the user can see. Closing its
+      // tab cannot remove the final visible pane.
+      const lastPane = newTabPanel(mainPane(page));
       await expect(lastPane).toBeVisible({ timeout: 15_000 });
-      await expect(lastPane.getByRole("button", { name: "Files" })).toBeVisible();
-      await expect(lastPane.getByRole("button", { name: "Close pane" })).toHaveCount(0);
-      await expect(closePaneButton(page)).toHaveCount(0);
+      await expect(lastPane.getByRole("button", { name: "Files", exact: true })).toBeVisible();
+      const finalNewTab = mainPane(page)
+        .locator('[data-testid^="workspace-tab-tab_"]')
+        .filter({ hasText: "New tab" });
+      await finalNewTab.hover();
+      await mainPane(page)
+        .locator('[data-testid^="workspace-new-tab-close-"]')
+        .filter({ visible: true })
+        .click();
+      await expect(lastPane).toBeVisible();
       await capture(page, testInfo, "08-final-visible-pane-has-no-close");
     } finally {
       await workspace.cleanup();
@@ -199,7 +205,7 @@ test.describe("Side panel", () => {
       });
       await capture(page, testInfo, "08-changes-in-side-panel");
 
-      await mainPane(page).getByTestId("workspace-new-tab-menu-trigger").click();
+      await mainPane(page).getByTestId("workspace-new-tab-button").click();
       await page
         .getByTestId("workspace-new-tab-menu-changes")
         .filter({ visible: true })
