@@ -523,8 +523,9 @@ const styles = StyleSheet.create((theme) => ({
     position: "relative",
   },
   workspaceRow: {
-    ...comfortableSidebarRowDensity(theme),
+    minHeight: 36,
     marginBottom: theme.spacing[1],
+    ...comfortableSidebarRowDensity(theme),
     paddingLeft: theme.spacing[2],
     paddingRight: theme.spacing[3],
     borderRadius: theme.borderRadius.lg,

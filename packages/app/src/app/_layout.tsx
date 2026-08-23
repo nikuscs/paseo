@@ -37,7 +37,7 @@ import { AppDiagnosticHost } from "@/components/app-diagnostic-host";
 import { LeftSidebar } from "@/components/left-sidebar";
 import { WindowSidebarMenuToggle } from "@/components/headers/menu-header";
 import { SidebarModelProvider } from "@/components/sidebar/sidebar-model";
-import { useRecentlyDoneRecency } from "@/components/sidebar/use-recently-done-recency";
+import { SidebarRecencyProvider } from "@/components/sidebar/sidebar-recency-context";
 import { WorkspacePinShortcutHandler } from "@/components/workspace-pin-shortcut-handler";
 import { CompactExplorerSidebarHost } from "@/components/compact-explorer-sidebar-host";
 import { ProviderSettingsHost } from "@/components/provider-settings-host";
@@ -532,12 +532,15 @@ function AppContainer({ children, chromeEnabled: chromeEnabledOverride }: AppCon
     hasTopLeftWindowControls,
     sidebarControlsEnabled: chromeEnabled && !isWorkspaceFocusModeEnabled,
   });
+  const sidebarChromeVisible = isCompactLayout ? chromeEnabled : desktopSidebarVisible;
   const sidebarChrome = (
-    <SidebarChrome
-      mounted={isCompactLayout ? chromeEnabled : desktopSidebarMounted}
-      visible={isCompactLayout ? chromeEnabled : desktopSidebarVisible}
-      keyboardShortcutsEnabled={keyboardShortcutsEnabled}
-    />
+    <SidebarRecencyBoundary visible={sidebarChromeVisible}>
+      <SidebarChrome
+        mounted={isCompactLayout ? chromeEnabled : desktopSidebarMounted}
+        visible={sidebarChromeVisible}
+        keyboardShortcutsEnabled={keyboardShortcutsEnabled}
+      />
+    </SidebarRecencyBoundary>
   );
   const workspaceChrome = (
     <View style={rowStyle}>
@@ -606,6 +609,14 @@ function AppContainer({ children, chromeEnabled: chromeEnabledOverride }: AppCon
   return <CommandCenterProvider>{content}</CommandCenterProvider>;
 }
 
+function SidebarRecencyBoundary({ children, visible }: { children: ReactNode; visible: boolean }) {
+  const isCompactLayout = useIsCompactFormFactor();
+  const isOpen = usePanelStore((state) =>
+    selectIsAgentListOpen(state, { isCompact: isCompactLayout }),
+  );
+  return <SidebarRecencyProvider active={visible && isOpen}>{children}</SidebarRecencyProvider>;
+}
+
 function SidebarChrome({
   mounted,
   visible,
@@ -620,9 +631,8 @@ function SidebarChrome({
     selectIsAgentListOpen(state, { isCompact: isCompactLayout }),
   );
   const active = visible && isOpen;
-  const recency = useRecentlyDoneRecency(active);
   return (
-    <SidebarModelProvider active={active} recency={recency}>
+    <SidebarModelProvider active={active}>
       {mounted ? <LeftSidebar active={active} /> : null}
       <WorkspaceShortcutTargetsSubscriber enabled={keyboardShortcutsEnabled} />
     </SidebarModelProvider>
