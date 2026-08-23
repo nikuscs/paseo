@@ -31,8 +31,10 @@ test("search stays available while the initial tree listing is errored and retri
   await chmod(workspace.repoPath, 0o000);
 
   const sidePanel = await ensureSidePanel(page);
-  await sidePanel.getByTestId("workspace-new-tab-menu-trigger").click();
-  await page.getByTestId("workspace-new-tab-menu-files").filter({ visible: true }).click();
+  if ((await sidePanel.getByTestId("workspace-new-tab-panel").count()) === 0) {
+    await sidePanel.getByTestId("workspace-new-tab-button").click();
+  }
+  await sidePanel.getByTestId("workspace-new-tab-files").click();
 
   const searchToggle = sidePanel.getByTestId("files-search-toggle");
   await expect(searchToggle).toBeVisible({ timeout: 30_000 });
@@ -62,8 +64,7 @@ test("opening the same search match again recenters the file", async ({ page }) 
   });
   await expect.poll(() => scroller.evaluate((element) => element.scrollTop)).toBe(0);
 
-  await page.getByTestId("files-search-toggle").filter({ visible: true }).click();
-  await page.getByTestId("files-search-input").filter({ visible: true }).fill("uniqueSearchNeedle");
+  await page.getByTestId("workspace-tab-files").filter({ visible: true }).click();
   await expect(match).toBeVisible({ timeout: 30_000 });
   await match.click();
 
