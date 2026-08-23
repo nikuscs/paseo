@@ -24,7 +24,6 @@ import {
 } from "react-native";
 import { EditingTextInput as TextInput } from "@/components/ui/text-input";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
-import type { DaemonClient } from "@getpaseo/client/internal/daemon-client";
 import { useIsCompactFormFactor } from "@/constants/layout";
 import { isWeb } from "@/constants/platform";
 import * as Clipboard from "expo-clipboard";
@@ -36,7 +35,6 @@ import {
   Folder,
   FolderPlus,
   RotateCw,
-  Search,
 } from "lucide-react-native";
 import { MaterialFileIcon } from "@/components/material-file-icon";
 import {
@@ -58,6 +56,8 @@ import {
   type OverlayFlatListScrollbar,
 } from "@/components/ui/overlay-scrollbar/use-overlay-flat-list-scrollbar";
 import type { Theme } from "@/styles/theme";
+import { Search } from "lucide-react-native";
+import type { DaemonClient } from "@getpaseo/client/internal/daemon-client";
 import { FileSearchPane } from "@/file-explorer/search-pane";
 import type {
   AgentFileExplorerState,
@@ -102,10 +102,10 @@ const ThemedFolder = withUnistyles(Folder);
 const ThemedFolderPlus = withUnistyles(FolderPlus);
 const ThemedLoadingSpinner = withUnistyles(LoadingSpinner);
 const ThemedRotateCw = withUnistyles(RotateCw);
-const ThemedSearch = withUnistyles(Search);
 const foregroundMutedColorMapping = (theme: Theme) => ({
   color: theme.colors.foregroundMuted,
 });
+const ThemedSearch = withUnistyles(Search);
 const selectedAccessibilityState = { selected: true } as const;
 
 function DirectoryChevronIcon({ loading, expanded }: { loading: boolean; expanded: boolean }) {
@@ -1211,7 +1211,7 @@ function FileExplorerPaneContent(props: FileExplorerPaneContentProps) {
     handleRefresh,
     handleBackFromError,
     handleRetry,
-    sortTriggerStyle: sortTriggerStyleProp,
+    sortTriggerStyle: baseSortTriggerStyle,
     iconButtonStyle: iconButtonStyleProp,
     client,
     workspaceRoot,
@@ -1220,6 +1220,13 @@ function FileExplorerPaneContent(props: FileExplorerPaneContentProps) {
 
   const [isSearchMode, setIsSearchMode] = useState(false);
   const showHiddenFiles = usePanelStore((state) => state.explorerShowHiddenFiles);
+  const sortTriggerStyleProp = useCallback(
+    (state: PressableStateCallbackType) => [
+      baseSortTriggerStyle(state),
+      isSearchMode && { display: "none" as const },
+    ],
+    [baseSortTriggerStyle, isSearchMode],
+  );
 
   const handleNewFileAtRoot = useCallback(() => {
     onNewEntryAtRoot?.(".", "file");
@@ -1288,18 +1295,16 @@ function FileExplorerPaneContent(props: FileExplorerPaneContentProps) {
   return (
     <View style={[styles.treePane, styles.treePaneFill]}>
       <PaneContentToolbar style={styles.paneHeader} testID="files-pane-header">
-        {isSearchMode ? null : (
-          <Pressable
-            onPress={handleSortCycle}
-            style={sortTriggerStyleProp}
-            testID="files-sort-trigger"
-          >
-            <Text style={styles.sortTriggerText} testID="files-sort-label">
-              {currentSortLabel}
-            </Text>
-            <ThemedChevronDown size={12} uniProps={foregroundMutedColorMapping} />
-          </Pressable>
-        )}
+        <Pressable
+          onPress={handleSortCycle}
+          style={sortTriggerStyleProp}
+          testID="files-sort-trigger"
+        >
+          <Text style={styles.sortTriggerText} testID="files-sort-label">
+            {currentSortLabel}
+          </Text>
+          <ThemedChevronDown size={12} uniProps={foregroundMutedColorMapping} />
+        </Pressable>
         <View style={styles.headerActions}>
           {onNewEntryAtRoot ? (
             <>
