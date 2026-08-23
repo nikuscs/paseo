@@ -23,16 +23,25 @@ import {
   type ViewStyle,
 } from "react-native";
 import { EditingTextInput as TextInput } from "@/components/ui/text-input";
-import { StyleSheet, useUnistyles, withUnistyles } from "react-native-unistyles";
+import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { useIsCompactFormFactor } from "@/constants/layout";
 import { isWeb } from "@/constants/platform";
 import * as Clipboard from "expo-clipboard";
-import { ChevronDown, Eye, EyeOff, FilePlus, FolderPlus, RotateCw } from "lucide-react-native";
+import {
+  ChevronDown,
+  Eye,
+  EyeOff,
+  FilePlus,
+  Folder,
+  FolderPlus,
+  RotateCw,
+} from "lucide-react-native";
 import { MaterialFileIcon } from "@/components/material-file-icon";
 import {
   TreeChevron,
   treeRowPaddingLeft,
   workspaceTreeRowStyles,
+  WORKSPACE_TREE_FOLDER_ICON_SIZE,
   WORKSPACE_TREE_ICON_LABEL_GAP,
   WORKSPACE_TREE_ICON_SIZE,
   WORKSPACE_TREE_LOADING_ICON_SIZE,
@@ -48,6 +57,9 @@ import {
   type OverlayFlatListScrollbar,
 } from "@/components/ui/overlay-scrollbar/use-overlay-flat-list-scrollbar";
 import type { Theme } from "@/styles/theme";
+import { Search } from "lucide-react-native";
+import type { DaemonClient } from "@getpaseo/client/internal/daemon-client";
+import { FileSearchPane } from "@/file-explorer/search-pane";
 import type {
   AgentFileExplorerState,
   ExplorerDirectory,
@@ -83,10 +95,19 @@ const SORT_OPTIONS: { value: SortOption }[] = [
   { value: "size" },
 ];
 
+const ThemedChevronDown = withUnistyles(ChevronDown);
+const ThemedEye = withUnistyles(Eye);
+const ThemedEyeOff = withUnistyles(EyeOff);
+const ThemedFilePlus = withUnistyles(FilePlus);
+const ThemedFolder = withUnistyles(Folder);
+const ThemedFolderPlus = withUnistyles(FolderPlus);
 const ThemedLoadingSpinner = withUnistyles(LoadingSpinner);
+const ThemedRotateCw = withUnistyles(RotateCw);
 const foregroundMutedColorMapping = (theme: Theme) => ({
   color: theme.colors.foregroundMuted,
 });
+const ThemedSearch = withUnistyles(Search);
+const selectedAccessibilityState = { selected: true } as const;
 
 function DirectoryChevronIcon({ loading, expanded }: { loading: boolean; expanded: boolean }) {
   if (loading) {
@@ -209,9 +230,15 @@ function EntryNameInputRow({
   return (
     <View style={[workspaceTreeRowStyles.row, { paddingLeft: treeRowPaddingLeft(depth) }]}>
       <View style={styles.entryInfo}>
+        <View style={styles.entryChevron}>
+          {kind === "directory" ? <TreeChevron expanded={false} /> : null}
+        </View>
         <View style={styles.entryIcon}>
           {kind === "directory" ? (
-            <TreeChevron expanded={false} />
+            <ThemedFolder
+              size={WORKSPACE_TREE_FOLDER_ICON_SIZE}
+              uniProps={foregroundMutedColorMapping}
+            />
           ) : (
             <MaterialFileIcon fileName={name || "untitled"} size={WORKSPACE_TREE_ICON_SIZE} />
           )}
@@ -379,9 +406,15 @@ function TreeRowItem({
         testID={testID}
       >
         <View ref={dragSourceRef} style={styles.entryInfo}>
+          <View style={styles.entryChevron}>
+            {isDirectory ? <DirectoryChevronIcon loading={loading} expanded={isExpanded} /> : null}
+          </View>
           <View style={styles.entryIcon}>
             {isDirectory ? (
-              <DirectoryChevronIcon loading={loading} expanded={isExpanded} />
+              <ThemedFolder
+                size={WORKSPACE_TREE_FOLDER_ICON_SIZE}
+                uniProps={foregroundMutedColorMapping}
+              />
             ) : (
               <MaterialFileIcon fileName={entry.name} size={WORKSPACE_TREE_ICON_SIZE} />
             )}
@@ -424,7 +457,7 @@ interface FileExplorerPaneProps {
   serverId: string;
   workspaceId?: string | null;
   workspaceRoot: string;
-  onOpenFile?: (filePath: string) => void;
+  onOpenFile?: (filePath: string, lineStart?: number, lineEnd?: number) => void;
   onAddToChat?: (path: string) => void;
 }
 
@@ -448,6 +481,7 @@ export function FileExplorerPane({
     [normalizedWorkspaceRoot, workspaceId],
   );
   const hasWorkspaceScope = Boolean(workspaceStateKey && normalizedWorkspaceRoot);
+  const client = useSessionStore((state) => state.sessions[serverId]?.client ?? null);
   const explorerState = useSessionStore((state) =>
     workspaceStateKey && state.sessions[serverId]
       ? state.sessions[serverId]?.fileExplorer.get(workspaceStateKey)
@@ -544,17 +578,10 @@ export function FileExplorerPane({
         entry,
         workspaceStateKey,
         expandedPaths,
-        directories,
         requestDirectoryListing,
         setExpandedPathsForWorkspace,
       }),
-    [
-      workspaceStateKey,
-      expandedPaths,
-      directories,
-      requestDirectoryListing,
-      setExpandedPathsForWorkspace,
-    ],
+    [workspaceStateKey, expandedPaths, requestDirectoryListing, setExpandedPathsForWorkspace],
   );
 
   // Selection is intentionally separate from opening/expansion so future keyboard actions
@@ -1088,6 +1115,9 @@ export function FileExplorerPane({
         handleRetry={handleRetry}
         sortTriggerStyle={sortTriggerStyle}
         iconButtonStyle={toolbarIconButtonStyle}
+        client={client ?? null}
+        workspaceRoot={normalizedWorkspaceRoot}
+        onOpenFile={onOpenFile}
       />
     </View>
   );
@@ -1163,10 +1193,12 @@ interface FileExplorerPaneContentProps {
   handleRetry: () => void;
   sortTriggerStyle: (state: PressableStateCallbackType) => StyleProp<ViewStyle>;
   iconButtonStyle: (state: PressableStateCallbackType) => StyleProp<ViewStyle>;
+  client: DaemonClient | null;
+  workspaceRoot: string;
+  onOpenFile?: (filePath: string, lineStart?: number, lineEnd?: number) => void;
 }
 
 function FileExplorerPaneContent(props: FileExplorerPaneContentProps) {
-  const { theme } = useUnistyles();
   const { t } = useTranslation();
   const {
     error,
@@ -1185,11 +1217,22 @@ function FileExplorerPaneContent(props: FileExplorerPaneContentProps) {
     handleRefresh,
     handleBackFromError,
     handleRetry,
-    sortTriggerStyle: sortTriggerStyleProp,
+    sortTriggerStyle: baseSortTriggerStyle,
     iconButtonStyle: iconButtonStyleProp,
+    client,
+    workspaceRoot,
+    onOpenFile,
   } = props;
 
+  const [isSearchMode, setIsSearchMode] = useState(false);
   const showHiddenFiles = usePanelStore((state) => state.explorerShowHiddenFiles);
+  const sortTriggerStyleProp = useCallback(
+    (state: PressableStateCallbackType) => [
+      baseSortTriggerStyle(state),
+      isSearchMode && { display: "none" as const },
+    ],
+    [baseSortTriggerStyle, isSearchMode],
+  );
 
   const handleNewFileAtRoot = useCallback(() => {
     onNewEntryAtRoot?.(".", "file");
@@ -1197,6 +1240,11 @@ function FileExplorerPaneContent(props: FileExplorerPaneContentProps) {
   const handleNewFolderAtRoot = useCallback(() => {
     onNewEntryAtRoot?.(".", "directory");
   }, [onNewEntryAtRoot]);
+  const toggleSearchMode = useCallback(() => setIsSearchMode((current) => !current), []);
+  const handleOpenSearchMatch = useCallback(
+    (path: string, line: number) => onOpenFile?.(path, line, line),
+    [onOpenFile],
+  );
 
   const hiddenFilesToggleAccessibilityLabel = showHiddenFiles
     ? t("workspace.fileExplorer.actions.hideHiddenFiles")
@@ -1216,8 +1264,17 @@ function FileExplorerPaneContent(props: FileExplorerPaneContentProps) {
     [showHiddenFiles],
   );
 
-  if (error) {
-    return (
+  let stateContent: ReactNode = null;
+  if (isSearchMode) {
+    stateContent = (
+      <FileSearchPane
+        client={client}
+        workspaceRoot={workspaceRoot}
+        onOpenMatch={handleOpenSearchMatch}
+      />
+    );
+  } else if (error) {
+    stateContent = (
       <View style={styles.centerState}>
         <Text style={styles.errorText}>{error}</Text>
         <View style={styles.errorActions}>
@@ -1232,10 +1289,8 @@ function FileExplorerPaneContent(props: FileExplorerPaneContentProps) {
         </View>
       </View>
     );
-  }
-
-  if (showInitialLoading) {
-    return (
+  } else if (showInitialLoading) {
+    stateContent = (
       <View style={styles.centerState}>
         <ThemedLoadingSpinner size="small" uniProps={foregroundMutedColorMapping} />
         <Text style={styles.loadingText}>{t("workspace.fileExplorer.states.loading")}</Text>
@@ -1254,7 +1309,7 @@ function FileExplorerPaneContent(props: FileExplorerPaneContentProps) {
           <Text style={styles.sortTriggerText} testID="files-sort-label">
             {currentSortLabel}
           </Text>
-          <ChevronDown size={12} color={theme.colors.foregroundMuted} />
+          <ThemedChevronDown size={12} uniProps={foregroundMutedColorMapping} />
         </Pressable>
         <View style={styles.headerActions}>
           {onNewEntryAtRoot ? (
@@ -1267,9 +1322,9 @@ function FileExplorerPaneContent(props: FileExplorerPaneContentProps) {
                 accessibilityLabel={t("workspace.fileActions.newFile")}
                 testID="files-new-file"
               >
-                <FilePlus
+                <ThemedFilePlus
                   size={paneContentToolbarIconSize(isCompact)}
-                  color={theme.colors.foregroundMuted}
+                  uniProps={foregroundMutedColorMapping}
                 />
               </Pressable>
               <Pressable
@@ -1280,13 +1335,34 @@ function FileExplorerPaneContent(props: FileExplorerPaneContentProps) {
                 accessibilityLabel={t("workspace.fileActions.newFolder")}
                 testID="files-new-folder"
               >
-                <FolderPlus
+                <ThemedFolderPlus
                   size={paneContentToolbarIconSize(isCompact)}
-                  color={theme.colors.foregroundMuted}
+                  uniProps={foregroundMutedColorMapping}
                 />
               </Pressable>
             </>
           ) : null}
+          <Pressable
+            onPress={toggleSearchMode}
+            hitSlop={8}
+            style={iconButtonStyleProp}
+            accessibilityRole="button"
+            accessibilityLabel={isSearchMode ? "Show files" : t("common.actions.search")}
+            accessibilityState={isSearchMode ? selectedAccessibilityState : undefined}
+            testID="files-search-toggle"
+          >
+            {isSearchMode ? (
+              <ThemedFolder
+                size={paneContentToolbarIconSize(isCompact)}
+                uniProps={foregroundMutedColorMapping}
+              />
+            ) : (
+              <ThemedSearch
+                size={paneContentToolbarIconSize(isCompact)}
+                uniProps={foregroundMutedColorMapping}
+              />
+            )}
+          </Pressable>
           <Pressable
             onPress={handleToggleHiddenFiles}
             hitSlop={8}
@@ -1297,14 +1373,14 @@ function FileExplorerPaneContent(props: FileExplorerPaneContentProps) {
             testID="files-hidden-toggle"
           >
             {showHiddenFiles ? (
-              <Eye
+              <ThemedEye
                 size={paneContentToolbarIconSize(isCompact)}
-                color={theme.colors.foregroundMuted}
+                uniProps={foregroundMutedColorMapping}
               />
             ) : (
-              <EyeOff
+              <ThemedEyeOff
                 size={paneContentToolbarIconSize(isCompact)}
-                color={theme.colors.foregroundMuted}
+                uniProps={foregroundMutedColorMapping}
               />
             )}
           </Pressable>
@@ -1323,56 +1399,58 @@ function FileExplorerPaneContent(props: FileExplorerPaneContentProps) {
           >
             <View style={styles.refreshIcon}>
               {isRefreshFetching ? (
-                <LoadingSpinner
+                <ThemedLoadingSpinner
                   size={paneContentToolbarIconSize(isCompact)}
-                  color={theme.colors.foregroundMuted}
+                  uniProps={foregroundMutedColorMapping}
                 />
               ) : (
-                <RotateCw
+                <ThemedRotateCw
                   size={paneContentToolbarIconSize(isCompact)}
-                  color={theme.colors.foregroundMuted}
+                  uniProps={foregroundMutedColorMapping}
                 />
               )}
             </View>
           </Pressable>
         </View>
       </PaneContentToolbar>
-      <ContextMenu>
-        <RootCreationContextTarget enabled={Boolean(onNewEntryAtRoot)}>
-          {listRows.length === 0 ? (
-            <View style={styles.centerState}>
-              <Text style={styles.emptyText}>{emptyLabel}</Text>
-            </View>
-          ) : (
-            <FlatList
-              ref={treeListRef}
-              style={styles.treeList}
-              data={listRows}
-              renderItem={renderTreeRow}
-              keyExtractor={listRowKeyExtractor}
-              testID="file-explorer-tree-scroll"
-              contentContainerStyle={styles.entriesContent}
-              onLayout={scrollbar.onLayout}
-              onScroll={scrollbar.onScroll}
-              onContentSizeChange={scrollbar.onContentSizeChange}
-              scrollEventThrottle={16}
-              showsVerticalScrollIndicator={!scrollbar.enabled}
-              initialNumToRender={24}
-              maxToRenderPerBatch={40}
-              windowSize={12}
+      {stateContent ?? (
+        <ContextMenu>
+          <RootCreationContextTarget enabled={Boolean(onNewEntryAtRoot)}>
+            {listRows.length === 0 ? (
+              <View style={styles.centerState}>
+                <Text style={styles.emptyText}>{emptyLabel}</Text>
+              </View>
+            ) : (
+              <FlatList
+                ref={treeListRef}
+                style={styles.treeList}
+                data={listRows}
+                renderItem={renderTreeRow}
+                keyExtractor={listRowKeyExtractor}
+                testID="file-explorer-tree-scroll"
+                contentContainerStyle={styles.entriesContent}
+                onLayout={scrollbar.onLayout}
+                onScroll={scrollbar.onScroll}
+                onContentSizeChange={scrollbar.onContentSizeChange}
+                scrollEventThrottle={16}
+                showsVerticalScrollIndicator={!scrollbar.enabled}
+                initialNumToRender={24}
+                maxToRenderPerBatch={40}
+                windowSize={12}
+              />
+            )}
+            {listRows.length > 0 ? scrollbar.overlay : null}
+          </RootCreationContextTarget>
+          {onNewEntryAtRoot ? (
+            <FileActionsContextMenuContent
+              fileKind="directory"
+              onNewFile={handleNewFileAtRoot}
+              onNewFolder={handleNewFolderAtRoot}
+              testIDPrefix="files-empty-area"
             />
-          )}
-          {listRows.length > 0 ? scrollbar.overlay : null}
-        </RootCreationContextTarget>
-        {onNewEntryAtRoot ? (
-          <FileActionsContextMenuContent
-            fileKind="directory"
-            onNewFile={handleNewFileAtRoot}
-            onNewFolder={handleNewFolderAtRoot}
-            testIDPrefix="files-empty-area"
-          />
-        ) : null}
-      </ContextMenu>
+          ) : null}
+        </ContextMenu>
+      )}
     </View>
   );
 }
@@ -1430,14 +1508,12 @@ function toggleDirectory({
   entry,
   workspaceStateKey,
   expandedPaths,
-  directories,
   requestDirectoryListing,
   setExpandedPathsForWorkspace,
 }: {
   entry: ExplorerEntry;
   workspaceStateKey: string | null;
   expandedPaths: Set<string>;
-  directories: Map<string, ExplorerDirectory>;
   requestDirectoryListing: (
     path: string,
     opts?: { recordHistory?: boolean; setCurrentPath?: boolean },
@@ -1455,7 +1531,7 @@ function toggleDirectory({
       expanded: !isExpanded,
     }),
   );
-  if (!isExpanded && !directories.has(entry.path)) {
+  if (!isExpanded) {
     void requestDirectoryListing(entry.path, {
       recordHistory: false,
       setCurrentPath: false,
@@ -1718,6 +1794,7 @@ const styles = StyleSheet.create((theme) => ({
     color: theme.colors.foregroundMuted,
   },
   headerActions: {
+    marginLeft: "auto",
     flexDirection: "row",
     alignItems: "center",
     gap: theme.spacing[1],
@@ -1783,6 +1860,13 @@ const styles = StyleSheet.create((theme) => ({
     alignItems: "center",
     gap: WORKSPACE_TREE_ICON_LABEL_GAP,
     minWidth: 0,
+  },
+  entryChevron: {
+    width: WORKSPACE_TREE_ICON_SIZE,
+    height: WORKSPACE_TREE_ICON_SIZE,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
   },
   entryIcon: {
     width: WORKSPACE_TREE_ICON_SIZE,

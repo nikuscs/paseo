@@ -114,12 +114,44 @@ describe("non-compact with splits", () => {
     checkout: CHECKOUT,
   };
 
-  it("reveals a New tab pane rather than seeding a supporting view into it", () => {
+  it("seeds Changes and Files into the revealed pane and focuses Files", () => {
     toggleSidePanel(wide);
 
     expect(isSidePanelOpen(wide)).toBe(true);
-    expect(tabKinds()).toEqual(["new_tab", "new_tab"]);
+    expect(tabKinds()).toEqual(["new_tab", "working_diff", "files"]);
     expect(collectAllPanes(layout().root).length).toBeGreaterThan(1);
+    const sidePanelPane = findPaneById(layout().root, sidePanelPaneId());
+    expect(sidePanelPane?.tabIds).toHaveLength(2);
+    expect(focusedPaneTabKinds()).toEqual(["working_diff", "files"]);
+    expect(
+      collectAllTabs(layout().root).find((tab) => tab.tabId === sidePanelPane?.focusedTabId)?.target
+        .kind,
+    ).toBe("files");
+  });
+
+  it("reveals a New tab pane when nothing seeded it", () => {
+    showSidePanel(wide);
+
+    expect(isSidePanelOpen(wide)).toBe(true);
+    expect(tabKinds()).toEqual(["new_tab", "new_tab"]);
+  });
+
+  it("leaves a seeded view where the user parked it", () => {
+    const filesTabId = openSupportingTab({
+      isCompact: false,
+      supportsPaneSplits: true,
+      workspaceKey: WORKSPACE_KEY,
+      target: { kind: "files" },
+      openInSidePanelByDefault: true,
+    }) as string;
+    useWorkspaceLayoutStore.getState().moveTabToPane(WORKSPACE_KEY, filesTabId, "main");
+    hideSidePanel(wide);
+
+    toggleSidePanel(wide);
+
+    expect(paneIdHolding(filesTabId)).toBe("main");
+    expect(tabKinds().filter((kind) => kind === "files")).toHaveLength(1);
+    expect(tabKinds()).toContain("working_diff");
   });
 
   it("opens the view the user picked from the revealed panel", () => {

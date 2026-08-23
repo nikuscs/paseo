@@ -108,6 +108,10 @@ import { PinnedSectionHeader } from "@/components/sidebar/pinned-section-header"
 import { SidebarGroupToggleRow } from "@/components/sidebar/sidebar-group-toggle-row";
 import { useLimitedSidebarGroup } from "@/components/sidebar/use-limited-sidebar-group";
 import {
+  comfortableSidebarRowDensity,
+  compactSidebarRowDensity,
+} from "@/components/sidebar/sidebar-row-metrics";
+import {
   SidebarWorkspaceRowFrame,
   SidebarWorkspaceRowContent,
   SidebarWorkspaceShortcutBadge,
@@ -158,7 +162,11 @@ import { OpenInFileManagerMenuItem } from "@/workspace/open-in-file-manager/menu
 import { useLocalDaemonServerId } from "@/hooks/use-is-local-daemon";
 import type { HostBadgeModel } from "@/hosts/appearance";
 import { useHostBadges } from "@/hosts/use-host-badges";
-import { useSidebarRowItems } from "@/components/sidebar/display-preferences/model";
+import {
+  useCompactSidebarRows,
+  useShowNewWorkspaceRow,
+  useSidebarRowItems,
+} from "@/components/sidebar/display-preferences/model";
 
 const workspaceKeyExtractor = (workspace: SidebarWorkspacePlacement) => workspace.workspaceKey;
 
@@ -272,7 +280,6 @@ interface ProjectHeaderRowProps {
   iconDataUri: string | null;
   statusBucket: SidebarStateBucket | null;
   selected?: boolean;
-  chevron: "expand" | "collapse" | null;
   onPress: () => void;
   worktreeTarget: SidebarProjectHostTarget | null;
   isProjectActive?: boolean;
@@ -392,14 +399,17 @@ function getProjectWorkspaceRowStyle({
   isPressed,
   selected,
   isHovered,
+  compact,
 }: {
   isDragging: boolean;
   isPressed: boolean;
   selected: boolean;
   isHovered: boolean;
+  compact: boolean;
 }) {
   return [
     styles.workspaceRow,
+    compact && styles.workspaceRowCompact,
     isHovered && styles.workspaceRowHovered,
     selected && styles.sidebarRowSelected,
     isDragging && styles.workspaceRowDragging,
@@ -878,7 +888,6 @@ function ProjectHeaderRow({
   iconDataUri,
   statusBucket,
   selected = false,
-  chevron,
   onPress,
   worktreeTarget,
   isProjectActive = false,
@@ -901,6 +910,7 @@ function ProjectHeaderRow({
   const localDaemonServerId = useLocalDaemonServerId();
   const projectPath = resolveSidebarProjectLocalPath(project, localDaemonServerId);
   const settingsTarget = project.hosts[0] ?? null;
+  const compactSidebarRows = useCompactSidebarRows();
   const handleBeginWorkspaceSetup = useCallback(() => {
     if (!worktreeTarget) {
       return;
@@ -957,12 +967,13 @@ function ProjectHeaderRow({
   const projectRowStyle = useCallback(
     ({ pressed }: PressableStateCallbackType) => [
       styles.projectRow,
+      compactSidebarRows && styles.projectRowCompact,
       isDragging && styles.projectRowDragging,
       selected && styles.sidebarRowSelected,
       isHovered && styles.projectRowHovered,
       pressed && styles.projectRowPressed,
     ],
-    [isDragging, selected, isHovered],
+    [compactSidebarRows, isDragging, selected, isHovered],
   );
 
   const rowChildren = (
@@ -974,8 +985,6 @@ function ProjectHeaderRow({
           statusBucket={statusBucket}
           projectViewKey={project.viewKey}
           backdrop={getSidebarRowBackdrop({ isDragging, isPressed, selected, isHovered })}
-          chevron={chevron}
-          showChevron={isHovered && chevron !== null}
           isArchiving={isArchiving}
         />
 
@@ -1102,6 +1111,7 @@ function WorkspaceRowInner({
   const isCompact = useIsCompactFormFactor();
   const [isPressed, setIsPressed] = useState(false);
   const isTouchPlatform = platformIsNative || isCompact;
+  const compactSidebarRows = useCompactSidebarRows();
   const interaction = useLongPressDragInteraction({
     drag,
     menuController,
@@ -1144,6 +1154,7 @@ function WorkspaceRowInner({
           isPressed,
           selected,
           isHovered,
+          compact: compactSidebarRows,
         });
         const backdrop = getSidebarRowBackdrop({ isDragging, isPressed, selected, isHovered });
         return (
@@ -1604,6 +1615,7 @@ function ProjectBlock({
   onToggleCollapsed,
   onWorkspacePress,
   onWorkspaceReorder,
+  reorderEnabled,
   onWorktreeCreated,
   drag,
   isDragging,
@@ -1629,6 +1641,7 @@ function ProjectBlock({
   onToggleCollapsed: (projectViewKey: string) => void;
   onWorkspacePress?: () => void;
   onWorkspaceReorder: (projectViewKey: string, workspaces: SidebarWorkspacePlacement[]) => void;
+  reorderEnabled: boolean;
   onWorktreeCreated?: (workspaceId: string) => void;
   drag: () => void;
   isDragging: boolean;
@@ -1648,6 +1661,7 @@ function ProjectBlock({
     canToggle: canToggleWorkspaces,
     toggleExpanded: toggleWorkspacesExpanded,
   } = useLimitedSidebarGroup(project.workspaces);
+  const showNewWorkspaceRow = useShowNewWorkspaceRow();
   const rowModel = useMemo(
     () =>
       buildSidebarProjectRowModel({
@@ -1812,6 +1826,7 @@ function ProjectBlock({
             extraData={activeWorkspaceSelectionKey(activeWorkspaceSelection)}
             scrollEnabled={false}
             useDragHandle
+            enabled={reorderEnabled}
             nestable={useNestable}
             simultaneousGestureRef={parentGestureRef}
             gestureHostPresented={dragGestureHostPresented}
@@ -1826,7 +1841,7 @@ function ProjectBlock({
           ) : null}
         </>
       );
-    } else if (rowModel.trailingAction.kind === "new_workspace") {
+    } else if (rowModel.trailingAction.kind === "new_workspace" && showNewWorkspaceRow) {
       projectChildren = (
         <NewWorkspaceGhostRow
           project={project}
@@ -1850,7 +1865,6 @@ function ProjectBlock({
         iconDataUri={iconDataUri}
         statusBucket={aggregateStatusBucket}
         selected={false}
-        chevron={rowModel.chevron}
         onPress={handleToggleCollapsed}
         worktreeTarget={
           rowModel.trailingAction.kind === "new_workspace" ? rowModel.trailingAction.target : null
@@ -1893,6 +1907,7 @@ function areProjectBlockPropsEqual(previous: ProjectBlockProps, next: ProjectBlo
     previous.onToggleCollapsed === next.onToggleCollapsed &&
     previous.onWorkspacePress === next.onWorkspacePress &&
     previous.onWorkspaceReorder === next.onWorkspaceReorder &&
+    previous.reorderEnabled === next.reorderEnabled &&
     previous.onWorktreeCreated === next.onWorktreeCreated &&
     previous.drag === next.drag &&
     previous.isDragging === next.isDragging &&
@@ -2168,6 +2183,7 @@ function ProjectModeList({
   onPinnedWorkspaceReorder: (workspaces: SidebarWorkspacePlacement[]) => void;
 }) {
   const hasActiveHostFilter = useSidebarViewStore((state) => state.hostFilters.length > 0);
+  const reorderEnabled = useSidebarViewStore((state) => state.sortMode === "manual");
   const [creatingWorkspaceIds, setCreatingWorkspaceIds] = useState<Set<string>>(() => new Set());
   const creatingWorkspaceTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(
     new Map(),
@@ -2353,6 +2369,7 @@ function ProjectModeList({
           onToggleCollapsed={onToggleProjectCollapsed}
           onWorkspacePress={onWorkspacePress}
           onWorkspaceReorder={handleWorkspaceReorder}
+          reorderEnabled={reorderEnabled}
           onWorktreeCreated={handleWorktreeCreated}
           drag={dragState.drag}
           isDragging={dragState.isDragging}
@@ -2379,6 +2396,7 @@ function ProjectModeList({
       onToggleWorkspacePin,
       onWorkspacePress,
       onToggleProjectCollapsed,
+      reorderEnabled,
       parentGestureRef,
       dragGestureHostPresented,
       projectIconByProjectViewKey,
@@ -2455,6 +2473,7 @@ function ProjectModeList({
         extraData={activeWorkspaceSelectionKey(activeWorkspaceSelection)}
         scrollEnabled={false}
         useDragHandle
+        enabled={reorderEnabled}
         nestable={platformIsNative}
         simultaneousGestureRef={parentGestureRef}
         gestureHostPresented={dragGestureHostPresented}
@@ -2614,18 +2633,18 @@ const styles = StyleSheet.create((theme) => ({
     color: theme.colors.foreground,
   },
   projectRow: {
+    ...comfortableSidebarRowDensity(theme),
     position: "relative",
-    minHeight: 36,
-    paddingVertical: theme.spacing[2],
     paddingHorizontal: theme.spacing[2],
     borderRadius: theme.borderRadius.lg,
-    marginBottom: theme.spacing[1],
+    marginBottom: theme.spacing[0.5],
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     gap: theme.spacing[2],
     userSelect: "none",
   },
+  projectRowCompact: compactSidebarRowDensity(theme),
   projectRowHovered: {
     backgroundColor: theme.colors.surfaceSidebarHover,
   },
@@ -2737,9 +2756,8 @@ const styles = StyleSheet.create((theme) => ({
     right: theme.spacing[2],
   },
   workspaceRow: {
-    minHeight: 36,
+    ...comfortableSidebarRowDensity(theme),
     marginBottom: theme.spacing[0.5],
-    paddingVertical: theme.spacing[2],
     paddingLeft: theme.spacing[2],
     paddingRight: theme.spacing[3],
     borderRadius: theme.borderRadius.lg,
@@ -2749,6 +2767,7 @@ const styles = StyleSheet.create((theme) => ({
     gap: theme.spacing[1],
     userSelect: "none",
   },
+  workspaceRowCompact: compactSidebarRowDensity(theme),
   workspaceRowMain: {
     flexDirection: "row",
     alignItems: "center",
