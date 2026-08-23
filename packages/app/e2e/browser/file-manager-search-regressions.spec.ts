@@ -45,6 +45,26 @@ test("search stays available while the initial tree listing is errored and retri
   await expect(sidePanel.getByTestId("files-sort-trigger")).toBeHidden();
 });
 
+test("Explorer file clicks retarget the Files tab instead of opening a main-pane tab", async ({
+  page,
+}) => {
+  await gotoWorkspace(page, workspace.workspaceId);
+  await openFilesPanel(page);
+
+  const sidePanel = await ensureSidePanel(page);
+  const mainPane = page.getByTestId("workspace-pane-main").filter({ visible: true }).first();
+  const mainTabCount = await mainPane.locator('[data-testid^="workspace-tab-"]').count();
+  const tree = sidePanel.getByTestId("file-explorer-tree-scroll");
+  await tree.getByText("src", { exact: true }).click();
+  await tree.getByText("search.ts", { exact: true }).click();
+
+  await expect(sidePanel.getByTestId("workspace-tab-files")).toHaveCount(0);
+  await expect(sidePanel.getByTestId("workspace-tab-file_src/search.ts")).toBeVisible();
+  await expect(sidePanel.getByTestId("file-tree-rail")).toBeVisible();
+  await expect(mainPane.locator('[data-testid^="workspace-tab-"]')).toHaveCount(mainTabCount);
+  await expect(mainPane.getByTestId("workspace-tab-file_src/search.ts")).toHaveCount(0);
+});
+
 test("opening the same search match again recenters the file", async ({ page }) => {
   await gotoWorkspace(page, workspace.workspaceId);
   await openFilesPanel(page);
@@ -65,7 +85,8 @@ test("opening the same search match again recenters the file", async ({ page }) 
   });
   await expect.poll(() => scroller.evaluate((element) => element.scrollTop)).toBe(0);
 
-  await page.getByTestId("workspace-tab-files").filter({ visible: true }).click();
+  await page.getByTestId("files-search-toggle").filter({ visible: true }).click();
+  await page.getByTestId("files-search-input").filter({ visible: true }).fill("uniqueSearchNeedle");
   await expect(match).toBeVisible({ timeout: 30_000 });
   await match.click();
 

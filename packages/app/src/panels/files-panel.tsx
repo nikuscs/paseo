@@ -5,6 +5,7 @@ import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import invariant from "tiny-invariant";
 import { FileExplorerPane } from "@/components/file-explorer-pane";
+import { createWorkspaceFileTabTarget } from "@/workspace/file-open";
 import { usePaneContext } from "@/panels/pane-context";
 import type { PanelRegistration } from "@/panels/panel-registry";
 import { useAddFileToChat } from "@/panels/use-add-file-to-chat";
@@ -29,18 +30,15 @@ function useFilesPanelDescriptor() {
 
 function FilesPanel() {
   const { t } = useTranslation();
-  const { serverId, workspaceId, target, openFileInWorkspace } = usePaneContext();
+  const { serverId, workspaceId, target, retargetCurrentTab } = usePaneContext();
   const workspaceRoot = useWorkspaceDirectory(serverId, workspaceId);
   const { addFile, canAddToChat } = useAddFileToChat({ serverId, workspaceId });
   const isCompact = useIsCompactFormFactor();
   invariant(target.kind === "files", "FilesPanel requires files target");
   const onOpenFile = useCallback(
     (path: string, lineStart?: number, lineEnd?: number) =>
-      openFileInWorkspace({
-        location: { path, lineStart, lineEnd },
-        disposition: "main",
-      }),
-    [openFileInWorkspace],
+      retargetCurrentTab(createWorkspaceFileTabTarget({ path, lineStart, lineEnd })),
+    [retargetCurrentTab],
   );
   if (!workspaceRoot) {
     return (
