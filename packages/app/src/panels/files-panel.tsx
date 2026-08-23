@@ -36,7 +36,10 @@ function FilesPanel() {
   invariant(target.kind === "files", "FilesPanel requires files target");
   const onOpenFile = useCallback(
     (path: string, lineStart?: number, lineEnd?: number) =>
-      openFileInWorkspace({ location: { path, lineStart, lineEnd }, disposition: "main" }),
+      openFileInWorkspace({
+        location: { path, lineStart, lineEnd },
+        disposition: "main",
+      }),
     [openFileInWorkspace],
   );
   if (!workspaceRoot) {
