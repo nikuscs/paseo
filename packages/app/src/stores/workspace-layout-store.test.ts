@@ -4021,4 +4021,48 @@ describe("workspace-layout-store actions", () => {
     expect(findPaneById(layout.root, "main")?.tabIds).toEqual([agentTabId]);
     expect(collectAllPanes(layout.root).map((pane) => pane.id)).toEqual(["main"]);
   });
+  it("reconcileTabs converges layout identity when a standalone terminal is not known", () => {
+    const workspaceKey = createWorkspaceKey();
+    const snapshot = {
+      agentsHydrated: true,
+      terminalsHydrated: true,
+      activeAgentIds: [],
+      autoOpenAgentIds: [],
+      knownAgentIds: [],
+      knownTerminalIds: [],
+      standaloneTerminalIds: ["x1"],
+      hasActivePendingDraftCreate: false,
+    };
+
+    workspaceLayoutStore.getState().reconcileTabs(workspaceKey, snapshot);
+    const firstLayout = workspaceLayoutStore.getState().layoutByWorkspace[workspaceKey];
+
+    for (let pass = 0; pass < 5; pass += 1) {
+      workspaceLayoutStore.getState().reconcileTabs(workspaceKey, snapshot);
+      expect(workspaceLayoutStore.getState().layoutByWorkspace[workspaceKey]).toBe(firstLayout);
+    }
+  });
+
+  it("reconcileTabs converges layout identity when a live browser is not known", () => {
+    const workspaceKey = createWorkspaceKey();
+    const snapshot = {
+      agentsHydrated: true,
+      terminalsHydrated: true,
+      activeAgentIds: [],
+      autoOpenAgentIds: [],
+      knownAgentIds: [],
+      knownTerminalIds: [],
+      standaloneTerminalIds: [],
+      browsers: { hydrated: true, knownIds: [], liveIds: ["b2"] },
+      hasActivePendingDraftCreate: false,
+    };
+
+    workspaceLayoutStore.getState().reconcileTabs(workspaceKey, snapshot);
+    const firstLayout = workspaceLayoutStore.getState().layoutByWorkspace[workspaceKey];
+
+    for (let pass = 0; pass < 5; pass += 1) {
+      workspaceLayoutStore.getState().reconcileTabs(workspaceKey, snapshot);
+      expect(workspaceLayoutStore.getState().layoutByWorkspace[workspaceKey]).toBe(firstLayout);
+    }
+  });
 });
