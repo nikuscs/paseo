@@ -518,6 +518,10 @@ export const ptBR: TranslationResources = {
         title: "O navegador é exclusivo do desktop",
         subtitle: "Abra este workspace no Electron para usar o navegador integrado.",
       },
+      mirror: {
+        keyboard: "Teclado do navegador espelhado",
+        connecting: "Conectando ao navegador no host…",
+      },
       session: "Sessão do navegador {{browserId}}",
       controls: {
         back: "Voltar",
@@ -545,9 +549,11 @@ export const ptBR: TranslationResources = {
       devices: {
         label: "Tamanho do dispositivo",
         responsive: "Responsivo",
+        landscape: "Paisagem",
       },
       errors: {
         failedToLoad: "Falha ao carregar página",
+        openTabFailed: "Não foi possível abrir uma aba no host",
         invalidUrl: "URL de navegador inválida",
         unsupportedProtocol: "URL de navegador sem suporte bloqueada: {{protocol}}",
       },

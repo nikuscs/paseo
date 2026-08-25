@@ -518,6 +518,10 @@ export const ja: TranslationResources = {
         title: "ブラウザはデスクトップ専用です",
         subtitle: "組み込みブラウザを使用するには、このワークスペースをElectronで開いてください。",
       },
+      mirror: {
+        keyboard: "ミラー表示ブラウザのキーボード",
+        connecting: "ホストのブラウザに接続しています…",
+      },
       session: "ブラウザセッション{{browserId}}",
       controls: {
         back: "戻る",
@@ -545,9 +549,11 @@ export const ja: TranslationResources = {
       devices: {
         label: "デバイスサイズ",
         responsive: "レスポンシブ",
+        landscape: "横向き",
       },
       errors: {
         failedToLoad: "ページの読み込みに失敗しました",
+        openTabFailed: "ホストでタブを開けませんでした",
         invalidUrl: "無効なブラウザURL",
         unsupportedProtocol: "サポートされていないブラウザURLをブロック: {{protocol}}",
       },
