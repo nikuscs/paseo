@@ -518,6 +518,10 @@ export const ru: TranslationResources = {
         subtitle:
           "Откройте это рабочее пространство в Electron, чтобы использовать встроенный браузер.",
       },
+      mirror: {
+        keyboard: "Клавиатура зеркального браузера",
+        connecting: "Подключение к браузеру на хосте…",
+      },
       session: "Сеанс браузера {{browserId}}",
       controls: {
         back: "Назад",
@@ -545,9 +549,11 @@ export const ru: TranslationResources = {
       devices: {
         label: "Размер экрана устройства",
         responsive: "Адаптивный режим",
+        landscape: "Альбомная",
       },
       errors: {
         failedToLoad: "Не удалось загрузить страницу",
+        openTabFailed: "Не удалось открыть вкладку на хосте",
         invalidUrl: "Недопустимый URL браузера",
         unsupportedProtocol:
           "URL браузера с неподдерживаемым протоколом заблокирован: {{protocol}}",
@@ -588,6 +594,7 @@ export const ru: TranslationResources = {
         closeLeft: "Закрыть вкладки слева",
         closeRight: "Закрыть вкладки справа",
         closeOthers: "Закрыть другие вкладки",
+        closeEditorTabs: "Закрыть вкладки редактора",
         moveToMain: "Переместить на основную панель",
         reloadAgent: "Перезагрузить агента",
         reloadAgentTooltip: "Перезагрузите агента, чтобы обновить навыки, MCP или статус входа.",
@@ -654,6 +661,7 @@ export const ru: TranslationResources = {
         closeTabsLeftTitle: "Закрыть вкладки слева?",
         closeTabsRightTitle: "Закрыть вкладки справа?",
         closeOtherTabsTitle: "Закрыть другие вкладки?",
+        closeEditorTabsTitle: "Закрыть вкладки редактора?",
         bulk: {
           all: "Будут архивированы агенты ({{agents}}), закрыты терминалы ({{terminals}}) и вкладки ({{tabs}}). Все запущенные процессы в закрытых терминалах будут немедленно остановлены.",
           agentsAndTerminals:
@@ -1038,6 +1046,12 @@ export const ru: TranslationResources = {
         status: "Статус",
         labels: "Метки",
       },
+      sorting: {
+        label: "Сортировка",
+        manual: "Вручную",
+        name: "По имени",
+        activity: "Недавняя активность",
+      },
       titleSource: {
         label: "Заголовок",
         title: "Заголовок",
@@ -1054,6 +1068,16 @@ export const ru: TranslationResources = {
         labels: "Метки",
         diff: "Статистика изменений",
         timestamp: "Последняя активность",
+        compactRows: "Компактные строки",
+        newWorkspaceRow: "Строка «Новое рабочее пространство»",
+      },
+      recentlyDone: {
+        label: "Недавно завершённые",
+        options: {
+          off: "Выключено",
+          minutes: "{{minutes}} мин",
+          hour: "1 час",
+        },
       },
       checks: {
         iconAndText: "Значок и текст",
@@ -1566,6 +1590,10 @@ export const ru: TranslationResources = {
         title: "Прямое подключение",
         description: "Локальная сеть или VPN.",
       },
+      remoteSsh: {
+        title: "Удалённый SSH",
+        description: "Подключение через SSH-клиент настольного приложения.",
+      },
       scanQr: {
         title: "Сканировать QR-код",
         description: "Зашифрованное подключение через ретранслятор.",
@@ -1616,6 +1644,27 @@ export const ru: TranslationResources = {
         unableToConnect:
           "Не удалось подключиться. Проверьте адрес хоста и порт, а также доступность демона.",
         details: "Подробности: {{detail}}",
+      },
+    },
+    remoteSsh: {
+      title: "Удалённый SSH",
+      helper: "Подключитесь к демону Paseo на удалённом хосте.",
+      fields: {
+        host: "Хост",
+        port: "Порт SSH",
+        identityFile: "Путь к файлу ключа",
+        optional: "Необязательно",
+      },
+      actions: {
+        cancel: "Отмена",
+        connect: "Подключить",
+        connecting: "Подключение...",
+      },
+      errors: {
+        hostRequired: "Укажите хост",
+        invalidHost: "Укажите корректный SSH-хост",
+        invalidPort: "Порт SSH должен быть от 1 до 65535",
+        failedToConnect: "Не удалось подключиться по SSH. {{detail}}",
       },
     },
     link: {
@@ -2262,6 +2311,7 @@ export const ru: TranslationResources = {
       badges: {
         relay: "Ретранслятор",
         local: "Локальный",
+        remoteSsh: "Удалённый SSH",
       },
       connections: {
         title: "Подключения",

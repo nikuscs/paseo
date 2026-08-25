@@ -107,7 +107,10 @@ import { confirmDialog } from "@/utils/confirm-dialog";
 import { useArchiveAgent } from "@/hooks/use-archive-agent";
 import { useStableEvent } from "@/hooks/use-stable-event";
 import { removeResidentBrowserWebview } from "@/desktop/browser/resident-webviews";
-import { createWorkspaceBrowser, useBrowserStore } from "@/desktop/browser/store";
+import { useCanOpenBrowserTabs } from "@/desktop/browser/capability";
+import { describeMirrorFailure, runMirrorCommand } from "@/desktop/browser/mirror/command";
+import { useBrowserStore } from "@/desktop/browser/store";
+import { useWorkspaceBrowsers } from "@/desktop/browser/use-workspace-browsers";
 import { getDesktopHost } from "@/desktop/host";
 import { buildProviderCommand } from "@/utils/provider-command-templates";
 import { generateDraftId } from "@/stores/draft-keys";
@@ -178,6 +181,7 @@ import {
   type BulkCloseConfirmationLabels,
   classifyBulkClosableTabs,
   closeBulkWorkspaceTabs,
+  selectWorkspaceEditorTabs,
 } from "@/screens/workspace/workspace-bulk-close";
 import { resolveCloseAgentTabPolicy } from "@/subagents";
 import {
@@ -189,6 +193,7 @@ import { supportsDesktopPaneSplits, useIsCompactFormFactor } from "@/constants/l
 import { getIsElectron, isNative, isWeb } from "@/constants/platform";
 import type { SurfaceBackdrop } from "@/styles/surface-backdrop";
 import { buildHostRootRoute, buildSettingsHostRoute } from "@/utils/host-routes";
+import { useShallow } from "zustand/react/shallow";
 import { useWorkspaceTerminals } from "@/screens/workspace/terminals/use-workspace-terminals";
 import type { TerminalProfile } from "@getpaseo/protocol/messages";
 import {
@@ -419,6 +424,8 @@ interface MobileWorkspaceTabSwitcherProps {
   onCloseTabsAbove: (tabId: string) => Promise<void> | void;
   onCloseTabsBelow: (tabId: string) => Promise<void> | void;
   onCloseOtherTabs: (tabId: string) => Promise<void> | void;
+  onCloseEditorTabs: () => Promise<void> | void;
+  canCloseEditorTabs: boolean;
 }
 
 function MobileActiveTabTrigger({
@@ -526,6 +533,8 @@ function MobileWorkspaceTabOption({
   onCloseTabsAbove,
   onCloseTabsBelow,
   onCloseOtherTabs,
+  onCloseEditorTabs,
+  canCloseEditorTabs,
 }: {
   tab: WorkspaceTabDescriptor;
   tabIndex: number;
@@ -545,6 +554,8 @@ function MobileWorkspaceTabOption({
   onCloseTabsAbove: (tabId: string) => Promise<void> | void;
   onCloseTabsBelow: (tabId: string) => Promise<void> | void;
   onCloseOtherTabs: (tabId: string) => Promise<void> | void;
+  onCloseEditorTabs: () => Promise<void> | void;
+  canCloseEditorTabs: boolean;
 }) {
   const { t } = useTranslation();
   const tabMenuLabels = useMemo<WorkspaceTabMenuLabels>(
@@ -559,6 +570,7 @@ function MobileWorkspaceTabOption({
       closeLeft: t("workspace.tabs.menu.closeLeft"),
       closeRight: t("workspace.tabs.menu.closeRight"),
       closeOthers: t("workspace.tabs.menu.closeOthers"),
+      closeEditorTabs: t("workspace.tabs.menu.closeEditorTabs"),
       reloadAgent: t("workspace.tabs.menu.reloadAgent"),
       reloadAgentTooltip: t("workspace.tabs.menu.reloadAgentTooltip"),
       close: t("workspace.tabs.menu.close"),
@@ -582,6 +594,8 @@ function MobileWorkspaceTabOption({
     onCloseTabsBefore: onCloseTabsAbove,
     onCloseTabsAfter: onCloseTabsBelow,
     onCloseOtherTabs,
+    onCloseEditorTabs,
+    canCloseEditorTabs,
     labels: tabMenuLabels,
   });
 
@@ -654,6 +668,8 @@ const MobileWorkspaceTabSwitcher = memo(function MobileWorkspaceTabSwitcher({
   onCloseTabsAbove,
   onCloseTabsBelow,
   onCloseOtherTabs,
+  onCloseEditorTabs,
+  canCloseEditorTabs,
 }: MobileWorkspaceTabSwitcherProps) {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
@@ -711,6 +727,8 @@ const MobileWorkspaceTabSwitcher = memo(function MobileWorkspaceTabSwitcher({
           onCloseTabsAbove={onCloseTabsAbove}
           onCloseTabsBelow={onCloseTabsBelow}
           onCloseOtherTabs={onCloseOtherTabs}
+          onCloseEditorTabs={onCloseEditorTabs}
+          canCloseEditorTabs={canCloseEditorTabs}
         />
       );
     },
@@ -730,6 +748,8 @@ const MobileWorkspaceTabSwitcher = memo(function MobileWorkspaceTabSwitcher({
       onCloseTabsAbove,
       onCloseTabsBelow,
       onCloseOtherTabs,
+      onCloseEditorTabs,
+      canCloseEditorTabs,
     ],
   );
 
@@ -1558,6 +1578,13 @@ function WorkspaceScreenContent({
 
   const client = useHostRuntimeClient(normalizedServerId);
   const isConnected = useHostRuntimeIsConnected(normalizedServerId);
+  const workspaceBrowsers = useWorkspaceBrowsers({
+    serverId: normalizedServerId,
+    workspaceId: normalizedWorkspaceId,
+  });
+  // Tabs this client hosts itself are known before the daemon has listed them,
+  // so a freshly opened local tab is never pruned as unknown.
+  const localBrowserIds = useBrowserStore(useShallow((state) => Object.keys(state.browsersById)));
   const supportsProvidersSnapshot = useSessionStore(
     (state) => state.sessions[normalizedServerId]?.serverInfo?.features?.providersSnapshot === true,
   );
@@ -1860,13 +1887,13 @@ function WorkspaceScreenContent({
   const pendingByDraftId = useCreateFlowStore((state) => state.pendingByDraftId);
   const { closingTabIds, closeTab } = useCloseTabs();
   const closeWorkspaceTabWithCleanup = useCallback(
-    function closeWorkspaceTabWithCleanup(input: {
+    async function closeWorkspaceTabWithCleanup(input: {
       tabId: string;
       target?: WorkspaceTabTarget | null;
-    }) {
+    }): Promise<boolean> {
       const normalizedTabId = trimNonEmpty(input.tabId);
       if (!normalizedTabId || !persistenceKey) {
-        return;
+        return false;
       }
 
       if (input.target?.kind === "agent") {
@@ -1875,13 +1902,38 @@ function WorkspaceScreenContent({
       }
       if (input.target?.kind === "browser") {
         const { browserId } = input.target;
+        const isLocalBrowser = Boolean(useBrowserStore.getState().browsersById[browserId]);
+        // A mirrored tab lives on another host. Dropping the pane before the host
+        // answers leaves the tab open there with nothing on screen to close it,
+        // so the local close waits for the confirmation and reports a refusal.
+        if (!isLocalBrowser) {
+          const outcome = await runMirrorCommand({
+            sender: client,
+            command: { command: "close_tab", args: { browserId } },
+            workspaceId: normalizedWorkspaceId,
+          });
+          if (outcome.status !== "ok") {
+            toast.error(describeMirrorFailure(outcome, t("common.errors.daemonClientUnavailable")));
+            return false;
+          }
+        }
         useBrowserStore.getState().removeBrowser(browserId);
         removeResidentBrowserWebview(browserId);
         void getDesktopHost()?.browser?.unregisterWorkspaceBrowser?.(browserId);
       }
       closeWorkspaceTab(persistenceKey, normalizedTabId);
+      return true;
     },
-    [closeWorkspaceTab, hideWorkspaceAgent, persistenceKey, unpinWorkspaceAgent],
+    [
+      client,
+      closeWorkspaceTab,
+      hideWorkspaceAgent,
+      normalizedWorkspaceId,
+      persistenceKey,
+      t,
+      toast,
+      unpinWorkspaceAgent,
+    ],
   );
 
   const focusedPaneTabState = useMemo(
@@ -2014,6 +2066,11 @@ function WorkspaceScreenContent({
         terminalsHydrated: terminalsQuery.isSuccess,
         knownTerminalIds,
         standaloneTerminalIds,
+        browsers: {
+          hydrated: workspaceBrowsers.isHydrated,
+          knownIds: [...workspaceBrowsers.browserIds, ...localBrowserIds],
+          liveIds: workspaceBrowsers.browserIds,
+        },
         hasActivePendingTerminalCreate:
           createTerminalMutation.isPending || pendingTerminalCreateInput !== null,
         hasActivePendingDraftCreate: hasActivePendingDraftCreateInWorkspace,
@@ -2031,10 +2088,13 @@ function WorkspaceScreenContent({
     persistenceKey,
     reconcileWorkspaceTabs,
     knownTerminalIds,
+    localBrowserIds,
     standaloneTerminalIds,
     terminalsQuery.isSuccess,
     uiTabs,
     workspaceAgentVisibility,
+    workspaceBrowsers.browserIds,
+    workspaceBrowsers.isHydrated,
   ]);
 
   const activeTabId = focusedPaneTabState.activeTabId;
@@ -2271,18 +2331,20 @@ function WorkspaceScreenContent({
     return map;
   }, [tabs]);
 
-  const allTabDescriptorsById = useMemo(() => {
-    const map = new Map<string, WorkspaceTabDescriptor>();
-    for (const tab of uiTabs) {
-      map.set(tab.tabId, {
-        key: tab.tabId,
-        tabId: tab.tabId,
-        kind: tab.target.kind,
-        target: tab.target,
-      });
-    }
-    return map;
+  const { allTabDescriptorsById, editorTabs } = useMemo(() => {
+    const tabDescriptors: WorkspaceTabDescriptor[] = uiTabs.map((tab) => ({
+      key: tab.tabId,
+      tabId: tab.tabId,
+      kind: tab.target.kind,
+      target: tab.target,
+    }));
+
+    return {
+      allTabDescriptorsById: new Map(tabDescriptors.map((tab) => [tab.tabId, tab])),
+      editorTabs: selectWorkspaceEditorTabs(tabDescriptors),
+    };
   }, [uiTabs]);
+  const canCloseEditorTabs = editorTabs.length > 0;
   const bulkCloseConfirmationLabels = useMemo<BulkCloseConfirmationLabels>(
     () => ({
       newTab: t("workspace.tabs.actions.newTab"),
@@ -2362,19 +2424,43 @@ function WorkspaceScreenContent({
     [createTerminal],
   );
 
-  const handleCreateBrowserTab = useCallback(
-    (input?: { paneId?: string }) => {
-      if (!persistenceKey || !getIsElectron()) {
+  // The daemon opens the tab on its own machine, so every client drives the same
+  // signed-in browser. The host that owns it adds its own tab locally; anyone
+  // else opens a mirror.
+  const openBrowserTabOnHost = useCallback(
+    async (url: string | undefined, openTarget: (target: WorkspaceTab["target"]) => void) => {
+      const outcome = await runMirrorCommand({
+        sender: client,
+        command: { command: "new_tab", args: url ? { url } : {} },
+        workspaceId: normalizedWorkspaceId,
+      });
+      if (outcome.status !== "ok") {
+        toast.error(describeMirrorFailure(outcome, t("common.errors.daemonClientUnavailable")));
         return;
       }
-      const { browserId } = createWorkspaceBrowser();
-      openWorkspaceTabFocused(
-        persistenceKey,
-        { kind: "browser", browserId },
-        paneLocalPlacement(input?.paneId),
+      if (outcome.result.command !== "new_tab") {
+        toast.error(t("workspace.browser.errors.openTabFailed"));
+        return;
+      }
+      const { browserId } = outcome.result;
+      if (useBrowserStore.getState().browsersById[browserId]) {
+        return;
+      }
+      openTarget({ kind: "browser", browserId });
+    },
+    [client, normalizedWorkspaceId, t, toast],
+  );
+
+  const handleCreateBrowserTab = useCallback(
+    (input?: { paneId?: string }) => {
+      if (!persistenceKey) {
+        return;
+      }
+      void openBrowserTabOnHost(undefined, (target) =>
+        openWorkspaceTabFocused(persistenceKey, target, paneLocalPlacement(input?.paneId)),
       );
     },
-    [openWorkspaceTabFocused, persistenceKey],
+    [openBrowserTabOnHost, openWorkspaceTabFocused, persistenceKey],
   );
 
   const handleCreateNewTab = useCallback(
@@ -2417,25 +2503,27 @@ function WorkspaceScreenContent({
         });
         return;
       }
-      const { browserId } = createWorkspaceBrowser();
-      openTarget({ kind: "browser", browserId });
+      void openBrowserTabOnHost(undefined, openTarget);
     },
-    [createTerminal, createWorkspaceTab, persistenceKey, replaceWorkspaceTabTarget],
+    [
+      createTerminal,
+      createWorkspaceTab,
+      openBrowserTabOnHost,
+      persistenceKey,
+      replaceWorkspaceTabTarget,
+    ],
   );
 
   const handleOpenUrlInBrowserTab = useCallback(
     (url: string) => {
-      if (!persistenceKey || !getIsElectron()) {
+      if (!persistenceKey) {
         return;
       }
-      const { browserId } = createWorkspaceBrowser({ initialUrl: url });
-      openWorkspaceTabFocused(
-        persistenceKey,
-        { kind: "browser", browserId },
-        FOCUSED_PANE_PLACEMENT,
+      void openBrowserTabOnHost(url, (target) =>
+        openWorkspaceTabFocused(persistenceKey, target, FOCUSED_PANE_PLACEMENT),
       );
     },
-    [openWorkspaceTabFocused, persistenceKey],
+    [openBrowserTabOnHost, openWorkspaceTabFocused, persistenceKey],
   );
 
   useDesktopBrowserNewTabRequests({
@@ -2483,7 +2571,7 @@ function WorkspaceScreenContent({
         removeTerminalFromCache(terminalId);
         setHoveredCloseTabKey((current) => (current === tabId ? null : current));
         if (persistenceKey) {
-          closeWorkspaceTabWithCleanup({
+          await closeWorkspaceTabWithCleanup({
             tabId,
             target: { kind: "terminal", terminalId },
           });
@@ -2552,7 +2640,7 @@ function WorkspaceScreenContent({
 
         setHoveredCloseTabKey((current) => (current === tabId ? null : current));
         if (persistenceKey) {
-          closeWorkspaceTabWithCleanup({
+          await closeWorkspaceTabWithCleanup({
             tabId,
             target: { kind: "agent", agentId },
           });
@@ -2578,13 +2666,21 @@ function WorkspaceScreenContent({
   );
 
   const handleClosePassiveTab = useCallback(
-    function handleClosePassiveTab(input: { tabId: string; target?: WorkspaceTabTarget | null }) {
+    async function handleClosePassiveTab(input: {
+      tabId: string;
+      target?: WorkspaceTabTarget | null;
+    }) {
       setHoveredCloseTabKey((current) => (current === input.tabId ? null : current));
-      if (persistenceKey) {
-        closeWorkspaceTabWithCleanup({ tabId: input.tabId, target: input.target });
+      if (!persistenceKey) {
+        return;
       }
+      // A mirrored browser tab waits on its host, so the tab shows the same
+      // closing state an agent or terminal tab does instead of hanging silent.
+      await closeTab(input.tabId, async () => {
+        await closeWorkspaceTabWithCleanup({ tabId: input.tabId, target: input.target });
+      });
     },
-    [closeWorkspaceTabWithCleanup, persistenceKey],
+    [closeTab, closeWorkspaceTabWithCleanup, persistenceKey],
   );
 
   const confirmDiscardModifiedTab = useCallback(
@@ -2626,7 +2722,7 @@ function WorkspaceScreenContent({
         await handleCloseAgentTab({ tabId, agentId: tab.target.agentId });
         return;
       }
-      handleClosePassiveTab({ tabId, target: tab.target });
+      await handleClosePassiveTab({ tabId, target: tab.target });
     },
     [
       allTabDescriptorsById,
@@ -2821,7 +2917,7 @@ function WorkspaceScreenContent({
         return false;
       }
 
-      await closeBulkWorkspaceTabs({
+      const allClosed = await closeBulkWorkspaceTabs({
         client,
         groups,
         closeTab,
@@ -2839,11 +2935,11 @@ function WorkspaceScreenContent({
             await archiveAgent({ serverId: normalizedServerId, agentId });
           }
         },
-        closeWorkspaceTabWithCleanup: (cleanupInput) => {
+        closeWorkspaceTabWithCleanup: async (cleanupInput) => {
           if (!persistenceKey) {
-            return;
+            return false;
           }
-          closeWorkspaceTabWithCleanup(cleanupInput);
+          return await closeWorkspaceTabWithCleanup(cleanupInput);
         },
         logLabel,
         warn: (message, payload) => {
@@ -2853,7 +2949,7 @@ function WorkspaceScreenContent({
 
       const closedKeys = new Set(tabsToClose.map((tab) => tab.key));
       setHoveredCloseTabKey((current) => (current && closedKeys.has(current) ? null : current));
-      return true;
+      return allClosed;
     },
     [
       archiveAgent,
@@ -2930,6 +3026,13 @@ function WorkspaceScreenContent({
     },
     [handleCloseOtherTabsInPane, tabs],
   );
+  const handleCloseEditorTabs = useCallback(async () => {
+    await handleBulkCloseTabs({
+      tabsToClose: editorTabs,
+      title: t("workspace.tabs.confirmations.closeEditorTabsTitle"),
+      logLabel: "from close editor tabs",
+    });
+  }, [editorTabs, handleBulkCloseTabs, t]);
 
   const handleClosePane = useCallback(
     async (paneId: string) => {
@@ -3504,7 +3607,10 @@ function WorkspaceScreenContent({
           if (!persistenceKey) {
             return;
           }
-          replaceWorkspaceTabTarget(persistenceKey, input.tab.tabId, target);
+          const tabId = replaceWorkspaceTabTarget(persistenceKey, input.tab.tabId, target);
+          if (target.kind === "file" && tabId) {
+            requestFileNavigation(tabId);
+          }
         },
         onSetCurrentTabState: (state) => {
           if (persistenceKey) {
@@ -3785,7 +3891,9 @@ function WorkspaceScreenContent({
     () => createTerminalMutation.isPending || pendingTerminalCreateInput !== null,
     [createTerminalMutation.isPending, pendingTerminalCreateInput],
   );
-  const showCreateBrowserTab = getIsElectron();
+  // Any client can open a browser tab as long as the daemon has a host that can
+  // actually mirror one; the tab lives there and is mirrored back here.
+  const showCreateBrowserTab = useCanOpenBrowserTabs(normalizedServerId);
   const newTabLauncher = useMemo<NewTabLauncher>(
     () => ({
       showChanges: isGitCheckout,
@@ -3913,6 +4021,8 @@ function WorkspaceScreenContent({
         onCloseTabsToLeft={handleCloseTabsToLeftInPane}
         onCloseTabsToRight={handleCloseTabsToRightInPane}
         onCloseOtherTabs={handleCloseOtherTabsInPane}
+        onCloseEditorTabs={handleCloseEditorTabs}
+        canCloseEditorTabs={canCloseEditorTabs}
         onCreateNewTab={handleCreateNewTab}
         buildPaneContentModel={buildDesktopPaneContentModel}
         onFocusPane={handleFocusPane}
@@ -3949,6 +4059,8 @@ function WorkspaceScreenContent({
     handleCloseTabsToLeftInPane,
     handleCloseTabsToRightInPane,
     handleCloseOtherTabsInPane,
+    handleCloseEditorTabs,
+    canCloseEditorTabs,
     handleCreateNewTab,
     buildDesktopPaneContentModel,
     handleFocusPane,
@@ -3993,6 +4105,8 @@ function WorkspaceScreenContent({
           onCloseTabsAbove={handleCloseTabsToLeft}
           onCloseTabsBelow={handleCloseTabsToRight}
           onCloseOtherTabs={handleCloseOtherTabs}
+          onCloseEditorTabs={handleCloseEditorTabs}
+          canCloseEditorTabs={canCloseEditorTabs}
         />
       ) : null}
 
@@ -4021,6 +4135,8 @@ function WorkspaceScreenContent({
             onCloseTabsToLeft={handleCloseTabsToLeft}
             onCloseTabsToRight={handleCloseTabsToRight}
             onCloseOtherTabs={handleCloseOtherTabs}
+            onCloseEditorTabs={handleCloseEditorTabs}
+            canCloseEditorTabs={canCloseEditorTabs}
             onCreateNewTab={handleCreateNewTab}
             onReorderTabs={handleReorderTabsInFocusedPane}
             focusModeEnabled={desktopFocusModeEnabled}

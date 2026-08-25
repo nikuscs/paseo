@@ -518,6 +518,10 @@ export const fr: TranslationResources = {
         title: "Le navigateur est réservé au bureau",
         subtitle: "Ouvrez cet espace de travail dans Electron pour utiliser le navigateur intégré.",
       },
+      mirror: {
+        keyboard: "Clavier du navigateur miroir",
+        connecting: "Connexion au navigateur de l'hôte…",
+      },
       session: "Session de navigateur{{browserId}}",
       controls: {
         back: "Dos",
@@ -545,9 +549,11 @@ export const fr: TranslationResources = {
       devices: {
         label: "Taille de l'appareil",
         responsive: "Adaptatif",
+        landscape: "Paysage",
       },
       errors: {
         failedToLoad: "Échec du chargement de la page",
+        openTabFailed: "Impossible d'ouvrir un onglet sur l'hôte",
         invalidUrl: "NavigateurURLinvalide",
         unsupportedProtocol: "Navigateur non pris en charge bloquéURL:{{protocol}}",
       },
@@ -587,6 +593,7 @@ export const fr: TranslationResources = {
         closeLeft: "Près de la gauche",
         closeRight: "Près de la droite",
         closeOthers: "Fermer les autres onglets",
+        closeEditorTabs: "Fermer les onglets de l’éditeur",
         moveToMain: "Déplacer vers le panneau principal",
         reloadAgent: "Agent de rechargement",
         reloadAgentTooltip:
@@ -654,6 +661,7 @@ export const fr: TranslationResources = {
         closeTabsLeftTitle: "Fermer les onglets à gauche?",
         closeTabsRightTitle: "Fermer les onglets à droite?",
         closeOtherTabsTitle: "Fermer les autres onglets?",
+        closeEditorTabsTitle: "Fermer les onglets de l’éditeur?",
         bulk: {
           all: "Cela archivera les agents{{agents}}, fermera les terminaux{{terminals}}et fermera les onglets{{tabs}}. Tout processus en cours d’exécution dans un terminal fermé sera immédiatement arrêté.",
           agentsAndTerminals:
@@ -1056,6 +1064,12 @@ export const fr: TranslationResources = {
         status: "Statut",
         labels: "Libellés",
       },
+      sorting: {
+        label: "Tri",
+        manual: "Manuel",
+        name: "Nom",
+        activity: "Activité récente",
+      },
       titleSource: {
         label: "Titre",
         title: "Titre",
@@ -1072,6 +1086,16 @@ export const fr: TranslationResources = {
         labels: "Libellés",
         diff: "Statistiques de diff",
         timestamp: "Dernière activité",
+        compactRows: "Lignes compactes",
+        newWorkspaceRow: "Ligne Nouvel espace de travail",
+      },
+      recentlyDone: {
+        label: "Récemment terminé",
+        options: {
+          off: "Désactivé",
+          minutes: "{{minutes}} min",
+          hour: "1 heure",
+        },
       },
       checks: {
         iconAndText: "Icône et texte",
@@ -1587,6 +1611,10 @@ export const fr: TranslationResources = {
         title: "Connexion directe",
         description: "Réseau local ou VPN.",
       },
+      remoteSsh: {
+        title: "SSH distant",
+        description: "Connectez-vous avec le client SSH de bureau.",
+      },
       scanQr: {
         title: "Scanner le codeQR",
         description: "Connexion relais cryptée.",
@@ -1637,6 +1665,27 @@ export const fr: TranslationResources = {
         unableToConnect:
           "Impossible de se connecter. Vérifiez l'hôte/portet que le démon est accessible.",
         details: "Détails:{{detail}}",
+      },
+    },
+    remoteSsh: {
+      title: "SSH distant",
+      helper: "Connectez-vous à un daemon Paseo sur l’hôte distant.",
+      fields: {
+        host: "Hôte",
+        port: "Port SSH",
+        identityFile: "Chemin du fichier d’identité",
+        optional: "Facultatif",
+      },
+      actions: {
+        cancel: "Annuler",
+        connect: "Connecter",
+        connecting: "Connexion...",
+      },
+      errors: {
+        hostRequired: "L’hôte est requis",
+        invalidHost: "Saisissez un hôte SSH valide",
+        invalidPort: "Le port SSH doit être compris entre 1 et 65535",
+        failedToConnect: "Connexion SSH impossible. {{detail}}",
       },
     },
     link: {
@@ -2281,6 +2330,7 @@ export const fr: TranslationResources = {
       badges: {
         relay: "Relais",
         local: "Locale",
+        remoteSsh: "SSH distant",
       },
       connections: {
         title: "Relations",

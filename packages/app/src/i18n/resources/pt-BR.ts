@@ -518,6 +518,10 @@ export const ptBR: TranslationResources = {
         title: "O navegador é exclusivo do desktop",
         subtitle: "Abra este workspace no Electron para usar o navegador integrado.",
       },
+      mirror: {
+        keyboard: "Teclado do navegador espelhado",
+        connecting: "Conectando ao navegador no host…",
+      },
       session: "Sessão do navegador {{browserId}}",
       controls: {
         back: "Voltar",
@@ -545,9 +549,11 @@ export const ptBR: TranslationResources = {
       devices: {
         label: "Tamanho do dispositivo",
         responsive: "Responsivo",
+        landscape: "Paisagem",
       },
       errors: {
         failedToLoad: "Falha ao carregar página",
+        openTabFailed: "Não foi possível abrir uma aba no host",
         invalidUrl: "URL de navegador inválida",
         unsupportedProtocol: "URL de navegador sem suporte bloqueada: {{protocol}}",
       },
@@ -587,6 +593,7 @@ export const ptBR: TranslationResources = {
         closeLeft: "Fechar à esquerda",
         closeRight: "Fechar à direita",
         closeOthers: "Fechar outras abas",
+        closeEditorTabs: "Fechar abas do editor",
         moveToMain: "Mover para o painel principal",
         reloadAgent: "Recarregar agente",
         reloadAgentTooltip: "Recarregue o agente para atualizar skills, MCPs ou status de login.",
@@ -652,6 +659,7 @@ export const ptBR: TranslationResources = {
         closeTabsLeftTitle: "Fechar abas à esquerda?",
         closeTabsRightTitle: "Fechar abas à direita?",
         closeOtherTabsTitle: "Fechar outras abas?",
+        closeEditorTabsTitle: "Fechar abas do editor?",
         bulk: {
           all: "Isso vai arquivar {{agents}} agente(s), fechar {{terminals}} terminal(ais) e fechar {{tabs}} aba(s). Qualquer processo em execução em um terminal fechado será interrompido imediatamente.",
           agentsAndTerminals:
@@ -1048,6 +1056,12 @@ export const ptBR: TranslationResources = {
         status: "Status",
         labels: "Etiquetas",
       },
+      sorting: {
+        label: "Ordenação",
+        manual: "Manual",
+        name: "Nome",
+        activity: "Atividade recente",
+      },
       titleSource: {
         label: "Título",
         title: "Título",
@@ -1064,6 +1078,16 @@ export const ptBR: TranslationResources = {
         labels: "Etiquetas",
         diff: "Estatísticas de diff",
         timestamp: "Última atividade",
+        compactRows: "Linhas compactas",
+        newWorkspaceRow: "Linha Novo workspace",
+      },
+      recentlyDone: {
+        label: "Concluído há pouco",
+        options: {
+          off: "Desativado",
+          minutes: "{{minutes}} min",
+          hour: "1 hora",
+        },
       },
       checks: {
         iconAndText: "Ícone e texto",
@@ -1569,6 +1593,10 @@ export const ptBR: TranslationResources = {
         title: "Conexão direta",
         description: "Rede local ou VPN.",
       },
+      remoteSsh: {
+        title: "SSH remoto",
+        description: "Conecte-se pelo cliente SSH do desktop.",
+      },
       scanQr: {
         title: "Escanear QR code",
         description: "Conexão relay criptografada.",
@@ -1619,6 +1647,27 @@ export const ptBR: TranslationResources = {
         unableToConnect:
           "Não foi possível conectar. Verifique o host/porta e se o daemon está acessível.",
         details: "Detalhes: {{detail}}",
+      },
+    },
+    remoteSsh: {
+      title: "SSH remoto",
+      helper: "Conecte-se a um daemon Paseo no host remoto.",
+      fields: {
+        host: "Host",
+        port: "Porta SSH",
+        identityFile: "Caminho do arquivo de identidade",
+        optional: "Opcional",
+      },
+      actions: {
+        cancel: "Cancelar",
+        connect: "Conectar",
+        connecting: "Conectando...",
+      },
+      errors: {
+        hostRequired: "O host é obrigatório",
+        invalidHost: "Insira um host SSH válido",
+        invalidPort: "A porta SSH deve estar entre 1 e 65535",
+        failedToConnect: "Não foi possível conectar por SSH. {{detail}}",
       },
     },
     link: {
@@ -2260,6 +2309,7 @@ export const ptBR: TranslationResources = {
       badges: {
         relay: "Relay",
         local: "Local",
+        remoteSsh: "SSH remoto",
       },
       connections: {
         title: "Conexões",

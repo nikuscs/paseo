@@ -62,6 +62,9 @@ export const MIN_CODE_FONT_SIZE = 9;
 export const MAX_CODE_FONT_SIZE = 22; // line-height 1.5×22=33 stays safe
 export const MAX_FONT_FAMILY_LENGTH = 200;
 
+export const RECENTLY_DONE_WINDOW_OPTIONS = [0, 1, 5, 15, 30, 60] as const; // minutes, 0 = off
+export type RecentlyDoneWindowMinutes = (typeof RECENTLY_DONE_WINDOW_OPTIONS)[number];
+
 export interface AppSettings {
   theme: ThemePreference;
   /** Which contributed theme `theme: "plugin"` selects. */
@@ -81,6 +84,9 @@ export interface AppSettings {
   sidebarWorkspaceTrailing: SidebarWorkspaceTrailing;
   sidebarRowItems: SidebarRowItems;
   sidebarChecksDisplay: SidebarChecksDisplay;
+  compactSidebarRows: boolean;
+  showNewWorkspaceRow: boolean;
+  recentlyDoneWindowMinutes: RecentlyDoneWindowMinutes;
   autoExpandReasoning: boolean;
   toolCallDetailLevel: ToolCallDetailLevel;
   chatOutlineEnabled: boolean;
@@ -114,6 +120,20 @@ export interface Settings extends AppSettings {
   releaseChannel: ReleaseChannel;
 }
 
+export type AppSettingsUpdate = Omit<Partial<AppSettings>, "sidebarRowItems"> & {
+  sidebarRowItems?: Partial<SidebarRowItems>;
+};
+
+interface LegacyAppearanceSettings {
+  hideWorkspaceDiffStats?: unknown;
+  hideHostLabels?: unknown;
+  compactSidebarRows?: unknown;
+  hidePrStatus?: unknown;
+  hideNewWorkspaceRow?: unknown;
+  hideScriptIndicators?: unknown;
+  recentlyDoneWindowMinutes?: unknown;
+}
+
 export const DEFAULT_CLIENT_SETTINGS: AppSettings = {
   theme: DEFAULT_THEME_PREFERENCE,
   pluginThemeId: null,
@@ -132,6 +152,9 @@ export const DEFAULT_CLIENT_SETTINGS: AppSettings = {
   sidebarWorkspaceTrailing: "diff",
   sidebarRowItems: DEFAULT_SIDEBAR_ROW_ITEMS,
   sidebarChecksDisplay: DEFAULT_SIDEBAR_CHECKS_DISPLAY,
+  compactSidebarRows: false,
+  showNewWorkspaceRow: true,
+  recentlyDoneWindowMinutes: 0,
   autoExpandReasoning: false,
   toolCallDetailLevel: "detailed",
   chatOutlineEnabled: true,
@@ -213,12 +236,22 @@ const StoredAppSettingsSchema = z
     ),
     syntaxTheme: z.string().refine(isSyntaxThemeId).catch("one"),
     workspaceTitleSource: z.enum(["title", "branch"]).catch("title"),
-    sidebarWorkspaceTrailing: z.enum(["diff", "timestamp", "none"]).catch("diff"),
-    sidebarRowItems: SidebarRowItemsSchema,
-    sidebarChecksDisplay: z
-      .enum(["iconAndText", "icon", "none"])
+    sidebarWorkspaceTrailing: z.enum(["diff", "timestamp", "none"]).optional().catch(undefined),
+    sidebarRowItems: SidebarRowItemsSchema.optional(),
+    sidebarChecksDisplay: z.enum(["iconAndText", "icon", "none"]).optional().catch(undefined),
+    compactSidebarRows: z.boolean().optional().catch(undefined),
+    showNewWorkspaceRow: z.boolean().optional().catch(undefined),
+    recentlyDoneWindowMinutes: z
+      .union([
+        z.literal(0),
+        z.literal(1),
+        z.literal(5),
+        z.literal(15),
+        z.literal(30),
+        z.literal(60),
+      ])
       .optional()
-      .catch(DEFAULT_SIDEBAR_CHECKS_DISPLAY),
+      .catch(undefined),
     autoExpandReasoning: z.boolean().catch(false),
     toolCallDetailLevel: z
       .enum(["overview", "detailed"])
@@ -240,6 +273,7 @@ const StoredAppSettingsSchema = z
         changesLinks: z.boolean().catch(false),
       })
       .catch(DEFAULT_OPEN_IN_SIDE_PANE_PREFERENCES),
+    appearance: z.unknown().optional().catch(undefined),
     // COMPAT(explorerSidebarRouting): replaced by source-specific side-pane preferences in v0.6.
     openSupportingTabsInSidePanel: z.boolean().optional().catch(undefined),
     // COMPAT(rendererDesktopSettings): these fields used to share this renderer-owned key.
@@ -255,24 +289,14 @@ const StoredAppSettingsSchema = z
       (stored.uiFontSize === undefined
         ? DEFAULT_UI_BASE_FONT_SIZE
         : Math.round((FONT_SIZE.base * stored.uiFontSize) / 16));
-    const sidebarChecksDisplay =
-      stored.sidebarChecksDisplay ??
-      (isChecksHiddenByLegacyRowItem(stored.sidebarRowItems)
-        ? "none"
-        : DEFAULT_SIDEBAR_CHECKS_DISPLAY);
     const toolCallDetailLevel =
       stored.toolCallDetailLevel ?? (stored.compactToolCalls ? "overview" : "detailed");
+    const { appearance: _appearance, ...storedWithoutAppearance } = stored;
     return {
-      ...stored,
+      ...storedWithoutAppearance,
       uiBaseFontSize,
       contentFontSize: stored.contentFontSize ?? uiBaseFontSize,
-      sidebarChecksDisplay,
-      sidebarRowItems: {
-        ...stored.sidebarRowItems,
-        services:
-          stored.sidebarRowItems.services ??
-          (stored.sidebarRowItems.scripts === false ? false : DEFAULT_SIDEBAR_ROW_ITEMS.services),
-      },
+      ...resolveSidebarSettings(stored),
       toolCallDetailLevel,
       needsWrite,
     };
@@ -304,14 +328,17 @@ export interface SettingsDeps {
 
 export async function saveAppSettings(input: {
   queryClient: QueryClient;
-  updates: Partial<AppSettings>;
+  updates: AppSettingsUpdate;
   deps: SettingsDeps;
 }): Promise<void> {
   const storedCurrent =
     input.queryClient.getQueryData<AppSettings>(APP_SETTINGS_QUERY_KEY) ??
     (await loadAppSettingsFromStorage(input.deps));
   const current = normalizeAppSettings(storedCurrent);
-  const next = { ...current, ...input.updates };
+  const sidebarRowItems = input.updates.sidebarRowItems
+    ? { ...current.sidebarRowItems, ...input.updates.sidebarRowItems }
+    : current.sidebarRowItems;
+  const next = { ...current, ...input.updates, sidebarRowItems };
   input.queryClient.setQueryData<AppSettings>(APP_SETTINGS_QUERY_KEY, next);
   await writeAppSettings(
     input.deps.storage,
@@ -401,6 +428,7 @@ export function normalizeAppSettings(value: unknown): AppSettings {
     releaseChannel: _releaseChannel,
     compactToolCalls: _compactToolCalls,
     uiFontSize: _uiFontSize,
+    openSupportingTabsInSidePanel: _openSupportingTabsInSidePanel,
     ...settings
   } = StoredAppSettingsSchema.parse(value);
   return settings;
@@ -414,6 +442,93 @@ function pickAppSettingsFromLegacy(legacy: StoredAppSettings): AppSettings {
     // rendered value into the new independent preference during migration.
     contentFontSize: legacy.uiBaseFontSize,
   };
+}
+
+function resolveSidebarSettings(stored: {
+  appearance?: unknown;
+  sidebarRowItems?: {
+    branch: boolean;
+    project: boolean;
+    host: boolean;
+    changeRequest: boolean;
+    services?: boolean;
+    labels: boolean;
+    checks?: boolean;
+    scripts?: boolean;
+  };
+  sidebarChecksDisplay?: SidebarChecksDisplay;
+  sidebarWorkspaceTrailing?: SidebarWorkspaceTrailing;
+  compactSidebarRows?: boolean;
+  showNewWorkspaceRow?: boolean;
+  recentlyDoneWindowMinutes?: RecentlyDoneWindowMinutes;
+}): {
+  sidebarRowItems: SidebarRowItems;
+  sidebarChecksDisplay: SidebarChecksDisplay;
+  sidebarWorkspaceTrailing: SidebarWorkspaceTrailing;
+  compactSidebarRows: boolean;
+  showNewWorkspaceRow: boolean;
+  recentlyDoneWindowMinutes: RecentlyDoneWindowMinutes;
+} {
+  const legacyAppearance = parseLegacyAppearance(stored.appearance);
+  const sidebarRowItems = stored.sidebarRowItems
+    ? {
+        ...stored.sidebarRowItems,
+        services:
+          stored.sidebarRowItems.services ??
+          (stored.sidebarRowItems.scripts === false ? false : DEFAULT_SIDEBAR_ROW_ITEMS.services),
+      }
+    : {
+        ...DEFAULT_SIDEBAR_ROW_ITEMS,
+        host: !readBoolean(legacyAppearance?.hideHostLabels, false),
+        changeRequest: !readBoolean(legacyAppearance?.hidePrStatus, false),
+        services: !readBoolean(legacyAppearance?.hideScriptIndicators, false),
+      };
+  return {
+    sidebarRowItems,
+    sidebarChecksDisplay:
+      stored.sidebarChecksDisplay ??
+      (isChecksHiddenByLegacyRowItem(stored.sidebarRowItems ?? sidebarRowItems)
+        ? "none"
+        : DEFAULT_SIDEBAR_CHECKS_DISPLAY),
+    sidebarWorkspaceTrailing:
+      stored.sidebarWorkspaceTrailing ??
+      (readBoolean(legacyAppearance?.hideWorkspaceDiffStats, false) ? "none" : "diff"),
+    compactSidebarRows:
+      typeof stored.compactSidebarRows === "boolean"
+        ? stored.compactSidebarRows
+        : readBoolean(legacyAppearance?.compactSidebarRows, false),
+    showNewWorkspaceRow:
+      typeof stored.showNewWorkspaceRow === "boolean"
+        ? stored.showNewWorkspaceRow
+        : !readBoolean(legacyAppearance?.hideNewWorkspaceRow, false),
+    recentlyDoneWindowMinutes: readRecentlyDoneWindowMinutes(
+      stored.recentlyDoneWindowMinutes ?? legacyAppearance?.recentlyDoneWindowMinutes,
+    ),
+  };
+}
+
+function parseLegacyAppearance(value: unknown): LegacyAppearanceSettings | null {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return null;
+  return {
+    hideWorkspaceDiffStats:
+      "hideWorkspaceDiffStats" in value ? value.hideWorkspaceDiffStats : undefined,
+    hideHostLabels: "hideHostLabels" in value ? value.hideHostLabels : undefined,
+    compactSidebarRows: "compactSidebarRows" in value ? value.compactSidebarRows : undefined,
+    hidePrStatus: "hidePrStatus" in value ? value.hidePrStatus : undefined,
+    hideNewWorkspaceRow: "hideNewWorkspaceRow" in value ? value.hideNewWorkspaceRow : undefined,
+    hideScriptIndicators: "hideScriptIndicators" in value ? value.hideScriptIndicators : undefined,
+    recentlyDoneWindowMinutes:
+      "recentlyDoneWindowMinutes" in value ? value.recentlyDoneWindowMinutes : undefined,
+  };
+}
+
+function readRecentlyDoneWindowMinutes(value: unknown): RecentlyDoneWindowMinutes {
+  const match = RECENTLY_DONE_WINDOW_OPTIONS.find((option) => option === value);
+  return match ?? 0;
+}
+
+function readBoolean(value: unknown, fallback: boolean): boolean {
+  return typeof value === "boolean" ? value : fallback;
 }
 
 export function parseTerminalScrollbackLines(value: unknown): number | null {

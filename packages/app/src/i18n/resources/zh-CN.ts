@@ -514,6 +514,10 @@ export const zhCN: TranslationResources = {
         title: "浏览器仅桌面端可用",
         subtitle: "在 Electron 中打开此 workspace 以使用内置浏览器。",
       },
+      mirror: {
+        keyboard: "镜像浏览器键盘",
+        connecting: "正在连接主机上的浏览器…",
+      },
       session: "浏览器会话 {{browserId}}",
       controls: {
         back: "后退",
@@ -541,9 +545,11 @@ export const zhCN: TranslationResources = {
       devices: {
         label: "设备尺寸",
         responsive: "自适应",
+        landscape: "横向",
       },
       errors: {
         failedToLoad: "页面加载失败",
+        openTabFailed: "无法在主机上打开标签页",
         invalidUrl: "浏览器 URL 无效",
         unsupportedProtocol: "已阻止不支持的浏览器 URL：{{protocol}}",
       },
@@ -583,6 +589,7 @@ export const zhCN: TranslationResources = {
         closeLeft: "关闭左侧标签",
         closeRight: "关闭右侧标签",
         closeOthers: "关闭其他标签",
+        closeEditorTabs: "关闭编辑器标签",
         moveToMain: "移至主面板",
         reloadAgent: "重新加载 Agent",
         reloadAgentTooltip: "重新加载 Agent 以更新 skills、MCPs 或登录状态。",
@@ -645,6 +652,7 @@ export const zhCN: TranslationResources = {
         closeTabsLeftTitle: "关闭左侧标签？",
         closeTabsRightTitle: "关闭右侧标签？",
         closeOtherTabsTitle: "关闭其他标签？",
+        closeEditorTabsTitle: "关闭编辑器标签？",
         bulk: {
           all: "这会归档 {{agents}} 个 Agent，关闭 {{terminals}} 个 Terminal，并关闭 {{tabs}} 个标签。已关闭 Terminal 中任何正在运行的进程都会立即停止。",
           agentsAndTerminals:
@@ -1015,6 +1023,12 @@ export const zhCN: TranslationResources = {
         status: "状态",
         labels: "标签",
       },
+      sorting: {
+        label: "排序",
+        manual: "手动",
+        name: "名称",
+        activity: "最近活动",
+      },
       titleSource: {
         label: "标题",
         title: "标题",
@@ -1031,6 +1045,16 @@ export const zhCN: TranslationResources = {
         labels: "标签",
         diff: "差异统计",
         timestamp: "最近活动",
+        compactRows: "紧凑行",
+        newWorkspaceRow: "新建工作区行",
+      },
+      recentlyDone: {
+        label: "最近完成",
+        options: {
+          off: "关闭",
+          minutes: "{{minutes}} 分钟",
+          hour: "1 小时",
+        },
       },
       checks: {
         iconAndText: "图标和文字",
@@ -1522,6 +1546,10 @@ export const zhCN: TranslationResources = {
         title: "直接连接",
         description: "本地网络或 VPN。",
       },
+      remoteSsh: {
+        title: "远程 SSH",
+        description: "通过桌面 SSH 客户端连接。",
+      },
       scanQr: {
         title: "扫描二维码",
         description: "加密 relay 连接。",
@@ -1570,6 +1598,27 @@ export const zhCN: TranslationResources = {
         tlsError: "TLS 错误。只有 daemon 前方有 TLS terminator 时，直接连接才使用 SSL。",
         unableToConnect: "无法连接。请检查 host/port，并确认 daemon 可达。",
         details: "详情：{{detail}}",
+      },
+    },
+    remoteSsh: {
+      title: "远程 SSH",
+      helper: "连接到远程主机上运行的 Paseo 守护进程。",
+      fields: {
+        host: "主机",
+        port: "SSH 端口",
+        identityFile: "身份文件路径",
+        optional: "可选",
+      },
+      actions: {
+        cancel: "取消",
+        connect: "连接",
+        connecting: "正在连接...",
+      },
+      errors: {
+        hostRequired: "主机为必填项",
+        invalidHost: "请输入有效的 SSH 主机",
+        invalidPort: "SSH 端口必须介于 1 和 65535 之间",
+        failedToConnect: "无法通过 SSH 连接。{{detail}}",
       },
     },
     link: {
@@ -2199,6 +2248,7 @@ export const zhCN: TranslationResources = {
       badges: {
         relay: "Relay",
         local: "本地",
+        remoteSsh: "远程 SSH",
       },
       connections: {
         title: "连接",
