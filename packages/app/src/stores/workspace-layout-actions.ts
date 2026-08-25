@@ -2459,6 +2459,15 @@ function addMissingEntityTabs(input: {
       if (currentEntityIds.has(entityId)) {
         continue;
       }
+      // A cached adoptable id can outlive the known list: the terminals query
+      // still lists a terminal that is no longer live. Adopting it here fights
+      // collapseStaleEntityTabs, which closes anything not in knownIds, and the
+      // pair mints a fresh tab every pass. The layout is then structurally equal
+      // but newly allocated, so reconcileTabs' identity guard never fires and the
+      // store writes forever (React #185, "Maximum update depth exceeded").
+      if (!sync.knownIds.has(entityId)) {
+        continue;
+      }
       nextLayout = openEntityTabWithoutFocusing({
         layout: nextLayout,
         target: sync.targetFor(entityId),
