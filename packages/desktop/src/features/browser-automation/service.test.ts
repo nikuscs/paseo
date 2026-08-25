@@ -10,7 +10,7 @@ import type {
 import { BrowserSnapshotEngine } from "./snapshot-engine.js";
 import type { BrowserRegistry, TabContents, TabImage } from "./service.js";
 import { executeAutomationCommand } from "./service.js";
-import type { IsolatedKeyboardInputEvent } from "./trusted-input.js";
+import type { BrowserInputEvent } from "./trusted-input.js";
 
 const BROWSER_A = "11111111-1111-4111-8111-111111111111";
 const BROWSER_B = "22222222-2222-4222-8222-222222222222";
@@ -38,7 +38,11 @@ class FakeTab implements TabContents {
   public readonly actions: string[] = [];
   public readonly capturedViewports: Array<{ stayHidden?: boolean }> = [];
   public readonly debugCommands: Array<{ command: string; params?: Record<string, unknown> }> = [];
-  public readonly inputEvents: IsolatedKeyboardInputEvent[] = [];
+  public readonly inputEvents: BrowserInputEvent[] = [];
+  private readonly debugMessageListeners = new Set<
+    (method: string, params: Record<string, unknown>) => void
+  >();
+  private readonly destroyedListeners = new Set<() => void>();
   private readonly captureStartWaiters: Array<() => void> = [];
   private readonly deferredCaptures: Array<(image: TabImage) => void> = [];
 
@@ -69,11 +73,13 @@ class FakeTab implements TabContents {
   public captureErrorMessage = "capture failed";
   public viewportCaptureFailuresBeforeSuccess = 0;
   public deferCaptures = false;
+  public stopScreencastThrows = false;
   public fullPageScreenshotThrows = false;
   public fullPageScreenshotErrorMessage = "UnknownVizError";
   public fullPageCaptureFailuresBeforeSuccess = 0;
   public layoutMetrics = {
     cssLayoutViewport: { clientWidth: 390, clientHeight: 844 },
+    cssVisualViewport: { clientWidth: 390, clientHeight: 844 },
     cssContentSize: { width: 390, height: 1200 },
   };
   public fullPageScreenshotData = "fullPagePng";
@@ -206,6 +212,9 @@ class FakeTab implements TabContents {
     if (command === "Page.getLayoutMetrics") {
       return this.layoutMetrics;
     }
+    if (command === "Page.stopScreencast" && this.stopScreencastThrows) {
+      throw new Error("stop failed");
+    }
     if (command === "Page.captureScreenshot") {
       if (this.fullPageCaptureFailuresBeforeSuccess > 0) {
         this.fullPageCaptureFailuresBeforeSuccess -= 1;
@@ -225,8 +234,33 @@ class FakeTab implements TabContents {
     return {};
   }
 
-  public sendInputEvent(event: IsolatedKeyboardInputEvent): void {
+  public sendInputEvent(event: BrowserInputEvent): void {
     this.inputEvents.push(event);
+  }
+
+  public onDebugMessage(
+    listener: (method: string, params: Record<string, unknown>) => void,
+  ): () => void {
+    this.debugMessageListeners.add(listener);
+    return () => this.debugMessageListeners.delete(listener);
+  }
+
+  public onceDestroyed(listener: () => void): void {
+    this.destroyedListeners.add(listener);
+  }
+
+  public emitDebugMessage(method: string, params: Record<string, unknown>): void {
+    for (const listener of this.debugMessageListeners) {
+      listener(method, params);
+    }
+  }
+
+  public destroy(): void {
+    this.destroyed = true;
+    for (const listener of this.destroyedListeners) {
+      listener();
+    }
+    this.destroyedListeners.clear();
   }
 
   public waitForCaptureStart(count: number): Promise<void> {
@@ -296,6 +330,12 @@ class BrowserAutomationHarness {
   public readonly registry = new FakeRegistry();
   public readonly snapshotEngine = new BrowserSnapshotEngine();
   public readonly tab = new FakeTab(1, "https://a.test/form", "Fixture");
+  public readonly screencastFrames: Array<{
+    browserId: string;
+    slot: number;
+    metadata: { deviceWidth: number; deviceHeight: number };
+    data: Uint8Array;
+  }> = [];
 
   public constructor() {
     this.registry.register(BROWSER_A, WORKSPACE_A, this.tab);
@@ -308,6 +348,7 @@ class BrowserAutomationHarness {
   ) {
     return executeAutomationCommand(automationRequest(command, input), this.registry, {
       snapshotEngine: this.snapshotEngine,
+      emitScreencastFrame: (frame) => this.screencastFrames.push(frame),
     });
   }
 
@@ -450,6 +491,12 @@ function requireSnapshotRefs(result: Awaited<ReturnType<BrowserAutomationHarness
       stats: { nodeCount: 6, refCount: 5, textLength: 187, iframeCount: 0, maxDepth: 1 },
     },
   });
+}
+
+function captureQualities(browser: BrowserAutomationHarness): unknown[] {
+  return browser.tab.debugCommands
+    .filter((entry) => entry.command === "Page.captureScreenshot")
+    .map((entry) => entry.params?.quality);
 }
 
 describe("executeAutomationCommand", () => {
@@ -1196,6 +1243,646 @@ describe("executeAutomationCommand", () => {
       },
     });
     expect(browser.tab.inputEvents).toEqual([]);
+  });
+
+  test("input_at click sends a complete press and release to viewport coordinates", async () => {
+    const browser = new BrowserAutomationHarness();
+
+    const result = await browser.execute({
+      command: "input_at",
+      args: {
+        browserId: BROWSER_A,
+        event: {
+          kind: "click",
+          x: 120,
+          y: 80,
+          button: "right",
+          clickCount: 2,
+          modifiers: ["Control", "Shift"],
+        },
+      },
+    });
+
+    expect(result).toEqual({
+      requestId: "req-input_at",
+      ok: true,
+      result: { command: "input_at", browserId: BROWSER_A },
+    });
+    // Pointer input goes through the same trusted CDP path as ref-based clicks:
+    // Electron's sendInputEvent wheels do not scroll a guest.
+    expect(browser.tab.inputEvents).toEqual([]);
+    const mouseEvents = browser.tab.debugCommands.filter(
+      (entry) => entry.command === "Input.dispatchMouseEvent",
+    );
+    expect(mouseEvents.map((entry) => entry.params?.type)).toEqual([
+      "mouseMoved",
+      "mousePressed",
+      "mouseReleased",
+      "mousePressed",
+      "mouseReleased",
+    ]);
+    for (const entry of mouseEvents) {
+      expect(entry.params).toMatchObject({ x: 120, y: 80 });
+    }
+    expect(mouseEvents.at(-1)?.params).toMatchObject({ button: "right", clickCount: 2 });
+  });
+
+  test("input_at hover moves the pointer with nothing held", async () => {
+    const browser = new BrowserAutomationHarness();
+
+    await browser.execute({
+      command: "input_at",
+      args: {
+        browserId: BROWSER_A,
+        event: {
+          kind: "pointer",
+          phase: "hover",
+          x: 30,
+          y: 40,
+          button: "left",
+          clickCount: 1,
+          modifiers: [],
+        },
+      },
+    });
+
+    // A held button would make the guest read the motion as a drag and start
+    // selecting text from wherever the pointer passed over.
+    expect(browser.tab.inputEvents).toEqual([]);
+    expect(browser.tab.debugCommands).toEqual([
+      {
+        command: "Input.dispatchMouseEvent",
+        params: {
+          type: "mouseMoved",
+          x: 30,
+          y: 40,
+          button: "none",
+          buttons: 0,
+          clickCount: 0,
+          modifiers: 0,
+        },
+      },
+    ]);
+  });
+
+  test("input_at pointer phases press, drag, and release without a synthetic click", async () => {
+    const browser = new BrowserAutomationHarness();
+
+    await browser.execute({
+      command: "input_at",
+      args: {
+        browserId: BROWSER_A,
+        event: {
+          kind: "pointer",
+          phase: "down",
+          x: 10,
+          y: 20,
+          button: "left",
+          clickCount: 1,
+          modifiers: ["Shift"],
+        },
+      },
+    });
+    await browser.execute({
+      command: "input_at",
+      args: {
+        browserId: BROWSER_A,
+        event: {
+          kind: "pointer",
+          phase: "move",
+          x: 90,
+          y: 24,
+          button: "left",
+          clickCount: 1,
+          modifiers: [],
+        },
+      },
+    });
+    await browser.execute({
+      command: "input_at",
+      args: {
+        browserId: BROWSER_A,
+        event: {
+          kind: "pointer",
+          phase: "up",
+          x: 90,
+          y: 24,
+          button: "left",
+          clickCount: 1,
+          modifiers: [],
+        },
+      },
+    });
+
+    expect(browser.tab.inputEvents).toEqual([]);
+    expect(browser.tab.debugCommands).toEqual([
+      {
+        command: "Input.dispatchMouseEvent",
+        params: {
+          type: "mousePressed",
+          x: 10,
+          y: 20,
+          button: "left",
+          buttons: 1,
+          clickCount: 1,
+          modifiers: 8,
+        },
+      },
+      {
+        command: "Input.dispatchMouseEvent",
+        params: {
+          type: "mouseMoved",
+          x: 90,
+          y: 24,
+          button: "left",
+          buttons: 1,
+          clickCount: 1,
+          modifiers: 0,
+        },
+      },
+      {
+        command: "Input.dispatchMouseEvent",
+        params: {
+          type: "mouseReleased",
+          x: 90,
+          y: 24,
+          button: "left",
+          buttons: 0,
+          clickCount: 1,
+          modifiers: 0,
+        },
+      },
+    ]);
+  });
+
+  test("input_at carries the viewer's click count into the pressed phase", async () => {
+    const browser = new BrowserAutomationHarness();
+
+    await browser.execute({
+      command: "input_at",
+      args: {
+        browserId: BROWSER_A,
+        event: {
+          kind: "pointer",
+          phase: "down",
+          x: 32,
+          y: 48,
+          button: "left",
+          clickCount: 2,
+          modifiers: [],
+        },
+      },
+    });
+
+    expect(browser.tab.debugCommands).toEqual([
+      {
+        command: "Input.dispatchMouseEvent",
+        params: {
+          type: "mousePressed",
+          x: 32,
+          y: 48,
+          button: "left",
+          buttons: 1,
+          clickCount: 2,
+          modifiers: 0,
+        },
+      },
+    ]);
+  });
+
+  test("input_at sends a wheel event to viewport coordinates", async () => {
+    const browser = new BrowserAutomationHarness();
+
+    await browser.execute({
+      command: "input_at",
+      args: {
+        browserId: BROWSER_A,
+        event: { kind: "wheel", x: 240, y: 160, deltaX: -12, deltaY: 48 },
+      },
+    });
+
+    expect(browser.tab.inputEvents).toEqual([]);
+    expect(browser.tab.debugCommands).toEqual([
+      {
+        command: "Input.dispatchMouseEvent",
+        params: { type: "mouseWheel", x: 240, y: 160, deltaX: -12, deltaY: 48 },
+      },
+    ]);
+  });
+
+  // sendInputEvent's keyDown/char/keyUp triple typed the character three times
+  // in a guest that is parked off-screen. One keyDown carrying text, one keyUp.
+  test("input_at types a printable key with a single CDP keyDown carrying text", async () => {
+    const browser = new BrowserAutomationHarness();
+
+    await browser.execute({
+      command: "input_at",
+      args: { browserId: BROWSER_A, event: { kind: "key", key: "a" } },
+    });
+
+    expect(browser.tab.inputEvents).toEqual([]);
+    expect(browser.tab.debugCommands).toEqual([
+      {
+        command: "Input.dispatchKeyEvent",
+        params: {
+          type: "keyDown",
+          key: "a",
+          code: "KeyA",
+          windowsVirtualKeyCode: 65,
+          modifiers: 0,
+          text: "a",
+        },
+      },
+      {
+        command: "Input.dispatchKeyEvent",
+        params: {
+          type: "keyUp",
+          key: "a",
+          code: "KeyA",
+          windowsVirtualKeyCode: 65,
+          modifiers: 0,
+        },
+      },
+    ]);
+  });
+
+  // Enter carries a carriage return because Chromium hangs newline insertion and
+  // implicit form submit off the char, not off keydown.
+  test("input_at sends a control key with its virtual key code", async () => {
+    const browser = new BrowserAutomationHarness();
+
+    await browser.execute({
+      command: "input_at",
+      args: { browserId: BROWSER_A, event: { kind: "key", key: "Enter" } },
+    });
+
+    expect(browser.tab.inputEvents).toEqual([]);
+    expect(browser.tab.debugCommands).toEqual([
+      {
+        command: "Input.dispatchKeyEvent",
+        params: {
+          type: "keyDown",
+          key: "Enter",
+          code: "Enter",
+          windowsVirtualKeyCode: 13,
+          modifiers: 0,
+          text: "\r",
+        },
+      },
+      {
+        command: "Input.dispatchKeyEvent",
+        params: {
+          type: "keyUp",
+          key: "Enter",
+          code: "Enter",
+          windowsVirtualKeyCode: 13,
+          modifiers: 0,
+        },
+      },
+    ]);
+  });
+
+  // Text alongside a held Meta would type "a" instead of running select-all.
+  test("input_at carries the modifier mask on both events of a shortcut", async () => {
+    const browser = new BrowserAutomationHarness();
+
+    await browser.execute({
+      command: "input_at",
+      args: { browserId: BROWSER_A, event: { kind: "key", key: "a", modifiers: ["Meta"] } },
+    });
+
+    expect(browser.tab.inputEvents).toEqual([]);
+    expect(browser.tab.debugCommands).toEqual([
+      {
+        command: "Input.dispatchKeyEvent",
+        params: {
+          type: "keyDown",
+          key: "a",
+          code: "KeyA",
+          windowsVirtualKeyCode: 65,
+          modifiers: 4,
+        },
+      },
+      {
+        command: "Input.dispatchKeyEvent",
+        params: {
+          type: "keyUp",
+          key: "a",
+          code: "KeyA",
+          windowsVirtualKeyCode: 65,
+          modifiers: 4,
+        },
+      },
+    ]);
+  });
+
+  test("screencast_start starts JPEG capture, forwards metadata, and acknowledges frames", async () => {
+    const browser = new BrowserAutomationHarness();
+
+    const result = await browser.execute({
+      command: "screencast_start",
+      args: {
+        browserId: BROWSER_A,
+        slot: 4,
+        quality: 70,
+        maxWidth: 1024,
+        maxHeight: 768,
+        everyNthFrame: 2,
+      },
+    });
+    browser.tab.emitDebugMessage("Page.screencastFrame", {
+      sessionId: 9,
+      data: Buffer.from([1, 2, 3]).toString("base64"),
+      metadata: { deviceWidth: 1000, deviceHeight: 750 },
+    });
+
+    expect(result).toEqual({
+      requestId: "req-screencast_start",
+      ok: true,
+      result: { command: "screencast_start", browserId: BROWSER_A, slot: 4 },
+    });
+    expect(browser.tab.debugCommands).toEqual([
+      {
+        command: "Page.startScreencast",
+        params: {
+          format: "jpeg",
+          quality: 70,
+          maxWidth: 1024,
+          maxHeight: 768,
+          everyNthFrame: 2,
+        },
+      },
+      { command: "Page.screencastFrameAck", params: { sessionId: 9 } },
+    ]);
+    expect(browser.screencastFrames).toEqual([
+      {
+        browserId: BROWSER_A,
+        slot: 4,
+        metadata: { deviceWidth: 1000, deviceHeight: 750 },
+        data: Buffer.from([1, 2, 3]),
+      },
+    ]);
+
+    await browser.execute({ command: "screencast_stop", args: { browserId: BROWSER_A } });
+  });
+
+  test("a page that never damages still gets a first frame, at the stream's quality", async () => {
+    vi.useFakeTimers();
+    try {
+      const browser = new BrowserAutomationHarness();
+      await browser.execute({
+        command: "screencast_start",
+        args: {
+          browserId: BROWSER_A,
+          slot: 4,
+          quality: 90,
+          maxWidth: 2560,
+          maxHeight: 1600,
+          everyNthFrame: 1,
+        },
+      });
+
+      await vi.advanceTimersByTimeAsync(700);
+
+      // Same quality as the stream, so a viewer cannot tell the two apart.
+      expect(captureQualities(browser)).toEqual([90]);
+      expect(browser.screencastFrames).toEqual([
+        {
+          browserId: BROWSER_A,
+          slot: 4,
+          metadata: { deviceWidth: 390, deviceHeight: 844 },
+          data: Buffer.from(browser.tab.fullPageScreenshotData, "base64"),
+        },
+      ]);
+
+      await browser.execute({ command: "screencast_stop", args: { browserId: BROWSER_A } });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  test("a page that damages on its own is never captured directly", async () => {
+    vi.useFakeTimers();
+    try {
+      const browser = new BrowserAutomationHarness();
+      await browser.execute({
+        command: "screencast_start",
+        args: {
+          browserId: BROWSER_A,
+          slot: 4,
+          quality: 90,
+          maxWidth: 2560,
+          maxHeight: 1600,
+          everyNthFrame: 1,
+        },
+      });
+
+      browser.tab.emitDebugMessage("Page.screencastFrame", {
+        sessionId: 1,
+        data: Buffer.from([1]).toString("base64"),
+        metadata: { deviceWidth: 1000, deviceHeight: 750 },
+      });
+      await vi.advanceTimersByTimeAsync(3000);
+
+      expect(captureQualities(browser)).toEqual([]);
+      expect(browser.screencastFrames).toHaveLength(1);
+
+      await browser.execute({ command: "screencast_stop", args: { browserId: BROWSER_A } });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  test("screencast_stop stops capture and removes the frame listener", async () => {
+    const browser = new BrowserAutomationHarness();
+    await browser.execute({
+      command: "screencast_start",
+      args: {
+        browserId: BROWSER_A,
+        slot: 5,
+        quality: 60,
+        maxWidth: 1280,
+        maxHeight: 800,
+        everyNthFrame: 1,
+      },
+    });
+
+    const result = await browser.execute({
+      command: "screencast_stop",
+      args: { browserId: BROWSER_A },
+    });
+    browser.tab.emitDebugMessage("Page.screencastFrame", {
+      sessionId: 10,
+      data: "AQ==",
+      metadata: { deviceWidth: 1280, deviceHeight: 800 },
+    });
+
+    expect(result).toEqual({
+      requestId: "req-screencast_stop",
+      ok: true,
+      result: { command: "screencast_stop", browserId: BROWSER_A },
+    });
+    expect(browser.tab.debugCommands.map((entry) => entry.command)).toEqual([
+      "Page.startScreencast",
+      "Page.stopScreencast",
+    ]);
+    expect(browser.screencastFrames).toEqual([]);
+  });
+
+  test("a stop before the first-frame timer fires emits nothing", async () => {
+    vi.useFakeTimers();
+    try {
+      const browser = new BrowserAutomationHarness();
+      await browser.execute({
+        command: "screencast_start",
+        args: {
+          browserId: BROWSER_A,
+          slot: 0,
+          quality: 90,
+          maxWidth: 2560,
+          maxHeight: 1600,
+          everyNthFrame: 1,
+        },
+      });
+
+      await browser.execute({ command: "screencast_stop", args: { browserId: BROWSER_A } });
+      // The daemon reuses slot 0 for another browser the moment the stop lands, so
+      // a late frame here fans this tab's page out to that browser's viewers.
+      await vi.advanceTimersByTimeAsync(700);
+
+      expect(browser.screencastFrames).toEqual([]);
+      expect(browser.tab.debugCommands.map((entry) => entry.command)).toEqual([
+        "Page.startScreencast",
+        "Page.stopScreencast",
+      ]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  test("a rejected stop still tears the stream down", async () => {
+    const browser = new BrowserAutomationHarness();
+    await browser.execute({
+      command: "screencast_start",
+      args: {
+        browserId: BROWSER_A,
+        slot: 0,
+        quality: 60,
+        maxWidth: 1280,
+        maxHeight: 800,
+        everyNthFrame: 1,
+      },
+    });
+    browser.tab.stopScreencastThrows = true;
+
+    const result = await browser.execute({
+      command: "screencast_stop",
+      args: { browserId: BROWSER_A },
+    });
+    browser.tab.emitDebugMessage("Page.screencastFrame", {
+      sessionId: 11,
+      data: "AQ==",
+      metadata: { deviceWidth: 1280, deviceHeight: 800 },
+    });
+
+    expect(result).toEqual({
+      requestId: "req-screencast_stop",
+      ok: true,
+      result: { command: "screencast_stop", browserId: BROWSER_A },
+    });
+    expect(browser.screencastFrames).toEqual([]);
+    expect(browser.tab.debugCommands.map((entry) => entry.command)).toEqual([
+      "Page.startScreencast",
+      "Page.stopScreencast",
+    ]);
+  });
+
+  test("screencast_start re-arms an existing stream on the daemon's new slot", async () => {
+    const browser = new BrowserAutomationHarness();
+    await browser.execute({
+      command: "screencast_start",
+      args: {
+        browserId: BROWSER_A,
+        slot: 6,
+        quality: 60,
+        maxWidth: 1280,
+        maxHeight: 800,
+        everyNthFrame: 1,
+      },
+    });
+
+    const result = await browser.execute({
+      command: "screencast_start",
+      args: {
+        browserId: BROWSER_A,
+        slot: 7,
+        quality: 80,
+        maxWidth: 800,
+        maxHeight: 600,
+        everyNthFrame: 3,
+      },
+    });
+
+    // Reusing the old stream pins frames to a slot the daemon no longer routes
+    // and to the renderer that started it, which may be gone.
+    expect(result).toEqual({
+      requestId: "req-screencast_start",
+      ok: true,
+      result: { command: "screencast_start", browserId: BROWSER_A, slot: 7 },
+    });
+    expect(
+      browser.tab.debugCommands.filter((entry) => entry.command === "Page.startScreencast"),
+    ).toHaveLength(2);
+    expect(
+      browser.tab.debugCommands.filter((entry) => entry.command === "Page.stopScreencast"),
+    ).toHaveLength(1);
+
+    browser.tab.emitDebugMessage("Page.screencastFrame", {
+      sessionId: 9,
+      data: Buffer.from("second").toString("base64"),
+      metadata: { deviceWidth: 800, deviceHeight: 600 },
+    });
+    expect(browser.screencastFrames.at(-1)?.slot).toBe(7);
+
+    await browser.execute({ command: "screencast_stop", args: { browserId: BROWSER_A } });
+  });
+
+  test("destroying a guest releases its active screencast", async () => {
+    const firstBrowser = new BrowserAutomationHarness();
+    await firstBrowser.execute({
+      command: "screencast_start",
+      args: {
+        browserId: BROWSER_A,
+        slot: 8,
+        quality: 60,
+        maxWidth: 1280,
+        maxHeight: 800,
+        everyNthFrame: 1,
+      },
+    });
+    firstBrowser.tab.destroy();
+
+    const replacementBrowser = new BrowserAutomationHarness();
+    await replacementBrowser.execute({
+      command: "screencast_start",
+      args: {
+        browserId: BROWSER_A,
+        slot: 9,
+        quality: 60,
+        maxWidth: 1280,
+        maxHeight: 800,
+        everyNthFrame: 1,
+      },
+    });
+
+    expect(replacementBrowser.tab.debugCommands.map((entry) => entry.command)).toEqual([
+      "Page.startScreencast",
+    ]);
+
+    await replacementBrowser.execute({
+      command: "screencast_stop",
+      args: { browserId: BROWSER_A },
+    });
   });
 
   test("navigate loads the requested HTTP URL in the explicit tab", async () => {

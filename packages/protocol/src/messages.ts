@@ -60,6 +60,17 @@ import {
 } from "./browser-automation/rpc-schemas.js";
 import { BrowserAutomationHostCapabilitySchema } from "./browser-automation/capabilities.js";
 import {
+  BrowserScreencastSubscribeRequestSchema,
+  BrowserScreencastSubscribeResponseSchema,
+  BrowserScreencastUnsubscribeRequestSchema,
+} from "./browser-automation/screencast.js";
+import {
+  BrowserTabExecuteRequestSchema,
+  BrowserTabExecuteResponseSchema,
+  BrowserTabsAnnounceRequestSchema,
+  BrowserTabsChangedSchema,
+} from "./browser-automation/client-command.js";
+import {
   PaseoConfigRawSchema,
   PaseoLifecycleCommandRawSchema,
   PaseoMetadataGenerationEntrySchema,
@@ -2635,6 +2646,19 @@ export const FileEntryDeleteRequestSchema = z.object({
   requestId: z.string(),
 });
 
+export const FileSearchRequestSchema = z.object({
+  type: z.literal("fs.search.request"),
+  cwd: z.string(),
+  query: z.string().min(1).max(1000),
+  caseSensitive: z.boolean().optional(),
+  wholeWord: z.boolean().optional(),
+  useRegex: z.boolean().optional(),
+  includePattern: z.string().max(1000).optional(),
+  excludePattern: z.string().max(1000).optional(),
+  maxResults: z.number().int().min(1).max(2000).optional(),
+  requestId: z.string(),
+});
+
 export const ProjectIconRequestSchema = z.object({
   type: z.literal("project_icon_request"),
   cwd: z.string(),
@@ -3083,6 +3107,7 @@ export const SessionInboundMessageSchema = z.discriminatedUnion("type", [
   FileEntryRenameRequestSchema,
   FileEntryDuplicateRequestSchema,
   FileEntryDeleteRequestSchema,
+  FileSearchRequestSchema,
   ProjectIconRequestSchema,
   ProjectIconGetRequestSchema,
   FileDownloadTokenRequestSchema,
@@ -3104,6 +3129,10 @@ export const SessionInboundMessageSchema = z.discriminatedUnion("type", [
   WorkspaceScriptStopRequestSchema,
   SubscribeTerminalRequestSchema,
   UnsubscribeTerminalRequestSchema,
+  BrowserScreencastSubscribeRequestSchema,
+  BrowserScreencastUnsubscribeRequestSchema,
+  BrowserTabExecuteRequestSchema,
+  BrowserTabsAnnounceRequestSchema,
   TerminalInputSchema,
   KillTerminalRequestSchema,
   CaptureTerminalRequestSchema,
@@ -3301,6 +3330,11 @@ export const ServerInfoStatusPayloadSchema = z
         directorySync: z.boolean().optional(),
         // COMPAT(workspaceLabels): added in v0.5.0, remove after 2027-08-14.
         workspaceLabels: z.boolean().optional(),
+        // COMPAT(browserMirror): added in v0.5.2, remove after 2027-09-01 once the
+        // supported client floor always gates browser tabs on this flag. True only
+        // while a host that can serve a mirror — screencast plus viewport input —
+        // is connected; a host registered for agent automation alone does not set it.
+        browserMirror: z.boolean().optional(),
         // COMPAT(checkoutForgeSetAutoMerge): added in v0.1.106, remove old
         // checkoutGithubSetAutoMerge fallback after 2026-12-28.
         checkoutForgeSetAutoMerge: z.boolean().optional(),
@@ -3422,6 +3456,8 @@ export const ServerInfoStatusPayloadSchema = z
         agentProfiles: z.boolean().optional(),
         // COMPAT(agentConfigApply): added in v0.3.2, remove gate after 2027-02-11.
         agentConfigApply: z.boolean().optional(),
+        // COMPAT(fileContentSearch): added in v0.3.0, remove gate after 2027-02-10.
+        fileContentSearch: z.boolean().optional(),
       })
       .optional(),
   })
@@ -5553,6 +5589,32 @@ export const FileEntryDeleteResponseSchema = z.object({
   }),
 });
 
+export const FileSearchMatchSchema = z.object({
+  line: z.number().int().positive(),
+  column: z.number().int().positive(),
+  matchLength: z.number().int().nonnegative(),
+  lineContent: z.string().max(500),
+  lineContentStartColumn: z.number().int().positive().optional(),
+});
+
+export const FileSearchResponseSchema = z.object({
+  type: z.literal("fs.search.response"),
+  payload: z.object({
+    cwd: z.string(),
+    files: z
+      .array(
+        z.object({
+          path: z.string(),
+          matches: z.array(FileSearchMatchSchema).max(100),
+        }),
+      )
+      .max(2000),
+    totalMatches: z.number().int().nonnegative().max(2000),
+    truncated: z.boolean(),
+    requestId: z.string(),
+  }),
+});
+
 export const FileUpdateSchema = z.object({
   type: z.literal("fs.file.update"),
   payload: z.object({
@@ -6160,6 +6222,9 @@ export const SessionOutboundMessageSchema = z.discriminatedUnion("type", [
   HubExecutionAgentUpdateSchema,
   HubExecutionAgentStreamSchema,
   BrowserAutomationExecuteRequestSchema,
+  BrowserScreencastSubscribeResponseSchema,
+  BrowserTabExecuteResponseSchema,
+  BrowserTabsChangedSchema,
   PluginCatalogGetResponseSchema,
   PluginListResponseSchema,
   PluginLogsGetResponseSchema,
@@ -6310,6 +6375,7 @@ export const SessionOutboundMessageSchema = z.discriminatedUnion("type", [
   FileEntryRenameResponseSchema,
   FileEntryDuplicateResponseSchema,
   FileEntryDeleteResponseSchema,
+  FileSearchResponseSchema,
   FileUpdateSchema,
   ProjectIconResponseSchema,
   ProjectIconGetResponseSchema,
@@ -6746,6 +6812,9 @@ export type FileEntryDuplicateRequest = z.infer<typeof FileEntryDuplicateRequest
 export type FileEntryDuplicateResponse = z.infer<typeof FileEntryDuplicateResponseSchema>;
 export type FileEntryDeleteRequest = z.infer<typeof FileEntryDeleteRequestSchema>;
 export type FileEntryDeleteResponse = z.infer<typeof FileEntryDeleteResponseSchema>;
+export type FileSearchRequest = z.infer<typeof FileSearchRequestSchema>;
+export type FileSearchResponse = z.infer<typeof FileSearchResponseSchema>;
+export type FileSearchMatch = z.infer<typeof FileSearchMatchSchema>;
 export type FileWriteResult = z.infer<typeof FileWriteResultSchema>;
 export type FileUpdate = z.infer<typeof FileUpdateSchema>;
 export type ProjectIconRequest = z.infer<typeof ProjectIconRequestSchema>;
@@ -6830,6 +6899,7 @@ export const WSHelloMessageSchema = z.object({
       [CLIENT_CAPS.providerSubagents]: z.boolean().optional(),
       [CLIENT_CAPS.projectUpdates]: z.boolean().optional(),
       [CLIENT_CAPS.compactProviderSnapshots]: z.boolean().optional(),
+      [CLIENT_CAPS.browserMirror]: z.boolean().optional(),
       [CLIENT_CAPS.browserHost]: BrowserAutomationHostCapabilitySchema.optional(),
     })
     .passthrough()

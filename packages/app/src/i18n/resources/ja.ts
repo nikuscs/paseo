@@ -518,6 +518,10 @@ export const ja: TranslationResources = {
         title: "ブラウザはデスクトップ専用です",
         subtitle: "組み込みブラウザを使用するには、このワークスペースをElectronで開いてください。",
       },
+      mirror: {
+        keyboard: "ミラー表示ブラウザのキーボード",
+        connecting: "ホストのブラウザに接続しています…",
+      },
       session: "ブラウザセッション{{browserId}}",
       controls: {
         back: "戻る",
@@ -545,9 +549,11 @@ export const ja: TranslationResources = {
       devices: {
         label: "デバイスサイズ",
         responsive: "レスポンシブ",
+        landscape: "横向き",
       },
       errors: {
         failedToLoad: "ページの読み込みに失敗しました",
+        openTabFailed: "ホストでタブを開けませんでした",
         invalidUrl: "無効なブラウザURL",
         unsupportedProtocol: "サポートされていないブラウザURLをブロック: {{protocol}}",
       },
@@ -587,6 +593,7 @@ export const ja: TranslationResources = {
         closeLeft: "左のタブを閉じる",
         closeRight: "右のタブを閉じる",
         closeOthers: "他のタブを閉じる",
+        closeEditorTabs: "エディタータブを閉じる",
         moveToMain: "メインパネルへ移動",
         reloadAgent: "エージェントを再読み込み",
         reloadAgentTooltip:
@@ -651,6 +658,7 @@ export const ja: TranslationResources = {
         closeTabsLeftTitle: "左のタブを閉じますか？",
         closeTabsRightTitle: "右のタブを閉じますか？",
         closeOtherTabsTitle: "他のタブを閉じますか？",
+        closeEditorTabsTitle: "エディタータブを閉じますか？",
         bulk: {
           all: "{{agents}}件のエージェントをアーカイブし、{{terminals}}件のターミナルを閉じ、{{tabs}}件のタブを閉じます。閉じたターミナルで実行中のプロセスはすぐに停止されます。",
           agentsAndTerminals:
@@ -1034,6 +1042,12 @@ export const ja: TranslationResources = {
         status: "ステータス",
         labels: "ラベル",
       },
+      sorting: {
+        label: "並び順",
+        manual: "手動",
+        name: "名前",
+        activity: "最近のアクティビティ",
+      },
       titleSource: {
         label: "タイトル",
         title: "タイトル",
@@ -1050,6 +1064,16 @@ export const ja: TranslationResources = {
         labels: "ラベル",
         diff: "差分統計",
         timestamp: "最終アクティビティ",
+        compactRows: "コンパクトな行",
+        newWorkspaceRow: "新しいワークスペース行",
+      },
+      recentlyDone: {
+        label: "最近完了",
+        options: {
+          off: "オフ",
+          minutes: "{{minutes}}分",
+          hour: "1時間",
+        },
       },
       checks: {
         iconAndText: "アイコンとテキスト",
@@ -1554,6 +1578,10 @@ export const ja: TranslationResources = {
         title: "直接接続",
         description: "ローカルネットワークまたはVPN。",
       },
+      remoteSsh: {
+        title: "リモート SSH",
+        description: "デスクトップの SSH クライアント経由で接続します。",
+      },
       scanQr: {
         title: "QRコードをスキャン",
         description: "暗号化されたリレー接続。",
@@ -1603,6 +1631,27 @@ export const ja: TranslationResources = {
         tlsError: "TLSエラー。直接接続は、デーモンの前にTLS終端がある場合のみSSLを使用します。",
         unableToConnect: "接続できません。ホスト/ポートとデーモンが到達可能かを確認してください。",
         details: "詳細: {{detail}}",
+      },
+    },
+    remoteSsh: {
+      title: "リモート SSH",
+      helper: "リモートホストで動作する Paseo デーモンに接続します。",
+      fields: {
+        host: "ホスト",
+        port: "SSH ポート",
+        identityFile: "秘密鍵ファイルのパス",
+        optional: "任意",
+      },
+      actions: {
+        cancel: "キャンセル",
+        connect: "接続",
+        connecting: "接続中...",
+      },
+      errors: {
+        hostRequired: "ホストは必須です",
+        invalidHost: "有効な SSH ホストを入力してください",
+        invalidPort: "SSH ポートは 1 から 65535 の間で指定してください",
+        failedToConnect: "SSH で接続できません。{{detail}}",
       },
     },
     link: {
@@ -2244,6 +2293,7 @@ export const ja: TranslationResources = {
       badges: {
         relay: "リレー",
         local: "ローカル",
+        remoteSsh: "リモート SSH",
       },
       connections: {
         title: "接続",
