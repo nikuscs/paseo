@@ -3310,6 +3310,28 @@ describe("workspace-layout-store actions", () => {
     expect(contentTabs(workspaceLayoutStore.getState().getWorkspaceTabs(workspaceKey))).toEqual([]);
   });
 
+  it("reconcileTabs converges layout identity when a standalone terminal is not known", () => {
+    const workspaceKey = createWorkspaceKey();
+    const snapshot = {
+      agentsHydrated: true,
+      terminalsHydrated: true,
+      activeAgentIds: [],
+      autoOpenAgentIds: [],
+      knownAgentIds: [],
+      knownTerminalIds: [],
+      standaloneTerminalIds: ["x1"],
+      hasActivePendingDraftCreate: false,
+    };
+
+    workspaceLayoutStore.getState().reconcileTabs(workspaceKey, snapshot);
+    const firstLayout = workspaceLayoutStore.getState().layoutByWorkspace[workspaceKey];
+
+    for (let pass = 0; pass < 5; pass += 1) {
+      workspaceLayoutStore.getState().reconcileTabs(workspaceKey, snapshot);
+      expect(workspaceLayoutStore.getState().layoutByWorkspace[workspaceKey]).toBe(firstLayout);
+    }
+  });
+
   it("explicitly opening an agent tab clears hidden intent", () => {
     const workspaceKey = createWorkspaceKey();
     const store = workspaceLayoutStore.getState();
