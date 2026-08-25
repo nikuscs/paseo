@@ -2372,6 +2372,7 @@ function addMissingEntityTabs(input: {
   autoOpenAgentIds: Set<string>;
   representedAgentIds: Set<string>;
   standaloneTerminalIds: Set<string>;
+  knownTerminalIds: Set<string>;
   hasActivePendingTerminalCreate: boolean;
   hasActivePendingDraftCreate: boolean;
   explorerSidebarPaneId: string | null;
@@ -2380,6 +2381,7 @@ function addMissingEntityTabs(input: {
     autoOpenAgentIds,
     representedAgentIds,
     standaloneTerminalIds,
+    knownTerminalIds,
     hasActivePendingTerminalCreate,
     hasActivePendingDraftCreate,
     explorerSidebarPaneId,
@@ -2413,6 +2415,11 @@ function addMissingEntityTabs(input: {
   if (!hasActivePendingTerminalCreate) {
     for (const terminalId of sortedTerminalIds) {
       if (currentTerminalIds.has(terminalId)) {
+        continue;
+      }
+      // Cached standalone IDs can outlive the live terminal list. Opening those
+      // here fights collapseStaleEntityTabs and reallocates the layout every pass.
+      if (!knownTerminalIds.has(terminalId)) {
         continue;
       }
       nextLayout = openEntityTabWithoutFocusing({
@@ -2512,6 +2519,7 @@ export function reconcileWorkspaceTabs(
     autoOpenAgentIds: autoOpenSet,
     representedAgentIds,
     standaloneTerminalIds,
+    knownTerminalIds,
     hasActivePendingTerminalCreate: snapshot.hasActivePendingTerminalCreate ?? false,
     hasActivePendingDraftCreate: snapshot.hasActivePendingDraftCreate ?? false,
     explorerSidebarPaneId: state.explorerSidebarPaneId,
