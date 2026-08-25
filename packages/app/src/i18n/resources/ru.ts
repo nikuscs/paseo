@@ -518,6 +518,10 @@ export const ru: TranslationResources = {
         subtitle:
           "Откройте это рабочее пространство в Electron, чтобы использовать встроенный браузер.",
       },
+      mirror: {
+        keyboard: "Клавиатура зеркального браузера",
+        connecting: "Подключение к браузеру на хосте…",
+      },
       session: "Сеанс браузера {{browserId}}",
       controls: {
         back: "Назад",
@@ -545,9 +549,11 @@ export const ru: TranslationResources = {
       devices: {
         label: "Размер экрана устройства",
         responsive: "Адаптивный режим",
+        landscape: "Альбомная",
       },
       errors: {
         failedToLoad: "Не удалось загрузить страницу",
+        openTabFailed: "Не удалось открыть вкладку на хосте",
         invalidUrl: "Недопустимый URL браузера",
         unsupportedProtocol:
           "URL браузера с неподдерживаемым протоколом заблокирован: {{protocol}}",

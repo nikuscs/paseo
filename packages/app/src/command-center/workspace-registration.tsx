@@ -35,6 +35,7 @@ import { type ShortcutOverrides } from "@/keyboard/keyboard-shortcuts";
 import { useKeyboardActionDispatcher } from "@/keyboard/keyboard-action-dispatcher-context";
 import { useHostFeature } from "@/runtime/host-features";
 import { useActiveWorkspaceSelection } from "@/stores/navigation-active-workspace-store";
+import { useCanOpenBrowserTabs } from "@/desktop/browser/capability";
 import { useWorkspaceDirectory, useWorkspaceFields } from "@/stores/session-store-hooks";
 import {
   collectAllTabs,
@@ -193,6 +194,7 @@ export function useWorkspaceCommandCenterActions(): void {
   const cwd = useWorkspaceDirectory(serverId, workspaceId);
   const currentBranch = fields?.currentBranch ?? null;
   const isPinned = fields?.pinnedAt != null;
+  const canOpenBrowserTabs = useCanOpenBrowserTabs(serverId ?? "");
   const isCompact = useIsCompactFormFactor();
   const canPin = useHostFeature(serverId, "workspacePinning");
   const persistenceKey =
@@ -285,7 +287,7 @@ export function useWorkspaceCommandCenterActions(): void {
         shortcuts: resolveWorkspaceShortcuts(overrides),
         capabilities: {
           canSplitPanes: supportsDesktopPaneSplits() && !isCompact,
-          canOpenBrowserTabs: getIsElectron(),
+          canOpenBrowserTabs,
           isGit,
           canPin,
           canShowSetup,
@@ -315,6 +317,7 @@ export function useWorkspaceCommandCenterActions(): void {
       currentBranch,
       focusedTabs.length,
       gitActions,
+      canOpenBrowserTabs,
       isCompact,
       isGit,
       isPinned,
