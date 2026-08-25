@@ -188,9 +188,15 @@ export function useSidebarDisplayPreferences(): SidebarDisplayPreferences {
  */
 export function useSidebarRowItems(): SidebarRowItems {
   const {
-    settings: { sidebarRowItems },
+    settings: { sidebarRowItems, appearance },
   } = useAppSettings();
-  return sidebarRowItems ?? DEFAULT_SIDEBAR_ROW_ITEMS;
+  return useMemo(
+    () => ({
+      ...(sidebarRowItems ?? DEFAULT_SIDEBAR_ROW_ITEMS),
+      host: appearance.hideHostLabels ? false : sidebarRowItems.host,
+    }),
+    [appearance.hideHostLabels, sidebarRowItems],
+  );
 }
 
 /**
@@ -215,7 +221,8 @@ export function useSidebarMetaPreferences(): {
 }
 
 export function useCompactSidebarRows(): boolean {
-  return useAppSettings().settings.compactSidebarRows;
+  const { compactSidebarRows, appearance } = useAppSettings().settings;
+  return compactSidebarRows || appearance.compactSidebarRows;
 }
 
 export function useShowNewWorkspaceRow(): boolean {

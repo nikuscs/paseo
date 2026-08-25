@@ -2116,6 +2116,25 @@ export const ko: TranslationResources = {
         title: "채팅 개요",
         description: "프롬프트 사이를 이동하기 위한 개요 표시",
       },
+      sidebar: {
+        title: "Sidebar",
+        compactRows: {
+          label: "Compact rows",
+          description: "Tighter spacing for project and workspace rows",
+        },
+        hideDiffStats: {
+          label: "Hide diff stats",
+          description: "Hide the +/− change counts on workspace rows",
+        },
+        hidePrStatus: {
+          label: "Hide PR status",
+          description: "Hide the pull request badge and checks on workspace rows",
+        },
+        hideHostNames: {
+          label: "Hide host names",
+          description: "Hide the machine name when grouping by status",
+        },
+      },
       fonts: {
         title: "글꼴",
         systemDefault: "시스템 기본값",

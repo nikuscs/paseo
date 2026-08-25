@@ -880,6 +880,12 @@ describe("sidebar display preferences", () => {
 
     const result = await loadAppSettingsFromStorage(deps);
 
+    expect(result.appearance).toEqual({
+      hideWorkspaceDiffStats: false,
+      hideHostLabels: false,
+      compactSidebarRows: false,
+      hidePrStatus: false,
+    });
     expect(result.compactSidebarRows).toBe(false);
     expect(result.showNewWorkspaceRow).toBe(true);
     expect(result.recentlyDoneWindowMinutes).toBe(0);
@@ -905,7 +911,7 @@ describe("sidebar display preferences", () => {
     expect(result.recentlyDoneWindowMinutes).toBe(15);
   });
 
-  it("migrates the removed appearance blob into canonical display settings", async () => {
+  it("loads nested appearance settings and migrates removed sidebar fields", async () => {
     const deps = makeDeps({
       storage: createInMemoryKeyValueStorage({
         [APP_SETTINGS_KEY]: JSON.stringify({
@@ -924,14 +930,18 @@ describe("sidebar display preferences", () => {
 
     const result = await loadAppSettingsFromStorage(deps);
 
-    expect(result.sidebarWorkspaceTrailing).toBe("none");
+    expect(result.appearance).toEqual({
+      hideWorkspaceDiffStats: true,
+      hideHostLabels: true,
+      compactSidebarRows: true,
+      hidePrStatus: true,
+    });
+    expect(result.sidebarWorkspaceTrailing).toBe("diff");
     expect(result.sidebarRowItems).toEqual({
       ...DEFAULT_CLIENT_SETTINGS.sidebarRowItems,
-      host: false,
-      changeRequest: false,
       services: false,
     });
-    expect(result.compactSidebarRows).toBe(true);
+    expect(result.compactSidebarRows).toBe(false);
     expect(result.showNewWorkspaceRow).toBe(false);
     expect(result.recentlyDoneWindowMinutes).toBe(30);
   });

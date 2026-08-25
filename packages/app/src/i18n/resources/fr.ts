@@ -2159,6 +2159,27 @@ export const fr: TranslationResources = {
         title: "Plan de la discussion",
         description: "Afficher un plan pour passer d’une requête à l’autre",
       },
+      sidebar: {
+        title: "Barre latérale",
+        compactRows: {
+          label: "Lignes compactes",
+          description: "Espacement plus serré pour les lignes de projets et d'espaces de travail",
+        },
+        hideDiffStats: {
+          label: "Masquer les statistiques de diff",
+          description:
+            "Masquer les décomptes de modifications +/− sur les lignes d'espaces de travail",
+        },
+        hidePrStatus: {
+          label: "Masquer l'état de la PR",
+          description:
+            "Masquer le badge de pull request et les vérifications sur les lignes d'espaces de travail",
+        },
+        hideHostNames: {
+          label: "Masquer les noms d'hôte",
+          description: "Masquer le nom de la machine lors du regroupement par statut",
+        },
+      },
       fonts: {
         title: "Polices",
         systemDefault: "Valeur par défaut du système",
