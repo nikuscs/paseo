@@ -512,6 +512,10 @@ export const en = {
         title: "Browser is desktop-only",
         subtitle: "Open this workspace in Electron to use the built-in browser.",
       },
+      mirror: {
+        keyboard: "Mirrored browser keyboard",
+        connecting: "Connecting to the browser on the host…",
+      },
       session: "Browser session {{browserId}}",
       controls: {
         back: "Back",
@@ -539,9 +543,11 @@ export const en = {
       devices: {
         label: "Device size",
         responsive: "Responsive",
+        landscape: "Landscape",
       },
       errors: {
         failedToLoad: "Failed to load page",
+        openTabFailed: "Unable to open a tab on the host",
         invalidUrl: "Invalid browser URL",
         unsupportedProtocol: "Blocked unsupported browser URL: {{protocol}}",
       },
@@ -581,6 +587,7 @@ export const en = {
         closeLeft: "Close to the left",
         closeRight: "Close to the right",
         closeOthers: "Close other tabs",
+        closeEditorTabs: "Close editor tabs",
         moveToMain: "Move to main panel",
         reloadAgent: "Reload agent",
         reloadAgentTooltip: "Reload agent to update skills, MCPs or login status.",
@@ -645,6 +652,7 @@ export const en = {
         closeTabsLeftTitle: "Close tabs to the left?",
         closeTabsRightTitle: "Close tabs to the right?",
         closeOtherTabsTitle: "Close other tabs?",
+        closeEditorTabsTitle: "Close editor tabs?",
         bulk: {
           all: "This will archive {{agents}} agent(s), close {{terminals}} terminal(s), and close {{tabs}} tab(s). Any running process in a closed terminal will be stopped immediately.",
           agentsAndTerminals:
@@ -1042,6 +1050,12 @@ export const en = {
         status: "Status",
         labels: "Labels",
       },
+      sorting: {
+        label: "Sorting",
+        manual: "Manual",
+        name: "Name",
+        activity: "Recent activity",
+      },
       titleSource: {
         label: "Title",
         title: "Title",
@@ -1058,6 +1072,16 @@ export const en = {
         labels: "Labels",
         diff: "Diff stats",
         timestamp: "Last activity",
+        compactRows: "Compact rows",
+        newWorkspaceRow: "New workspace row",
+      },
+      recentlyDone: {
+        label: "Recently done",
+        options: {
+          off: "Off",
+          minutes: "{{minutes}} min",
+          hour: "1 hour",
+        },
       },
       checks: {
         iconAndText: "Icon and text",
@@ -1627,6 +1651,8 @@ export const en = {
       helper: "Connect to a Paseo daemon running on the remote host.",
       fields: {
         target: "SSH host",
+        identityFile: "Identity file path",
+        optional: "Optional",
       },
       actions: {
         cancel: "Cancel",
@@ -2193,6 +2219,25 @@ export const en = {
       chatOutline: {
         title: "Chat outline",
         description: "Show an outline for jumping between prompts",
+      },
+      sidebar: {
+        title: "Sidebar",
+        compactRows: {
+          label: "Compact rows",
+          description: "Tighter spacing for project and workspace rows",
+        },
+        hideDiffStats: {
+          label: "Hide diff stats",
+          description: "Hide the +/− change counts on workspace rows",
+        },
+        hidePrStatus: {
+          label: "Hide PR status",
+          description: "Hide the pull request badge and checks on workspace rows",
+        },
+        hideHostNames: {
+          label: "Hide host names",
+          description: "Hide the machine name when grouping by status",
+        },
       },
       fonts: {
         title: "Fonts",

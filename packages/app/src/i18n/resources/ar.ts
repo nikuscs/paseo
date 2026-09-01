@@ -514,6 +514,10 @@ export const ar: TranslationResources = {
         title: "المتصفح مخصص لسطح المكتب فقط",
         subtitle: "افتح مساحة العمل هذه في Electron لاستخدام المتصفح المدمج.",
       },
+      mirror: {
+        keyboard: "لوحة مفاتيح المتصفح المعكوس",
+        connecting: "جارٍ الاتصال بالمتصفح على المضيف…",
+      },
       session: "جلسة المتصفح{{browserId}}",
       controls: {
         back: "خلف",
@@ -541,9 +545,11 @@ export const ar: TranslationResources = {
       devices: {
         label: "حجم الجهاز",
         responsive: "متجاوب",
+        landscape: "أفقي",
       },
       errors: {
         failedToLoad: "فشل تحميل الصفحة",
+        openTabFailed: "تعذر فتح علامة تبويب على المضيف",
         invalidUrl: "متصفح غير صالح URL",
         unsupportedProtocol: "متصفح محظور غير مدعوم URL:{{protocol}}",
       },
@@ -583,6 +589,7 @@ export const ar: TranslationResources = {
         closeLeft: "بالقرب من اليسار",
         closeRight: "قريب من اليمين",
         closeOthers: "أغلق علامات التبويب الأخرى",
+        closeEditorTabs: "إغلاق علامات تبويب المحرر",
         moveToMain: "Move to main panel",
         reloadAgent: "إعادة تحميل الوكيل",
         reloadAgentTooltip: "قم بإعادة تحميل الوكيل لتحديث المهارات أو MCPs أو حالة تسجيل الدخول.",
@@ -648,6 +655,7 @@ export const ar: TranslationResources = {
         closeTabsLeftTitle: "هل تريد إغلاق علامات التبويب على اليسار؟",
         closeTabsRightTitle: "هل تريد إغلاق علامات التبويب على اليمين؟",
         closeOtherTabsTitle: "هل تريد إغلاق علامات التبويب الأخرى؟",
+        closeEditorTabsTitle: "هل تريد إغلاق علامات تبويب المحرر؟",
         bulk: {
           all: "سيؤدي هذا إلى أرشفة وكيل (وكلاء){{agents}}، وإغلاق محطة (محطات){{terminals}}، وإغلاق علامة (علامات) تبويب{{tabs}}. سيتم إيقاف أي عملية جارية في محطة مغلقة على الفور.",
           agentsAndTerminals:
@@ -1033,6 +1041,12 @@ export const ar: TranslationResources = {
         status: "الحالة",
         labels: "التسميات",
       },
+      sorting: {
+        label: "الترتيب",
+        manual: "يدوي",
+        name: "الاسم",
+        activity: "النشاط الأخير",
+      },
       titleSource: {
         label: "العنوان",
         title: "العنوان",
@@ -1049,6 +1063,16 @@ export const ar: TranslationResources = {
         labels: "التسميات",
         diff: "إحصائيات الفروق",
         timestamp: "آخر نشاط",
+        compactRows: "صفوف مضغوطة",
+        newWorkspaceRow: "صف مساحة عمل جديدة",
+      },
+      recentlyDone: {
+        label: "تم مؤخرًا",
+        options: {
+          off: "إيقاف",
+          minutes: "{{minutes}} د",
+          hour: "ساعة واحدة",
+        },
       },
       checks: {
         iconAndText: "أيقونة ونص",
@@ -1618,6 +1642,8 @@ export const ar: TranslationResources = {
       helper: "الاتصال بخادم Paseo يعمل على المضيف البعيد.",
       fields: {
         target: "مضيف SSH",
+        identityFile: "مسار ملف الهوية",
+        optional: "اختياري",
       },
       actions: {
         cancel: "إلغاء",
@@ -2094,6 +2120,25 @@ export const ar: TranslationResources = {
       chatOutline: {
         title: "مخطط المحادثة",
         description: "عرض مخطط للتنقل بين المطالبات",
+      },
+      sidebar: {
+        title: "الشريط الجانبي",
+        compactRows: {
+          label: "صفوف مضغوطة",
+          description: "تباعد أضيق لصفوف المشاريع ومساحات العمل",
+        },
+        hideDiffStats: {
+          label: "إخفاء إحصائيات الفروق",
+          description: "إخفاء أعداد التغييرات +/− في صفوف مساحات العمل",
+        },
+        hidePrStatus: {
+          label: "إخفاء حالة طلب السحب",
+          description: "إخفاء شارة طلب السحب والفحوصات في صفوف مساحات العمل",
+        },
+        hideHostNames: {
+          label: "إخفاء أسماء المضيفين",
+          description: "إخفاء اسم الجهاز عند التجميع حسب الحالة",
+        },
       },
       fonts: {
         title: "الخطوط",

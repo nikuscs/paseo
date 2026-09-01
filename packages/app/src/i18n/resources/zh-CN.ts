@@ -514,6 +514,10 @@ export const zhCN: TranslationResources = {
         title: "浏览器仅桌面端可用",
         subtitle: "在 Electron 中打开此 workspace 以使用内置浏览器。",
       },
+      mirror: {
+        keyboard: "镜像浏览器键盘",
+        connecting: "正在连接主机上的浏览器…",
+      },
       session: "浏览器会话 {{browserId}}",
       controls: {
         back: "后退",
@@ -541,9 +545,11 @@ export const zhCN: TranslationResources = {
       devices: {
         label: "设备尺寸",
         responsive: "自适应",
+        landscape: "横向",
       },
       errors: {
         failedToLoad: "页面加载失败",
+        openTabFailed: "无法在主机上打开标签页",
         invalidUrl: "浏览器 URL 无效",
         unsupportedProtocol: "已阻止不支持的浏览器 URL：{{protocol}}",
       },
@@ -583,6 +589,7 @@ export const zhCN: TranslationResources = {
         closeLeft: "关闭左侧标签",
         closeRight: "关闭右侧标签",
         closeOthers: "关闭其他标签",
+        closeEditorTabs: "关闭编辑器标签",
         moveToMain: "移至主面板",
         reloadAgent: "重新加载 Agent",
         reloadAgentTooltip: "重新加载 Agent 以更新 skills、MCPs 或登录状态。",
@@ -645,6 +652,7 @@ export const zhCN: TranslationResources = {
         closeTabsLeftTitle: "关闭左侧标签？",
         closeTabsRightTitle: "关闭右侧标签？",
         closeOtherTabsTitle: "关闭其他标签？",
+        closeEditorTabsTitle: "关闭编辑器标签？",
         bulk: {
           all: "这会归档 {{agents}} 个 Agent，关闭 {{terminals}} 个 Terminal，并关闭 {{tabs}} 个标签。已关闭 Terminal 中任何正在运行的进程都会立即停止。",
           agentsAndTerminals:
@@ -1025,6 +1033,12 @@ export const zhCN: TranslationResources = {
         status: "状态",
         labels: "标签",
       },
+      sorting: {
+        label: "排序",
+        manual: "手动",
+        name: "名称",
+        activity: "最近活动",
+      },
       titleSource: {
         label: "标题",
         title: "标题",
@@ -1041,6 +1055,16 @@ export const zhCN: TranslationResources = {
         labels: "标签",
         diff: "差异统计",
         timestamp: "最近活动",
+        compactRows: "紧凑行",
+        newWorkspaceRow: "新建工作区行",
+      },
+      recentlyDone: {
+        label: "最近完成",
+        options: {
+          off: "关闭",
+          minutes: "{{minutes}} 分钟",
+          hour: "1 小时",
+        },
       },
       checks: {
         iconAndText: "图标和文字",
@@ -1599,6 +1623,8 @@ export const zhCN: TranslationResources = {
       helper: "连接到远程主机上运行的 Paseo 守护进程。",
       fields: {
         target: "SSH 主机",
+        identityFile: "身份文件路径",
+        optional: "可选",
       },
       actions: {
         cancel: "取消",
@@ -2070,6 +2096,25 @@ export const zhCN: TranslationResources = {
       chatOutline: {
         title: "聊天大纲",
         description: "显示用于在提示词之间跳转的大纲",
+      },
+      sidebar: {
+        title: "侧边栏",
+        compactRows: {
+          label: "紧凑行",
+          description: "为项目和工作区行使用更紧凑的间距",
+        },
+        hideDiffStats: {
+          label: "隐藏差异统计",
+          description: "隐藏工作区行上的 +/− 更改计数",
+        },
+        hidePrStatus: {
+          label: "隐藏 PR 状态",
+          description: "隐藏工作区行上的拉取请求徽章和检查",
+        },
+        hideHostNames: {
+          label: "隐藏主机名",
+          description: "按状态分组时隐藏机器名称",
+        },
       },
       fonts: {
         title: "字体",

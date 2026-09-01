@@ -152,6 +152,10 @@ import { createOrchestrationSkills } from "./orchestration-skills/index.js";
 import { resolveConfigFromPersisted, type CliConfigOverrides } from "./config.js";
 import { BrowserToolsBroker } from "./browser-tools/broker.js";
 import { DaemonConfigBrowserToolsPolicy } from "./browser-tools/policy.js";
+import {
+  startConfiguredHeadlessBrowserHost,
+  type HeadlessBrowserHost,
+} from "./browser-tools/headless-host.js";
 import { WorkspaceGitServiceImpl } from "./workspace-git-service.js";
 import { resolveWorkspaceIdForPath } from "./resolve-workspace-id-for-path.js";
 import {
@@ -393,6 +397,8 @@ export interface PaseoDaemonConfig {
   mcpEnabled?: boolean;
   mcpInjectIntoAgents?: boolean;
   browserToolsEnabled?: boolean;
+  /** CDP endpoint the daemon attaches to for its own browser host. */
+  browserToolsCdpEndpoint?: string;
   git?: {
     maxProcessesPerSecond: number;
     maxProcessConcurrency: number;
@@ -666,6 +672,7 @@ export async function createPaseoDaemon(
     appBaseUrl = typeof value === "string" ? value : "https://app.paseo.sh";
   });
   let wsServer: VoiceAssistantWebSocketServer | null = null;
+  let headlessBrowserHost: HeadlessBrowserHost | null = null;
   let serviceProxyListenTarget: ListenTarget | null = null;
   const scriptHealthMonitor = new ScriptHealthMonitor({
     serviceProxy,
@@ -1683,6 +1690,15 @@ export async function createPaseoDaemon(
             pluginRuntime.bindPaseoSessionHost(wsServer);
             await pluginRuntime.start();
             wsServer.beginAcceptingConnections();
+            headlessBrowserHost = startConfiguredHeadlessBrowserHost({
+              endpoint: config.browserToolsCdpEndpoint,
+              broker: browserToolsBroker,
+              sink: {
+                handleScreencastFrame: (params) => wsServer?.handleBrowserScreencastFrame(params),
+                announceTabsChanged: () => wsServer?.announceBrowserTabsChanged(),
+              },
+              logger,
+            });
             relayRuntime = createRelayRuntime({
               config: {
                 enabled: relayEnabled,
@@ -1737,6 +1753,8 @@ export async function createPaseoDaemon(
   };
 
   const stop = async () => {
+    headlessBrowserHost?.stop();
+    headlessBrowserHost = null;
     await pluginRuntime.stopAllPlugins();
     await hubRelationships.stop();
     workspaceReconciliation.dispose();

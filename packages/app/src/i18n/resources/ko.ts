@@ -515,6 +515,10 @@ export const ko: TranslationResources = {
         title: "브라우저는 데스크톱 전용입니다",
         subtitle: "내장 브라우저를 사용하려면 이 워크스페이스를 Electron에서 여세요.",
       },
+      mirror: {
+        keyboard: "미러링된 브라우저 키보드",
+        connecting: "호스트의 브라우저에 연결하는 중…",
+      },
       session: "브라우저 세션 {{browserId}}",
       controls: {
         back: "뒤로",
@@ -542,9 +546,11 @@ export const ko: TranslationResources = {
       devices: {
         label: "장치 크기",
         responsive: "반응형",
+        landscape: "가로 모드",
       },
       errors: {
         failedToLoad: "페이지를 불러오지 못했습니다",
+        openTabFailed: "호스트에서 탭을 열 수 없습니다",
         invalidUrl: "잘못된 브라우저 URL",
         unsupportedProtocol: "지원되지 않는 브라우저 URL을 차단했습니다: {{protocol}}",
       },
@@ -584,6 +590,7 @@ export const ko: TranslationResources = {
         closeLeft: "왼쪽 탭 닫기",
         closeRight: "오른쪽 탭 닫기",
         closeOthers: "다른 탭 닫기",
+        closeEditorTabs: "편집기 탭 닫기",
         moveToMain: "기본 패널로 이동",
         reloadAgent: "에이전트 다시 로드",
         reloadAgentTooltip:
@@ -649,6 +656,7 @@ export const ko: TranslationResources = {
         closeTabsLeftTitle: "왼쪽 탭을 닫을까요?",
         closeTabsRightTitle: "오른쪽 탭을 닫을까요?",
         closeOtherTabsTitle: "다른 탭을 닫을까요?",
+        closeEditorTabsTitle: "편집기 탭을 닫을까요?",
         bulk: {
           all: "에이전트 {{agents}}개를 보관하고, 터미널 {{terminals}}개를 닫고, 탭 {{tabs}}개를 닫습니다. 닫히는 터미널에서 실행 중인 프로세스는 즉시 중지됩니다.",
           agentsAndTerminals:
@@ -1040,6 +1048,12 @@ export const ko: TranslationResources = {
         status: "상태",
         labels: "레이블",
       },
+      sorting: {
+        label: "정렬",
+        manual: "수동",
+        name: "이름",
+        activity: "최근 활동",
+      },
       titleSource: {
         label: "제목",
         title: "제목",
@@ -1056,6 +1070,16 @@ export const ko: TranslationResources = {
         labels: "레이블",
         diff: "Diff 통계",
         timestamp: "마지막 활동",
+        compactRows: "행 간격 좁게",
+        newWorkspaceRow: "새 워크스페이스 행",
+      },
+      recentlyDone: {
+        label: "최근 완료",
+        options: {
+          off: "끔",
+          minutes: "{{minutes}}분",
+          hour: "1시간",
+        },
       },
       checks: {
         iconAndText: "아이콘 및 텍스트",
@@ -1626,6 +1650,8 @@ export const ko: TranslationResources = {
       helper: "원격 호스트에서 실행 중인 Paseo 데몬에 연결합니다.",
       fields: {
         target: "SSH 호스트",
+        identityFile: "ID 파일 경로",
+        optional: "선택 사항",
       },
       actions: {
         cancel: "취소",
@@ -2105,6 +2131,25 @@ export const ko: TranslationResources = {
       chatOutline: {
         title: "채팅 개요",
         description: "프롬프트 사이를 이동하기 위한 개요 표시",
+      },
+      sidebar: {
+        title: "Sidebar",
+        compactRows: {
+          label: "Compact rows",
+          description: "Tighter spacing for project and workspace rows",
+        },
+        hideDiffStats: {
+          label: "Hide diff stats",
+          description: "Hide the +/− change counts on workspace rows",
+        },
+        hidePrStatus: {
+          label: "Hide PR status",
+          description: "Hide the pull request badge and checks on workspace rows",
+        },
+        hideHostNames: {
+          label: "Hide host names",
+          description: "Hide the machine name when grouping by status",
+        },
       },
       fonts: {
         title: "글꼴",
