@@ -162,6 +162,7 @@ function useWorkspaceLabelCatalog(
   return { labelCatalog, toggleLabel };
 }
 
+// oxlint-disable-next-line complexity -- canOpenBrowserTabs is the patch; do not split this hook
 export function useWorkspaceCommandCenterActions(): void {
   const keyboardActionDispatcher = useKeyboardActionDispatcher();
   const { t } = useTranslation();
