@@ -19,6 +19,7 @@ export interface SshTransportTarget {
   host: string;
   sshPort?: number;
   daemonPort?: number;
+  identityFile?: string;
 }
 
 export type TransportTarget = LocalTransportTarget | SshTransportTarget;
@@ -137,11 +138,14 @@ function parseSshTransportTarget(value: Record<string, unknown>): SshTransportTa
     value.sshPort === undefined ? undefined : validatePortValue(value.sshPort, "SSH port");
   const daemonPort =
     value.daemonPort === undefined ? undefined : validatePortValue(value.daemonPort, "Daemon port");
+  const identityFile =
+    typeof value.identityFile === "string" ? value.identityFile.trim() || undefined : undefined;
   return {
     transportType: "ssh",
     host,
     ...(sshPort !== undefined ? { sshPort } : {}),
     ...(daemonPort !== undefined ? { daemonPort } : {}),
+    ...(identityFile ? { identityFile } : {}),
   };
 }
 
@@ -171,11 +175,15 @@ function parseOpenTransportSessionInput(value: unknown): OpenTransportSessionInp
 }
 
 export function buildSshArgs(target: SshTransportTarget): string[] {
-  return buildSshTunnelArgs({
+  const args = buildSshTunnelArgs({
     host: target.host,
     ...(target.sshPort !== undefined ? { sshPort: target.sshPort } : {}),
     daemonPort: target.daemonPort ?? DEFAULT_SSH_DAEMON_PORT,
   });
+  if (target.identityFile) {
+    args.splice(args.indexOf("-W"), 0, "-i", target.identityFile);
+  }
+  return args;
 }
 
 function formatSshFailure(

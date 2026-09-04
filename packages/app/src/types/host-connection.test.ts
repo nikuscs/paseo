@@ -152,16 +152,18 @@ describe("normalizeStoredHostProfile", () => {
           host: " deploy@example.com ",
           sshPort: 2222,
           daemonPort: 7777,
+          identityFile: " ~/.ssh/paseo ",
         },
       ],
     });
 
     expect(profile?.connections[0]).toEqual({
-      id: "ssh:deploy%40example.com:2222:7777",
+      id: "ssh:deploy%40example.com:2222:7777:~%2F.ssh%2Fpaseo",
       type: "remoteSsh",
       host: "deploy@example.com",
       sshPort: 2222,
       daemonPort: 7777,
+      identityFile: "~/.ssh/paseo",
     });
   });
 });

@@ -43,10 +43,28 @@ interface CloseBulkWorkspaceTabsInput {
   client: Pick<DaemonClient, "closeItems"> | null;
   groups: BulkClosableTabGroups;
   closeTab: (tabId: string, action: () => Promise<void>) => Promise<void>;
-  closeWorkspaceTabWithCleanup: (input: CloseWorkspaceTabWithCleanupInput) => void;
+  closeWorkspaceTabWithCleanup: (input: CloseWorkspaceTabWithCleanupInput) => Promise<boolean>;
   closeLayoutOnlyAgent: (agentId: string) => Promise<void>;
   logLabel: string;
   warn?: (message: string, payload: object) => void;
+}
+
+function isWorkspaceEditorTab(tab: WorkspaceTabDescriptor): boolean {
+  switch (tab.target.kind) {
+    case "agent":
+    case "draft":
+    case "provider_subagent":
+    case "terminal":
+      return false;
+    default:
+      return true;
+  }
+}
+
+export function selectWorkspaceEditorTabs(
+  tabs: WorkspaceTabDescriptor[],
+): WorkspaceTabDescriptor[] {
+  return tabs.filter(isWorkspaceEditorTab);
 }
 
 export function classifyBulkClosableTabs(
@@ -120,7 +138,8 @@ export function buildBulkCloseConfirmationMessage(
   return labels.agents({ agents: archiveAgentTabs.length });
 }
 
-export async function closeBulkWorkspaceTabs(input: CloseBulkWorkspaceTabsInput): Promise<void> {
+/** True when every tab in the selection actually left the layout. */
+export async function closeBulkWorkspaceTabs(input: CloseBulkWorkspaceTabsInput): Promise<boolean> {
   const {
     client,
     groups,
@@ -131,6 +150,7 @@ export async function closeBulkWorkspaceTabs(input: CloseBulkWorkspaceTabsInput)
     warn,
   } = input;
   const hasDestructiveTabs = groups.archiveAgentTabs.length > 0 || groups.terminalTabs.length > 0;
+  const closed: boolean[] = [];
 
   for (const { tabId, agentId } of groups.layoutOnlyAgentTabs) {
     await closeTab(tabId, async () => {
@@ -138,12 +158,15 @@ export async function closeBulkWorkspaceTabs(input: CloseBulkWorkspaceTabsInput)
         await closeLayoutOnlyAgent(agentId);
       } catch (error) {
         warn?.(`[WorkspaceScreen] Failed to close subagent tab ${logLabel}`, { error, agentId });
+        closed.push(false);
         return;
       }
-      closeWorkspaceTabWithCleanup({
-        tabId,
-        target: { kind: "agent", agentId },
-      });
+      closed.push(
+        await closeWorkspaceTabWithCleanup({
+          tabId,
+          target: { kind: "agent", agentId },
+        }),
+      );
     });
   }
 
@@ -162,27 +185,21 @@ export async function closeBulkWorkspaceTabs(input: CloseBulkWorkspaceTabsInput)
     });
   }
 
+  const record = async (cleanup: CloseWorkspaceTabWithCleanupInput) => {
+    closed.push(await closeWorkspaceTabWithCleanup(cleanup));
+  };
+
   await Promise.all([
     ...groups.archiveAgentTabs.map(({ tabId, agentId }) =>
-      closeTab(tabId, async () => {
-        closeWorkspaceTabWithCleanup({
-          tabId,
-          target: { kind: "agent", agentId },
-        });
-      }),
+      closeTab(tabId, () => record({ tabId, target: { kind: "agent", agentId } })),
     ),
     ...groups.terminalTabs.map(({ tabId, terminalId }) =>
-      closeTab(tabId, async () => {
-        closeWorkspaceTabWithCleanup({
-          tabId,
-          target: { kind: "terminal", terminalId },
-        });
-      }),
+      closeTab(tabId, () => record({ tabId, target: { kind: "terminal", terminalId } })),
     ),
     ...groups.otherTabs.map(({ tabId, target }) =>
-      closeTab(tabId, async () => {
-        closeWorkspaceTabWithCleanup({ tabId, target });
-      }),
+      closeTab(tabId, () => record({ tabId, target })),
     ),
   ]);
+
+  return closed.every((didClose) => didClose);
 }

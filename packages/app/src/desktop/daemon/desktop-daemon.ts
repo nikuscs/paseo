@@ -46,6 +46,7 @@ export interface RemoteSshTransportTarget {
   host: string;
   sshPort?: number;
   daemonPort?: number;
+  identityFile?: string;
 }
 
 export type DesktopDaemonTransportTarget = LocalTransportTarget | RemoteSshTransportTarget;

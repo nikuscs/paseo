@@ -40,6 +40,9 @@ export function buildDesktopDaemonTransportUrl(target: DesktopDaemonTransportTar
     if (target.daemonPort !== undefined) {
       url.searchParams.set("daemonPort", String(target.daemonPort));
     }
+    if (target.identityFile) {
+      url.searchParams.set("identity", target.identityFile);
+    }
   } else {
     url.searchParams.set("path", target.transportPath);
   }
@@ -68,11 +71,13 @@ function parseSshDesktopTransportUrl(parsed: URL, rawUrl: string): DesktopDaemon
     const host = validateSshHost(parsed.searchParams.get("host") ?? "");
     const sshPort = parseOptionalUrlPort(parsed, "port", "SSH port");
     const daemonPort = parseOptionalUrlPort(parsed, "daemonPort", "Daemon port");
+    const identityFile = parsed.searchParams.get("identity")?.trim() || undefined;
     return {
       transportType: "ssh",
       host,
       ...(sshPort !== undefined ? { sshPort } : {}),
       ...(daemonPort !== undefined ? { daemonPort } : {}),
+      ...(identityFile ? { identityFile } : {}),
     };
   } catch (error) {
     throw new Error(`Invalid SSH transport target: ${rawUrl}`, { cause: error });

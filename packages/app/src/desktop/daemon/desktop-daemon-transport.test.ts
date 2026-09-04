@@ -80,6 +80,7 @@ describe("desktop-daemon-transport", () => {
       host: "deploy@example.com",
       sshPort: 2222,
       daemonPort: 7777,
+      identityFile: "/Users/example/.ssh/paseo",
     });
     transportFactory!({ url });
     rpc.resolveListen(vi.fn());
@@ -91,6 +92,7 @@ describe("desktop-daemon-transport", () => {
       host: "deploy@example.com",
       sshPort: 2222,
       daemonPort: 7777,
+      identityFile: "/Users/example/.ssh/paseo",
     });
   });
 

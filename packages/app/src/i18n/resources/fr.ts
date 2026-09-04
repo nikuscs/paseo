@@ -540,6 +540,10 @@ export const fr: TranslationResources = {
         title: "Le navigateur est réservé au bureau",
         subtitle: "Ouvrez cet espace de travail dans Electron pour utiliser le navigateur intégré.",
       },
+      mirror: {
+        keyboard: "Clavier du navigateur miroir",
+        connecting: "Connexion au navigateur de l'hôte…",
+      },
       session: "Session de navigateur{{browserId}}",
       controls: {
         back: "Dos",
@@ -567,9 +571,11 @@ export const fr: TranslationResources = {
       devices: {
         label: "Taille de l'appareil",
         responsive: "Adaptatif",
+        landscape: "Paysage",
       },
       errors: {
         failedToLoad: "Échec du chargement de la page",
+        openTabFailed: "Impossible d'ouvrir un onglet sur l'hôte",
         invalidUrl: "NavigateurURLinvalide",
         unsupportedProtocol: "Navigateur non pris en charge bloquéURL:{{protocol}}",
       },
@@ -609,6 +615,7 @@ export const fr: TranslationResources = {
         closeLeft: "Près de la gauche",
         closeRight: "Près de la droite",
         closeOthers: "Fermer les autres onglets",
+        closeEditorTabs: "Fermer les onglets de l’éditeur",
         moveToMain: "Déplacer vers le panneau principal",
         reloadAgent: "Agent de rechargement",
         reloadAgentTooltip:
@@ -676,6 +683,7 @@ export const fr: TranslationResources = {
         closeTabsLeftTitle: "Fermer les onglets à gauche?",
         closeTabsRightTitle: "Fermer les onglets à droite?",
         closeOtherTabsTitle: "Fermer les autres onglets?",
+        closeEditorTabsTitle: "Fermer les onglets de l’éditeur?",
         bulk: {
           all: "Cela archivera les agents{{agents}}, fermera les terminaux{{terminals}}et fermera les onglets{{tabs}}. Tout processus en cours d’exécution dans un terminal fermé sera immédiatement arrêté.",
           agentsAndTerminals:
@@ -1088,6 +1096,12 @@ export const fr: TranslationResources = {
         status: "Statut",
         labels: "Libellés",
       },
+      sorting: {
+        label: "Tri",
+        manual: "Manuel",
+        name: "Nom",
+        activity: "Activité récente",
+      },
       titleSource: {
         label: "Titre",
         title: "Titre",
@@ -1104,6 +1118,16 @@ export const fr: TranslationResources = {
         labels: "Libellés",
         diff: "Statistiques de diff",
         timestamp: "Dernière activité",
+        compactRows: "Lignes compactes",
+        newWorkspaceRow: "Ligne nouvel espace de travail",
+      },
+      recentlyDone: {
+        label: "Récemment terminé",
+        options: {
+          off: "Désactivé",
+          minutes: "{{minutes}} min",
+          hour: "1 heure",
+        },
       },
       checks: {
         iconAndText: "Icône et texte",
@@ -1688,6 +1712,8 @@ export const fr: TranslationResources = {
       helper: "Connectez-vous à un daemon Paseo sur l’hôte distant.",
       fields: {
         target: "Hôte SSH",
+        identityFile: "Chemin du fichier d’identité",
+        optional: "Facultatif",
       },
       actions: {
         cancel: "Annuler",
@@ -2176,6 +2202,44 @@ export const fr: TranslationResources = {
         description: "Choisissez les éléments affichés en haut de la barre latérale et leur ordre",
         moveUp: "Déplacer vers le haut",
         moveDown: "Déplacer vers le bas",
+        compactRows: {
+          label: "Lignes compactes",
+          description:
+            "Espacement plus serré pour les lignes, les en-têtes et les groupes de statut",
+        },
+        hideDiffStats: {
+          label: "Masquer les statistiques de diff",
+          description:
+            "Masquer les décomptes de modifications +/− sur les lignes d'espaces de travail",
+        },
+        hidePrStatus: {
+          label: "Masquer l'état de la PR",
+          description:
+            "Masquer le badge de pull request et les vérifications sur les lignes d'espaces de travail",
+        },
+        hideNewWorkspaceRow: {
+          label: "Masquer la ligne Nouvel espace de travail",
+          description: "Masquer la ligne + Nouvel espace de travail sous les projets vides",
+        },
+        hideScriptIndicators: {
+          label: "Masquer les indicateurs de scripts",
+          description: "Masquer les icônes globe et terminal des scripts en cours d'exécution",
+        },
+        hideHostNames: {
+          label: "Masquer les noms d'hôte",
+          description: "Masquer le badge du nom de la machine sur les lignes d'espace de travail",
+        },
+        recentlyDone: {
+          label: "Terminé récemment",
+          description:
+            "Afficher les espaces de travail juste terminés dans leur propre groupe au-dessus de Terminé",
+          accessibilityLabel: "Fenêtre Terminé récemment, actuellement {{value}}",
+          options: {
+            off: "Désactivé",
+            minutes: "{{minutes}} min",
+            hour: "1 heure",
+          },
+        },
       },
       fonts: {
         title: "Polices",

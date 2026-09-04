@@ -31,7 +31,14 @@ export const CLIENT_CAPS = {
   // timeline items for older clients whose strict timeline union rejects them.
   // Remove after 2027-03-03 once the supported client floor is >= v0.7.2.
   timelineNotifications: "timeline_notifications",
+  // The host end of browser automation: this client owns browser tabs and can
+  // run automation commands against them. Its value is the host's command list.
   browserHost: "browser_host",
+  // COMPAT(browserMirror): added in v0.5.2. The viewer end: this client parses
+  // `browser.tabs.changed`. Older apps have no branch for it, so the daemon
+  // pushes mirror messages only to clients that advertise this. Remove the gate
+  // after 2027-09-01 once the supported client floor is >= v0.5.2.
+  browserMirror: "browser_mirror",
 } as const;
 
 export type ClientCapability = (typeof CLIENT_CAPS)[keyof typeof CLIENT_CAPS];

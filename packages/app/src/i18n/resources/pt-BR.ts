@@ -540,6 +540,10 @@ export const ptBR: TranslationResources = {
         title: "O navegador é exclusivo do desktop",
         subtitle: "Abra este workspace no Electron para usar o navegador integrado.",
       },
+      mirror: {
+        keyboard: "Teclado do navegador espelhado",
+        connecting: "Conectando ao navegador no host…",
+      },
       session: "Sessão do navegador {{browserId}}",
       controls: {
         back: "Voltar",
@@ -567,9 +571,11 @@ export const ptBR: TranslationResources = {
       devices: {
         label: "Tamanho do dispositivo",
         responsive: "Responsivo",
+        landscape: "Paisagem",
       },
       errors: {
         failedToLoad: "Falha ao carregar página",
+        openTabFailed: "Não foi possível abrir uma aba no host",
         invalidUrl: "URL de navegador inválida",
         unsupportedProtocol: "URL de navegador sem suporte bloqueada: {{protocol}}",
       },
@@ -609,6 +615,7 @@ export const ptBR: TranslationResources = {
         closeLeft: "Fechar à esquerda",
         closeRight: "Fechar à direita",
         closeOthers: "Fechar outras abas",
+        closeEditorTabs: "Fechar abas do editor",
         moveToMain: "Mover para o painel principal",
         reloadAgent: "Recarregar agente",
         reloadAgentTooltip: "Recarregue o agente para atualizar skills, MCPs ou status de login.",
@@ -674,6 +681,7 @@ export const ptBR: TranslationResources = {
         closeTabsLeftTitle: "Fechar abas à esquerda?",
         closeTabsRightTitle: "Fechar abas à direita?",
         closeOtherTabsTitle: "Fechar outras abas?",
+        closeEditorTabsTitle: "Fechar abas do editor?",
         bulk: {
           all: "Isso vai arquivar {{agents}} agente(s), fechar {{terminals}} terminal(ais) e fechar {{tabs}} aba(s). Qualquer processo em execução em um terminal fechado será interrompido imediatamente.",
           agentsAndTerminals:
@@ -1080,6 +1088,12 @@ export const ptBR: TranslationResources = {
         status: "Status",
         labels: "Etiquetas",
       },
+      sorting: {
+        label: "Ordenação",
+        manual: "Manual",
+        name: "Nome",
+        activity: "Atividade recente",
+      },
       titleSource: {
         label: "Título",
         title: "Título",
@@ -1096,6 +1110,16 @@ export const ptBR: TranslationResources = {
         labels: "Etiquetas",
         diff: "Estatísticas de diff",
         timestamp: "Última atividade",
+        compactRows: "Linhas compactas",
+        newWorkspaceRow: "Linha de novo espaço de trabalho",
+      },
+      recentlyDone: {
+        label: "Concluído há pouco",
+        options: {
+          off: "Desativado",
+          minutes: "{{minutes}} min",
+          hour: "1 hora",
+        },
       },
       checks: {
         iconAndText: "Ícone e texto",
@@ -1670,6 +1694,8 @@ export const ptBR: TranslationResources = {
       helper: "Conecte-se a um daemon Paseo no host remoto.",
       fields: {
         target: "Host SSH",
+        identityFile: "Caminho do arquivo de identidade",
+        optional: "Opcional",
       },
       actions: {
         cancel: "Cancelar",
@@ -2156,6 +2182,42 @@ export const ptBR: TranslationResources = {
         description: "Escolha quais itens aparecem no topo da barra lateral e em que ordem",
         moveUp: "Mover para cima",
         moveDown: "Mover para baixo",
+        compactRows: {
+          label: "Linhas compactas",
+          description: "Espaçamento mais compacto para linhas, cabeçalhos e grupos de status",
+        },
+        hideDiffStats: {
+          label: "Ocultar estatísticas de diff",
+          description: "Oculta as contagens de alterações +/− nas linhas de espaços de trabalho",
+        },
+        hidePrStatus: {
+          label: "Ocultar status de PR",
+          description:
+            "Oculta o selo de pull request e as verificações nas linhas de espaços de trabalho",
+        },
+        hideNewWorkspaceRow: {
+          label: "Ocultar linha Novo espaço de trabalho",
+          description: "Oculta a linha + Novo espaço de trabalho abaixo de projetos vazios",
+        },
+        hideScriptIndicators: {
+          label: "Ocultar indicadores de scripts",
+          description: "Oculta os ícones de globo e terminal dos scripts em execução",
+        },
+        hideHostNames: {
+          label: "Ocultar nomes de host",
+          description: "Oculta o selo com o nome da máquina nas linhas de workspace",
+        },
+        recentlyDone: {
+          label: "Concluído há pouco",
+          description:
+            "Mostra os espaços de trabalho recém-concluídos em um grupo próprio acima de Concluído",
+          accessibilityLabel: "Janela de concluído há pouco, atualmente {{value}}",
+          options: {
+            off: "Desativado",
+            minutes: "{{minutes}} min",
+            hour: "1 hora",
+          },
+        },
       },
       fonts: {
         title: "Fontes",

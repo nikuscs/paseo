@@ -540,6 +540,10 @@ export const ja: TranslationResources = {
         title: "ブラウザはデスクトップ専用です",
         subtitle: "組み込みブラウザを使用するには、このワークスペースをElectronで開いてください。",
       },
+      mirror: {
+        keyboard: "ミラー表示ブラウザのキーボード",
+        connecting: "ホストのブラウザに接続しています…",
+      },
       session: "ブラウザセッション{{browserId}}",
       controls: {
         back: "戻る",
@@ -567,9 +571,11 @@ export const ja: TranslationResources = {
       devices: {
         label: "デバイスサイズ",
         responsive: "レスポンシブ",
+        landscape: "横向き",
       },
       errors: {
         failedToLoad: "ページの読み込みに失敗しました",
+        openTabFailed: "ホストでタブを開けませんでした",
         invalidUrl: "無効なブラウザURL",
         unsupportedProtocol: "サポートされていないブラウザURLをブロック: {{protocol}}",
       },
@@ -609,6 +615,7 @@ export const ja: TranslationResources = {
         closeLeft: "左のタブを閉じる",
         closeRight: "右のタブを閉じる",
         closeOthers: "他のタブを閉じる",
+        closeEditorTabs: "エディタータブを閉じる",
         moveToMain: "メインパネルへ移動",
         reloadAgent: "エージェントを再読み込み",
         reloadAgentTooltip:
@@ -673,6 +680,7 @@ export const ja: TranslationResources = {
         closeTabsLeftTitle: "左のタブを閉じますか？",
         closeTabsRightTitle: "右のタブを閉じますか？",
         closeOtherTabsTitle: "他のタブを閉じますか？",
+        closeEditorTabsTitle: "エディタータブを閉じますか？",
         bulk: {
           all: "{{agents}}件のエージェントをアーカイブし、{{terminals}}件のターミナルを閉じ、{{tabs}}件のタブを閉じます。閉じたターミナルで実行中のプロセスはすぐに停止されます。",
           agentsAndTerminals:
@@ -1066,6 +1074,12 @@ export const ja: TranslationResources = {
         status: "ステータス",
         labels: "ラベル",
       },
+      sorting: {
+        label: "並び順",
+        manual: "手動",
+        name: "名前",
+        activity: "最近のアクティビティ",
+      },
       titleSource: {
         label: "タイトル",
         title: "タイトル",
@@ -1082,6 +1096,16 @@ export const ja: TranslationResources = {
         labels: "ラベル",
         diff: "差分統計",
         timestamp: "最終アクティビティ",
+        compactRows: "コンパクト行",
+        newWorkspaceRow: "新規ワークスペース行",
+      },
+      recentlyDone: {
+        label: "最近完了",
+        options: {
+          off: "オフ",
+          minutes: "{{minutes}}分",
+          hour: "1時間",
+        },
       },
       checks: {
         iconAndText: "アイコンとテキスト",
@@ -1654,6 +1678,8 @@ export const ja: TranslationResources = {
       helper: "リモートホストで動作する Paseo デーモンに接続します。",
       fields: {
         target: "SSH ホスト",
+        identityFile: "秘密鍵ファイルのパス",
+        optional: "任意",
       },
       actions: {
         cancel: "キャンセル",
@@ -2139,6 +2165,40 @@ export const ja: TranslationResources = {
         description: "サイドバー上部に表示する項目とその順序を選択します",
         moveUp: "上に移動",
         moveDown: "下に移動",
+        compactRows: {
+          label: "コンパクト行",
+          description: "行・セクション見出し・ステータスグループの間隔を狭くする",
+        },
+        hideDiffStats: {
+          label: "差分統計を非表示",
+          description: "ワークスペース行の +/− 変更数を非表示にする",
+        },
+        hidePrStatus: {
+          label: "PR ステータスを非表示",
+          description: "ワークスペース行のプルリクエストバッジとチェックを非表示にする",
+        },
+        hideNewWorkspaceRow: {
+          label: "新規ワークスペース行を非表示",
+          description: "空のプロジェクトの下に表示される + 新規ワークスペース行を非表示にする",
+        },
+        hideScriptIndicators: {
+          label: "スクリプトインジケーターを非表示",
+          description: "実行中スクリプトの地球儀とターミナルのアイコンを非表示にする",
+        },
+        hideHostNames: {
+          label: "ホスト名を非表示",
+          description: "ワークスペース行のマシン名バッジを非表示にする",
+        },
+        recentlyDone: {
+          label: "最近完了",
+          description: "完了したばかりのワークスペースを「完了」の上の専用グループに表示する",
+          accessibilityLabel: "最近完了の期間、現在 {{value}}",
+          options: {
+            off: "オフ",
+            minutes: "{{minutes}} 分",
+            hour: "1 時間",
+          },
+        },
       },
       fonts: {
         title: "フォント",

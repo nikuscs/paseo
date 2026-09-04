@@ -56,6 +56,7 @@ function buildRemoteSshClientConfig(input: {
       ...(input.connection.daemonPort !== undefined
         ? { daemonPort: input.connection.daemonPort }
         : {}),
+      ...(input.connection.identityFile ? { identityFile: input.connection.identityFile } : {}),
     }),
   };
 }

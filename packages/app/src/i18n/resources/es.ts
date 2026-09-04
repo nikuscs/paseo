@@ -540,6 +540,10 @@ export const es: TranslationResources = {
         title: "El navegador es solo para escritorio",
         subtitle: "Abra este espacio de trabajo en Electron para usar el navegador integrado.",
       },
+      mirror: {
+        keyboard: "Teclado del navegador reflejado",
+        connecting: "Conectando con el navegador del host…",
+      },
       session: "Sesión de navegador{{browserId}}",
       controls: {
         back: "Atrás",
@@ -567,9 +571,11 @@ export const es: TranslationResources = {
       devices: {
         label: "Tamaño del dispositivo",
         responsive: "Adaptable",
+        landscape: "Horizontal",
       },
       errors: {
         failedToLoad: "No se pudo cargar la página",
+        openTabFailed: "No se pudo abrir una pestaña en el host",
         invalidUrl: "Navegador no válidoURL",
         unsupportedProtocol: "Navegador bloqueado no compatibleURL:{{protocol}}",
       },
@@ -609,6 +615,7 @@ export const es: TranslationResources = {
         closeLeft: "Cerrar pestañas a la izquierda",
         closeRight: "Cerrar pestañas a la derecha",
         closeOthers: "Cerrar otras pestañas",
+        closeEditorTabs: "Cerrar pestañas del editor",
         moveToMain: "Mover al panel principal",
         reloadAgent: "Recargar agente",
         reloadAgentTooltip:
@@ -676,6 +683,7 @@ export const es: TranslationResources = {
         closeTabsLeftTitle: "¿Cerrar pestañas a la izquierda?",
         closeTabsRightTitle: "¿Cerrar pestañas a la derecha?",
         closeOtherTabsTitle: "¿Cerrar otras pestañas?",
+        closeEditorTabsTitle: "¿Cerrar pestañas del editor?",
         bulk: {
           all: "Esto archivará los agentes{{agents}}, cerrará los terminales{{terminals}}y cerrará las pestañas{{tabs}}. Cualquier proceso en ejecución en una terminal cerrada se detendrá inmediatamente.",
           agentsAndTerminals:
@@ -1089,6 +1097,12 @@ export const es: TranslationResources = {
         status: "Estado",
         labels: "Etiquetas",
       },
+      sorting: {
+        label: "Ordenar",
+        manual: "Manual",
+        name: "Nombre",
+        activity: "Actividad reciente",
+      },
       titleSource: {
         label: "Título",
         title: "Título",
@@ -1105,6 +1119,16 @@ export const es: TranslationResources = {
         labels: "Etiquetas",
         diff: "Estadísticas de cambios",
         timestamp: "Última actividad",
+        compactRows: "Filas compactas",
+        newWorkspaceRow: "Fila de nuevo espacio de trabajo",
+      },
+      recentlyDone: {
+        label: "Hecho recientemente",
+        options: {
+          off: "Desactivado",
+          minutes: "{{minutes}} min",
+          hour: "1 hora",
+        },
       },
       checks: {
         iconAndText: "Icono y texto",
@@ -1684,6 +1708,8 @@ export const es: TranslationResources = {
       helper: "Conéctate a un daemon de Paseo en el host remoto.",
       fields: {
         target: "Host SSH",
+        identityFile: "Ruta del archivo de identidad",
+        optional: "Opcional",
       },
       actions: {
         cancel: "Cancelar",
@@ -2173,6 +2199,43 @@ export const es: TranslationResources = {
           "Elige qué elementos aparecen en la parte superior de la barra lateral y en qué orden",
         moveUp: "Mover hacia arriba",
         moveDown: "Mover hacia abajo",
+        compactRows: {
+          label: "Filas compactas",
+          description: "Espaciado más ajustado para filas, encabezados y grupos de estado",
+        },
+        hideDiffStats: {
+          label: "Ocultar estadísticas de cambios",
+          description: "Oculta los recuentos de cambios +/− en las filas de espacios de trabajo",
+        },
+        hidePrStatus: {
+          label: "Ocultar estado de PR",
+          description:
+            "Oculta la insignia de pull request y las comprobaciones en las filas de espacios de trabajo",
+        },
+        hideNewWorkspaceRow: {
+          label: "Ocultar fila Nuevo espacio de trabajo",
+          description: "Oculta la fila + Nuevo espacio de trabajo bajo los proyectos vacíos",
+        },
+        hideScriptIndicators: {
+          label: "Ocultar indicadores de scripts",
+          description: "Oculta los iconos de globo y terminal de los scripts en ejecución",
+        },
+        hideHostNames: {
+          label: "Ocultar nombres de host",
+          description:
+            "Oculta la insignia con el nombre de la máquina en las filas de espacios de trabajo",
+        },
+        recentlyDone: {
+          label: "Terminado hace poco",
+          description:
+            "Muestra los espacios de trabajo recién terminados en su propio grupo sobre Listo",
+          accessibilityLabel: "Ventana de terminado hace poco, actualmente {{value}}",
+          options: {
+            off: "Desactivado",
+            minutes: "{{minutes}} min",
+            hour: "1 hora",
+          },
+        },
       },
       fonts: {
         title: "Fuentes",
