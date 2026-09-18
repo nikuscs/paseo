@@ -1091,6 +1091,17 @@ export const zhCN: TranslationResources = {
         title: "标题",
         branch: "分支名称",
       },
+      density: {
+        label: "行高",
+        comfortable: "标准",
+        compact: "紧凑",
+      },
+      recentlyDone: {
+        label: "最近完成",
+        off: "关闭",
+        minutes: "{{count}} 分钟",
+        hour: "1 小时",
+      },
       show: {
         label: "显示",
         branch: "分支",

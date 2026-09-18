@@ -1112,6 +1112,17 @@ export const ja: TranslationResources = {
         title: "タイトル",
         branch: "ブランチ名",
       },
+      density: {
+        label: "行の高さ",
+        comfortable: "標準",
+        compact: "コンパクト",
+      },
+      recentlyDone: {
+        label: "最近完了",
+        off: "オフ",
+        minutes: "{{count}}分",
+        hour: "1時間",
+      },
       show: {
         label: "表示項目",
         branch: "ブランチ",
