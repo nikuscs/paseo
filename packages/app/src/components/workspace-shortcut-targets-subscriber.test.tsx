@@ -1,7 +1,8 @@
 /**
  * @vitest-environment jsdom
  */
-import React from "react";
+import React, { type ReactNode } from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "@testing-library/react";
 import type { DaemonClient } from "@getpaseo/client/internal/daemon-client";
 import { createRoot, type Root } from "react-dom/client";
@@ -71,6 +72,20 @@ function setHostProfiles(hosts: HostProfile[]): void {
   ).setHostsAndSync(hosts);
 }
 
+/**
+ * The provider reads app settings for the "Recently done" window, so it needs a query client
+ * even though nothing here asserts on settings.
+ */
+function SidebarHarness({ children }: { children: ReactNode }) {
+  return (
+    <QueryClientProvider
+      client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+    >
+      <SidebarModelProvider>{children}</SidebarModelProvider>
+    </QueryClientProvider>
+  );
+}
+
 describe("WorkspaceShortcutTargetsSubscriber", () => {
   let root: Root | null = null;
   let container: HTMLElement | null = null;
@@ -130,9 +145,9 @@ describe("WorkspaceShortcutTargetsSubscriber", () => {
   it("publishes workspace shortcut targets without rendering the sidebar", async () => {
     await act(async () => {
       root?.render(
-        <SidebarModelProvider>
+        <SidebarHarness>
           <WorkspaceShortcutTargetsSubscriber enabled={true} />
-        </SidebarModelProvider>,
+        </SidebarHarness>,
       );
     });
 
@@ -146,7 +161,7 @@ describe("WorkspaceShortcutTargetsSubscriber", () => {
     const unchangedStatusEnteredAt = new Date("2026-01-01T00:00:00.000Z");
     act(() => {
       useSidebarViewStore.getState().setSortMode("activity");
-      seedSessionWorkspaces(
+      seedRuntimeWorkspaces(
         "srv",
         new Map([
           [
@@ -171,9 +186,9 @@ describe("WorkspaceShortcutTargetsSubscriber", () => {
 
     await act(async () => {
       root?.render(
-        <SidebarModelProvider>
+        <SidebarHarness>
           <WorkspaceShortcutTargetsSubscriber enabled={true} />
-        </SidebarModelProvider>,
+        </SidebarHarness>,
       );
     });
 
@@ -183,7 +198,7 @@ describe("WorkspaceShortcutTargetsSubscriber", () => {
     ]);
 
     act(() => {
-      seedSessionWorkspaces(
+      seedRuntimeWorkspaces(
         "srv",
         new Map([
           [
@@ -271,9 +286,9 @@ describe("WorkspaceShortcutTargetsSubscriber", () => {
 
     await act(async () => {
       root?.render(
-        <SidebarModelProvider>
+        <SidebarHarness>
           <WorkspaceShortcutTargetsSubscriber enabled={true} />
-        </SidebarModelProvider>,
+        </SidebarHarness>,
       );
     });
 
@@ -305,9 +320,9 @@ describe("WorkspaceShortcutTargetsSubscriber", () => {
 
     await act(async () => {
       root?.render(
-        <SidebarModelProvider>
+        <SidebarHarness>
           <WorkspaceShortcutTargetsSubscriber enabled={true} />
-        </SidebarModelProvider>,
+        </SidebarHarness>,
       );
     });
 
@@ -327,17 +342,17 @@ describe("WorkspaceShortcutTargetsSubscriber", () => {
   it("clears targets when disabled", async () => {
     await act(async () => {
       root?.render(
-        <SidebarModelProvider>
+        <SidebarHarness>
           <WorkspaceShortcutTargetsSubscriber enabled={true} />
-        </SidebarModelProvider>,
+        </SidebarHarness>,
       );
     });
 
     await act(async () => {
       root?.render(
-        <SidebarModelProvider>
+        <SidebarHarness>
           <WorkspaceShortcutTargetsSubscriber enabled={false} />
-        </SidebarModelProvider>,
+        </SidebarHarness>,
       );
     });
 
