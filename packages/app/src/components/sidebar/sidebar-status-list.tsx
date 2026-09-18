@@ -21,7 +21,6 @@ import type { GestureType } from "react-native-gesture-handler";
 import { navigateToWorkspace } from "@/stores/navigation-active-workspace-store";
 import { useActiveWorkspaceSelection } from "@/stores/navigation-active-workspace-store";
 import { type SidebarWorkspaceEntry } from "@/hooks/use-sidebar-workspaces-list";
-import type { StatusBucket } from "@/hooks/sidebar-status-view-model";
 import type { SidebarWorkspaceGroup } from "@/components/sidebar/sidebar-labels";
 import { SidebarFilterEmptyState } from "@/components/sidebar/empty-states";
 import type { HostBadgeModel } from "@/hosts/appearance";
@@ -38,6 +37,7 @@ import {
   CircleCheck,
   CircleDot,
   CircleX,
+  Hourglass,
 } from "lucide-react-native";
 import { useToast } from "@/contexts/toast-context";
 import { WorkspaceRenameModal } from "@/components/workspace-rename-modal";
@@ -74,6 +74,8 @@ import {
   SidebarWorkspaceMenu,
 } from "@/components/sidebar/sidebar-workspace-menu";
 import { SidebarSectionHeader } from "@/components/sidebar/sidebar-section-header";
+import { useCompactSidebarRows } from "@/components/sidebar/display-preferences/model";
+import { compactSidebarRowMetrics } from "@/components/sidebar/sidebar-row-metrics";
 import { SidebarGroupToggleRow } from "@/components/sidebar/sidebar-group-toggle-row";
 import { useLimitedSidebarGroup } from "@/components/sidebar/use-limited-sidebar-group";
 import type { ToggleSidebarWorkspacePin } from "@/hooks/use-sidebar-workspace-pin";
@@ -106,6 +108,7 @@ const ThemedCircleAlert = withUnistyles(CircleAlert);
 const ThemedCircleCheck = withUnistyles(CircleCheck);
 const ThemedCircleDot = withUnistyles(CircleDot);
 const ThemedCircleX = withUnistyles(CircleX);
+const ThemedHourglass = withUnistyles(Hourglass);
 const EMPTY_SHORTCUT_INDEX = new Map<string, number>();
 
 function statusWorkspaceKeyExtractor(workspace: SidebarWorkspaceEntry): string {
@@ -416,6 +419,7 @@ function StatusGroupHeader({
 }) {
   const { t } = useTranslation();
   const [isHovered, setIsHovered] = useState(false);
+  const compactRows = useCompactSidebarRows();
   const toggleWorkspaceGroupCollapsed = useSidebarCollapsedSectionsStore(
     (state) => state.toggleWorkspaceGroupCollapsed,
   );
@@ -427,10 +431,11 @@ function StatusGroupHeader({
   const rowStyle = useCallback(
     ({ pressed }: PressableStateCallbackType) => [
       styles.statusGroupRow,
+      compactRows && styles.statusGroupRowCompact,
       isHovered && styles.statusGroupRowHovered,
       pressed && styles.statusGroupRowPressed,
     ],
-    [isHovered],
+    [compactRows, isHovered],
   );
   const accessibilityState = useMemo(() => ({ expanded: !collapsed }), [collapsed]);
 
@@ -481,7 +486,7 @@ function StatusGroupLeadingVisual({
   return <ThemedChevronDown uniProps={mutedGroupIconProps} />;
 }
 
-function StatusGroupIcon({ bucket }: { bucket: StatusBucket }) {
+function StatusGroupIcon({ bucket }: { bucket: SidebarWorkspaceGroup["leading"]["bucket"] }) {
   switch (bucket) {
     case "needs_input":
       return <ThemedCircleAlert uniProps={needsInputGroupIconProps} />;
@@ -491,6 +496,9 @@ function StatusGroupIcon({ bucket }: { bucket: StatusBucket }) {
       return <ThemedCircleCheck uniProps={attentionGroupIconProps} />;
     case "running":
       return <ThemedCircleDot uniProps={runningGroupIconProps} />;
+    // Muted like Done, because it is Done — the glass says only that it is still draining.
+    case "recently_done":
+      return <ThemedHourglass uniProps={mutedGroupIconProps} />;
     case "done":
       return <ThemedCircleCheck uniProps={mutedGroupIconProps} />;
   }
@@ -797,6 +805,7 @@ function StatusWorkspaceRowInnerContent({
   const isTouchPlatform = platformIsNative || isCompact;
   const [isPressed, setIsPressed] = useState(false);
   const trailing = useSidebarWorkspaceTrailing();
+  const compactRows = useCompactSidebarRows();
   const {
     role: _dragRole,
     tabIndex: _dragTabIndex,
@@ -855,6 +864,7 @@ function StatusWorkspaceRowInnerContent({
           isHovered,
           inStatusGroup,
           isDragging,
+          compact: compactRows,
         });
         const backdrop = getSidebarRowBackdrop({ isDragging, isPressed, selected, isHovered });
         return (
@@ -1025,15 +1035,18 @@ function getStatusWorkspaceRowStyle({
   isHovered,
   inStatusGroup,
   isDragging,
+  compact,
 }: {
   isPressed: boolean;
   selected: boolean;
   isHovered: boolean;
   inStatusGroup: boolean;
   isDragging: boolean;
+  compact: boolean;
 }) {
   return [
     styles.workspaceRow,
+    compact && styles.workspaceRowCompact,
     inStatusGroup && sidebarWorkspaceRowStyles.rowIndented,
     isHovered && styles.workspaceRowHovered,
     selected && styles.sidebarRowSelected,
@@ -1075,6 +1088,7 @@ const styles = StyleSheet.create((theme) => ({
     gap: theme.spacing[2],
     userSelect: "none",
   },
+  statusGroupRowCompact: compactSidebarRowMetrics(theme),
   statusGroupRowHovered: {
     backgroundColor: theme.colors.surfaceSidebarHover,
   },
@@ -1126,6 +1140,7 @@ const styles = StyleSheet.create((theme) => ({
     gap: theme.spacing[1],
     userSelect: "none",
   },
+  workspaceRowCompact: compactSidebarRowMetrics(theme),
   workspaceRowHovered: {
     backgroundColor: theme.colors.surfaceSidebarHover,
   },

@@ -16,6 +16,8 @@ import {
 } from "@/stores/sidebar-view-store";
 import { useSidebarOrderStore } from "@/stores/sidebar-order-store";
 import type { SidebarShortcutModel } from "@/utils/sidebar-shortcuts";
+import { useRecentlyDoneWindow } from "./display-preferences/model";
+import { useNowTick } from "@/hooks/use-now-tick";
 import { buildSidebarProjection } from "./sidebar-projection";
 import type { SidebarProjectIconTarget } from "@/utils/sidebar-project-row-model";
 import { filterWorkspacesByLabels, type SidebarWorkspaceGroup } from "./sidebar-labels";
@@ -148,6 +150,11 @@ export function SidebarModelProvider({
     visibleWorkspaceKeys,
   ]);
   const pinnedKeys = usePinnedSidebarKeys(filteredProjects);
+  // Only status mode draws the group, so project mode schedules no timer and re-groups nothing.
+  const { windowMs, tickIntervalMs } = useRecentlyDoneWindow();
+  const isStatusMode = groupMode === "status";
+  const now = useNowTick(isStatusMode ? tickIntervalMs : null);
+  const recentlyDoneSince = isStatusMode && windowMs > 0 ? now - windowMs : null;
   const projectionInput = useMemo(
     () => ({
       projects: filteredProjects,
@@ -156,6 +163,7 @@ export function SidebarModelProvider({
       workspaceEntriesByKey: filteredWorkspaceEntriesByKey,
       projectNamesByViewKey: list.projectNamesByViewKey,
       groupMode,
+      recentlyDoneSince,
       pinnedCollapsed,
       collapsedProjectKeys,
       collapsedWorkspaceGroupKeys,
@@ -170,6 +178,7 @@ export function SidebarModelProvider({
       pinnedCollapsed,
       pinnedKeys,
       pinnedWorkspaceOrder,
+      recentlyDoneSince,
       filteredWorkspaceEntriesByKey,
       t,
     ],
