@@ -1106,6 +1106,17 @@ export const ko: TranslationResources = {
         title: "제목",
         branch: "브랜치 이름",
       },
+      density: {
+        label: "행 높이",
+        comfortable: "기본",
+        compact: "좁게",
+      },
+      recentlyDone: {
+        label: "최근 완료",
+        off: "끔",
+        minutes: "{{count}}분",
+        hour: "1시간",
+      },
       show: {
         label: "표시 항목",
         branch: "브랜치",

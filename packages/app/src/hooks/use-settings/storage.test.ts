@@ -22,6 +22,7 @@ import {
   DEFAULT_SIDEBAR_ROW_ITEMS,
   SIDEBAR_ROW_ITEMS,
 } from "@/components/sidebar/display-preferences/row-items";
+import { SIDEBAR_RECENTLY_DONE_WINDOWS } from "@/components/sidebar/display-preferences/recently-done";
 import { THEME_OPTIONS } from "@/styles/theme";
 
 const LEGACY_SETTINGS_KEY = "@paseo:settings";
@@ -731,6 +732,75 @@ describe("appearance settings", () => {
 
     expect((await loadAppSettingsFromStorage(deps)).sidebarChecksDisplay).toBe("icon");
   });
+
+  it("defaults the sidebar density and recency window when an old blob omits them", async () => {
+    const deps = makeDeps({
+      storage: createInMemoryKeyValueStorage({
+        [APP_SETTINGS_KEY]: JSON.stringify({ theme: "dark" }),
+      }),
+    });
+
+    const result = await loadAppSettingsFromStorage(deps);
+
+    expect(result.sidebarRowDensity).toBe("comfortable");
+    expect(result.sidebarRecentlyDoneWindowMinutes).toBe(0);
+  });
+
+  it.each([["compact"], ["comfortable"]])("round-trips the %s row density", async (density) => {
+    const deps = makeDeps();
+    const queryClient = new QueryClient();
+
+    await saveAppSettings({
+      queryClient,
+      updates: { sidebarRowDensity: density as "compact" | "comfortable" },
+      deps,
+    });
+
+    expect((await loadAppSettingsFromStorage(deps)).sidebarRowDensity).toBe(density);
+  });
+
+  it("clears a stored row density that is not one of the two", async () => {
+    const deps = makeDeps({
+      storage: createInMemoryKeyValueStorage({
+        [APP_SETTINGS_KEY]: JSON.stringify({ sidebarRowDensity: "dense" }),
+      }),
+    });
+
+    expect((await loadAppSettingsFromStorage(deps)).sidebarRowDensity).toBe("comfortable");
+  });
+
+  it.each(SIDEBAR_RECENTLY_DONE_WINDOWS)(
+    "round-trips the %s minute recency window",
+    async (minutes) => {
+      const deps = makeDeps();
+      const queryClient = new QueryClient();
+
+      await saveAppSettings({
+        queryClient,
+        updates: { sidebarRecentlyDoneWindowMinutes: minutes },
+        deps,
+      });
+
+      expect((await loadAppSettingsFromStorage(deps)).sidebarRecentlyDoneWindowMinutes).toBe(
+        minutes,
+      );
+    },
+  );
+
+  // The menu can only ever write one of the offered windows, so a stored value off the list is a
+  // hand-edited or downgraded blob and has to land on off rather than on a window nothing shows.
+  it.each([[7], ["15"], [-1], [null]])(
+    "switches off a stored recency window of %s",
+    async (value) => {
+      const deps = makeDeps({
+        storage: createInMemoryKeyValueStorage({
+          [APP_SETTINGS_KEY]: JSON.stringify({ sidebarRecentlyDoneWindowMinutes: value }),
+        }),
+      });
+
+      expect((await loadAppSettingsFromStorage(deps)).sidebarRecentlyDoneWindowMinutes).toBe(0);
+    },
+  );
 
   it("uses a 15px mobile base and a 14px web base", () => {
     expect(defaultUiBaseFontSize(true)).toBe(15);
