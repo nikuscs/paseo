@@ -13,6 +13,16 @@ import {
   isChecksHiddenByLegacyRowItem,
   type SidebarRowItems,
 } from "@/components/sidebar/display-preferences/row-items";
+import {
+  DEFAULT_SIDEBAR_RECENTLY_DONE_WINDOW,
+  SIDEBAR_RECENTLY_DONE_WINDOWS,
+  type SidebarRecentlyDoneWindowMinutes,
+} from "@/components/sidebar/display-preferences/recently-done";
+import {
+  DEFAULT_SIDEBAR_ROW_DENSITY,
+  SIDEBAR_ROW_DENSITIES,
+  type SidebarRowDensity,
+} from "@/components/sidebar/display-preferences/row-density";
 import { isNative } from "@/constants/platform";
 import {
   FONT_SIZE,
@@ -83,6 +93,9 @@ export interface AppSettings {
   sidebarWorkspaceTrailing: SidebarWorkspaceTrailing;
   sidebarRowItems: SidebarRowItems;
   sidebarChecksDisplay: SidebarChecksDisplay;
+  sidebarRowDensity: SidebarRowDensity;
+  /** Minutes a finished workspace keeps its own status group. 0 is off. */
+  sidebarRecentlyDoneWindowMinutes: SidebarRecentlyDoneWindowMinutes;
   /** Top-level sidebar rows in display order; empty means the default order, all visible. */
   sidebarNavItems: SidebarNavPreference[];
   autoExpandReasoning: boolean;
@@ -137,6 +150,8 @@ export const DEFAULT_CLIENT_SETTINGS: AppSettings = {
   sidebarWorkspaceTrailing: "diff",
   sidebarRowItems: DEFAULT_SIDEBAR_ROW_ITEMS,
   sidebarChecksDisplay: DEFAULT_SIDEBAR_CHECKS_DISPLAY,
+  sidebarRowDensity: DEFAULT_SIDEBAR_ROW_DENSITY,
+  sidebarRecentlyDoneWindowMinutes: DEFAULT_SIDEBAR_RECENTLY_DONE_WINDOW,
   sidebarNavItems: [],
   autoExpandReasoning: false,
   toolCallDetailLevel: "detailed",
@@ -226,6 +241,10 @@ const StoredAppSettingsSchema = z
       .enum(["iconAndText", "icon", "none"])
       .optional()
       .catch(DEFAULT_SIDEBAR_CHECKS_DISPLAY),
+    sidebarRowDensity: z.enum(SIDEBAR_ROW_DENSITIES).catch(DEFAULT_SIDEBAR_ROW_DENSITY),
+    sidebarRecentlyDoneWindowMinutes: z
+      .literal(SIDEBAR_RECENTLY_DONE_WINDOWS)
+      .catch(DEFAULT_SIDEBAR_RECENTLY_DONE_WINDOW),
     sidebarNavItems: z.array(z.object({ key: z.string(), visible: z.boolean() })).catch([]),
     autoExpandReasoning: z.boolean().catch(false),
     toolCallDetailLevel: z

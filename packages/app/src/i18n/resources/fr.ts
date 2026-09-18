@@ -1134,6 +1134,17 @@ export const fr: TranslationResources = {
         title: "Titre",
         branch: "Nom de branche",
       },
+      density: {
+        label: "Densité",
+        comfortable: "Confortable",
+        compact: "Compacte",
+      },
+      recentlyDone: {
+        label: "Terminés récemment",
+        off: "Désactivé",
+        minutes: "{{count}} min",
+        hour: "1 heure",
+      },
       show: {
         label: "Afficher",
         branch: "Branche",
