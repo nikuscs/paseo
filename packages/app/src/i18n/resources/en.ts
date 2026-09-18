@@ -1106,6 +1106,17 @@ export const en = {
         title: "Title",
         branch: "Branch name",
       },
+      density: {
+        label: "Density",
+        comfortable: "Comfortable",
+        compact: "Compact",
+      },
+      recentlyDone: {
+        label: "Recently done",
+        off: "Off",
+        minutes: "{{count}} min",
+        hour: "1 hour",
+      },
       show: {
         label: "Show",
         branch: "Branch",

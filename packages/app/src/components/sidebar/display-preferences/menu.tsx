@@ -21,6 +21,9 @@ import {
   GitBranch,
   GitPullRequest,
   Globe,
+  Hourglass,
+  Rows3,
+  Rows4,
   Server,
   Settings2,
   Tag,
@@ -54,6 +57,11 @@ import { workspaceLabelKey, type WorkspaceLabelColor } from "@getpaseo/protocol/
 import type { WorkspaceTitleSource } from "@/hooks/use-settings";
 import { SIDEBAR_CHECKS_DISPLAYS, type SidebarChecksDisplay } from "./checks-display";
 import { useSidebarDisplayPreferences, type SidebarTrailingChoice } from "./model";
+import {
+  SIDEBAR_RECENTLY_DONE_WINDOWS,
+  type SidebarRecentlyDoneWindowMinutes,
+} from "./recently-done";
+import { SIDEBAR_ROW_DENSITIES, type SidebarRowDensity } from "./row-density";
 import { SIDEBAR_ROW_ITEMS, type SidebarRowItem } from "./row-items";
 import { useWorkspaceLabelProjection } from "@/workspace-labels";
 import { WorkspaceLabelDot } from "@/workspace-labels/swatch";
@@ -120,6 +128,17 @@ const TRAILING_ICONS: Record<SidebarTrailingChoice, OptionIcon> = {
   timestamp: withUnistyles(Clock),
 };
 
+// Rows of two thicknesses against rows of one: the mark is how many fit, not what a row is.
+const ROW_DENSITY_ICONS: Record<SidebarRowDensity, OptionIcon> = {
+  comfortable: withUnistyles(Rows3),
+  compact: withUnistyles(Rows4),
+};
+
+const ROW_DENSITY_LABEL_KEYS: Record<SidebarRowDensity, string> = {
+  comfortable: "sidebar.display.density.comfortable",
+  compact: "sidebar.display.density.compact",
+};
+
 const GROUPING_MODES: readonly SidebarGroupMode[] = ["project", "status"];
 const TITLE_SOURCES: readonly WorkspaceTitleSource[] = ["title", "branch"];
 const TRAILING_CHOICES: readonly SidebarTrailingChoice[] = ["diff", "timestamp"];
@@ -154,6 +173,16 @@ const TRAILING_LABEL_KEYS: Record<SidebarTrailingChoice, string> = {
   timestamp: "sidebar.display.show.timestamp",
 };
 
+const ThemedHourglass = withUnistyles(Hourglass);
+
+/** Off, then the windows, in the order they grow. */
+function recentlyDoneLabelKey(minutes: SidebarRecentlyDoneWindowMinutes): string {
+  if (minutes === 0) return "sidebar.display.recentlyDone.off";
+  return minutes === 60
+    ? "sidebar.display.recentlyDone.hour"
+    : "sidebar.display.recentlyDone.minutes";
+}
+
 /**
  * What the sidebar shows and how it is arranged.
  *
@@ -182,6 +211,9 @@ export function SidebarDisplayPreferencesMenu(): ReactElement {
   );
 
   const showHostFilter = hosts.length > 1;
+  // Only the status grouping draws status groups, so in project mode the row would configure
+  // something the sidebar is not showing.
+  const showRecentlyDone = preferences.grouping === "status";
   // One project is the whole sidebar, so filtering to it is a no-op with a menu row attached.
   const showProjectFilter = allProjects.length > 1;
   // Nothing to filter by means no row at all. The active-filter half is not redundant: the merged
@@ -220,6 +252,20 @@ export function SidebarDisplayPreferencesMenu(): ReactElement {
         ),
       },
       {
+        id: "density",
+        title: t("sidebar.display.density.label"),
+        content: (
+          <OptionList
+            values={SIDEBAR_ROW_DENSITIES}
+            icons={ROW_DENSITY_ICONS}
+            labelKeys={ROW_DENSITY_LABEL_KEYS}
+            selectedValue={preferences.rowDensity}
+            onSelect={preferences.setRowDensity}
+            testIDPrefix="sidebar-row-density"
+          />
+        ),
+      },
+      {
         id: "show",
         title: t("sidebar.display.show.label"),
         content: <ShowPage preferences={preferences} />,
@@ -240,6 +286,13 @@ export function SidebarDisplayPreferencesMenu(): ReactElement {
       },
     ];
 
+    if (showRecentlyDone) {
+      definitions.push({
+        id: "recentlyDone",
+        title: t("sidebar.display.recentlyDone.label"),
+        content: <RecentlyDonePage preferences={preferences} />,
+      });
+    }
     if (showHostFilter) {
       definitions.push({
         id: "hostFilter",
@@ -276,6 +329,7 @@ export function SidebarDisplayPreferencesMenu(): ReactElement {
     hosts,
     showHostFilter,
     showProjectFilter,
+    showRecentlyDone,
     allProjects,
     resolvedProjectFilters,
     showLabelFilter,
@@ -315,9 +369,27 @@ export function SidebarDisplayPreferencesMenu(): ReactElement {
           >
             {t("sidebar.display.titleSource.label")}
           </MenuSubTrigger>
+          <MenuSubTrigger
+            id="density"
+            value={t(ROW_DENSITY_LABEL_KEYS[preferences.rowDensity])}
+            testID="sidebar-display-density"
+          >
+            {t("sidebar.display.density.label")}
+          </MenuSubTrigger>
           <MenuSubTrigger id="show" testID="sidebar-display-show">
             {t("sidebar.display.show.label")}
           </MenuSubTrigger>
+          {showRecentlyDone ? (
+            <MenuSubTrigger
+              id="recentlyDone"
+              value={t(recentlyDoneLabelKey(preferences.recentlyDoneWindowMinutes), {
+                count: preferences.recentlyDoneWindowMinutes,
+              })}
+              testID="sidebar-display-recently-done"
+            >
+              {t("sidebar.display.recentlyDone.label")}
+            </MenuSubTrigger>
+          ) : null}
           {showHostFilter ? (
             <>
               <MenuSeparator />
@@ -579,6 +651,57 @@ function ShowPage({ preferences }: { preferences: Preferences }): ReactElement {
         />
       ))}
     </>
+  );
+}
+
+/**
+ * How long a finished workspace keeps its own group, Off first.
+ *
+ * Not an `OptionList`: the values are minutes, and its label lookup is a record keyed by the
+ * value. One glyph for every row, because the rows differ by a number rather than by a kind.
+ */
+function RecentlyDonePage({ preferences }: { preferences: Preferences }): ReactElement {
+  const { t } = useTranslation();
+  return (
+    <>
+      {SIDEBAR_RECENTLY_DONE_WINDOWS.map((minutes) => (
+        <RecentlyDoneItem
+          key={minutes}
+          minutes={minutes}
+          label={t(recentlyDoneLabelKey(minutes), { count: minutes })}
+          selected={minutes === preferences.recentlyDoneWindowMinutes}
+          onSelect={preferences.setRecentlyDoneWindowMinutes}
+        />
+      ))}
+    </>
+  );
+}
+
+function RecentlyDoneItem({
+  minutes,
+  label,
+  selected,
+  onSelect,
+}: {
+  minutes: SidebarRecentlyDoneWindowMinutes;
+  label: string;
+  selected: boolean;
+  onSelect: (minutes: SidebarRecentlyDoneWindowMinutes) => void;
+}): ReactElement {
+  const handleSelect = useCallback(() => onSelect(minutes), [minutes, onSelect]);
+  const leading = useMemo(
+    () => <ThemedHourglass size={OPTION_ICON_SIZE} uniProps={mutedIconMapping} />,
+    [],
+  );
+  return (
+    <MenuItem
+      selected={selected}
+      leading={leading}
+      onSelect={handleSelect}
+      testID={`sidebar-recently-done-${minutes}`}
+    >
+      {label}
+    </MenuItem>
   );
 }
 

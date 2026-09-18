@@ -42,6 +42,8 @@ export interface SidebarProjectionInput {
   workspaceEntriesByKey: ReadonlyMap<string, SidebarWorkspaceEntry>;
   projectNamesByViewKey: Map<string, string>;
   groupMode: SidebarGroupMode;
+  /** Finish times at or after this keep their own "Recently done" group; `null` is off. */
+  recentlyDoneSince: number | null;
   pinnedCollapsed: boolean;
   collapsedProjectKeys: ReadonlySet<string>;
   collapsedWorkspaceGroupKeys: ReadonlySet<string>;
@@ -100,7 +102,7 @@ function buildWorkspaceGroups(
       return [];
     case "status":
       return statusWorkspaceGroups(
-        buildStatusGroups(unpinnedWorkspaces, input.projectNamesByViewKey),
+        buildStatusGroups(unpinnedWorkspaces, input.projectNamesByViewKey, input.recentlyDoneSince),
       );
   }
 }

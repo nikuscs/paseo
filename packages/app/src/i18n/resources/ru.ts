@@ -1115,6 +1115,17 @@ export const ru: TranslationResources = {
         title: "Заголовок",
         branch: "Имя ветки",
       },
+      density: {
+        label: "Плотность",
+        comfortable: "Обычная",
+        compact: "Компактная",
+      },
+      recentlyDone: {
+        label: "Недавно завершённые",
+        off: "Выкл.",
+        minutes: "{{count}} мин",
+        hour: "1 час",
+      },
       show: {
         label: "Показывать",
         branch: "Ветка",
