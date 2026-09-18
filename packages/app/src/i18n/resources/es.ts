@@ -639,6 +639,7 @@ export const es: TranslationResources = {
         closeLeft: "Cerrar pestañas a la izquierda",
         closeRight: "Cerrar pestañas a la derecha",
         closeOthers: "Cerrar otras pestañas",
+        closeEditorTabs: "Cerrar pestañas del editor",
         moveToMain: "Mover al panel principal",
         reloadAgent: "Recargar agente",
         reloadAgentTooltip:
@@ -706,6 +707,7 @@ export const es: TranslationResources = {
         closeTabsLeftTitle: "¿Cerrar pestañas a la izquierda?",
         closeTabsRightTitle: "¿Cerrar pestañas a la derecha?",
         closeOtherTabsTitle: "¿Cerrar otras pestañas?",
+        closeEditorTabsTitle: "¿Cerrar pestañas del editor?",
         bulk: {
           all: "Esto archivará los agentes{{agents}}, cerrará los terminales{{terminals}}y cerrará las pestañas{{tabs}}. Cualquier proceso en ejecución en una terminal cerrada se detendrá inmediatamente.",
           agentsAndTerminals:
@@ -1129,10 +1131,27 @@ export const es: TranslationResources = {
         status: "Estado",
         labels: "Etiquetas",
       },
+      sorting: {
+        label: "Ordenar",
+        manual: "Manual",
+        name: "Nombre",
+        activity: "Actividad reciente",
+      },
       titleSource: {
         label: "Título",
         title: "Título",
         branch: "Nombre de rama",
+      },
+      density: {
+        label: "Densidad",
+        comfortable: "Cómoda",
+        compact: "Compacta",
+      },
+      recentlyDone: {
+        label: "Terminados hace poco",
+        off: "Desactivado",
+        minutes: "{{count}} min",
+        hour: "1 hora",
       },
       show: {
         label: "Mostrar",
