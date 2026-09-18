@@ -33,6 +33,8 @@ import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { density, densityIconBox } from "@/styles/density";
 import type { Theme } from "@/styles/theme";
 import type { SidebarSurfaceBackdrop } from "@/styles/surface-backdrop";
+import { useCompactSidebarRows } from "@/components/sidebar/display-preferences/model";
+import { compactSidebarRowMetrics } from "@/components/sidebar/sidebar-row-metrics";
 import { getSidebarRowBackdrop } from "@/components/sidebar/sidebar-row-backdrop";
 import { type GestureType } from "react-native-gesture-handler";
 import { WorkspaceRenameModal } from "@/components/workspace-rename-modal";
@@ -365,14 +367,17 @@ function getProjectWorkspaceRowStyle({
   isPressed,
   selected,
   isHovered,
+  compact,
 }: {
   isDragging: boolean;
   isPressed: boolean;
   selected: boolean;
   isHovered: boolean;
+  compact: boolean;
 }) {
   return [
     styles.workspaceRow,
+    compact && styles.workspaceRowCompact,
     isHovered && styles.workspaceRowHovered,
     selected && styles.sidebarRowSelected,
     isDragging && styles.workspaceRowDragging,
@@ -805,13 +810,15 @@ function NewWorkspaceGhostRow({
       }) as Href,
     );
   }, [displayName, onWorkspacePress, worktreeTarget]);
+  const compactRows = useCompactSidebarRows();
   const rowStyle = useCallback(
     ({ hovered = false, pressed }: PressableStateCallbackType & { hovered?: boolean }) => [
       styles.newWorkspaceGhostRow,
+      compactRows && styles.newWorkspaceGhostRowCompact,
       hovered && !pressed && styles.newWorkspaceGhostRowHovered,
       pressed && styles.newWorkspaceGhostRowPressed,
     ],
-    [],
+    [compactRows],
   );
 
   return (
@@ -930,15 +937,17 @@ function ProjectHeaderRow({
     interaction.handlePressOut();
   }, [interaction]);
 
+  const compactRows = useCompactSidebarRows();
   const projectRowStyle = useCallback(
     ({ pressed }: PressableStateCallbackType) => [
       styles.projectRow,
+      compactRows && styles.projectRowCompact,
       isDragging && styles.projectRowDragging,
       selected && styles.sidebarRowSelected,
       isHovered && styles.projectRowHovered,
       pressed && styles.projectRowPressed,
     ],
-    [isDragging, selected, isHovered],
+    [compactRows, isDragging, selected, isHovered],
   );
 
   const rowChildren = (
@@ -1078,6 +1087,7 @@ function WorkspaceRowInner({
   const isCompact = useIsCompactFormFactor();
   const [isPressed, setIsPressed] = useState(false);
   const isTouchPlatform = platformIsNative || isCompact;
+  const compactRows = useCompactSidebarRows();
   const interaction = useLongPressDragInteraction({
     drag,
     menuController,
@@ -1116,6 +1126,7 @@ function WorkspaceRowInner({
         const isDesktop = !isTouchPlatform;
         const serviceSummary = isDesktop ? selectWorkspaceServiceSummary(workspace.scripts) : null;
         const workspaceRowStyle = getProjectWorkspaceRowStyle({
+          compact: compactRows,
           isDragging,
           isPressed,
           selected,
@@ -2543,6 +2554,7 @@ const styles = StyleSheet.create((theme) => ({
     gap: theme.spacing[2],
     userSelect: "none",
   },
+  newWorkspaceGhostRowCompact: compactSidebarRowMetrics(theme),
   newWorkspaceGhostRowHovered: {
     backgroundColor: theme.colors.surfaceSidebarHover,
   },
@@ -2583,6 +2595,7 @@ const styles = StyleSheet.create((theme) => ({
     gap: theme.spacing[2],
     userSelect: "none",
   },
+  projectRowCompact: compactSidebarRowMetrics(theme),
   projectRowHovered: {
     backgroundColor: theme.colors.surfaceSidebarHover,
   },
@@ -2706,6 +2719,7 @@ const styles = StyleSheet.create((theme) => ({
     gap: theme.spacing[1],
     userSelect: "none",
   },
+  workspaceRowCompact: compactSidebarRowMetrics(theme),
   workspaceRowMain: {
     flexDirection: "row",
     alignItems: "center",

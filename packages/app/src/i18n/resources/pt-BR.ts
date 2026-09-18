@@ -1200,6 +1200,17 @@ export const ptBR: TranslationResources = {
         title: "Título",
         branch: "Nome da branch",
       },
+      density: {
+        label: "Densidade",
+        comfortable: "Confortável",
+        compact: "Compacta",
+      },
+      recentlyDone: {
+        label: "Concluídos há pouco",
+        off: "Desativado",
+        minutes: "{{count}} min",
+        hour: "1 hora",
+      },
       show: {
         label: "Mostrar",
         branch: "Branch",
