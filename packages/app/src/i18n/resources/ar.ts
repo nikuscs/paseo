@@ -1160,6 +1160,17 @@ export const ar: TranslationResources = {
         title: "العنوان",
         branch: "اسم الفرع",
       },
+      density: {
+        label: "الكثافة",
+        comfortable: "مريحة",
+        compact: "مضغوطة",
+      },
+      recentlyDone: {
+        label: "المكتملة حديثًا",
+        off: "إيقاف",
+        minutes: "{{count}} دقيقة",
+        hour: "ساعة واحدة",
+      },
       show: {
         label: "إظهار",
         branch: "الفرع",

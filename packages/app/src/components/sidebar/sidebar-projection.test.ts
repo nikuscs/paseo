@@ -67,6 +67,7 @@ function makeProject(
 function projectionInput(options?: {
   groupMode?: "project" | "status";
   pinnedCollapsed?: boolean;
+  recentlyDoneSince?: number | null;
 }) {
   const pinned = makeWorkspace("pinned", "running");
   const unpinned = makeWorkspace("unpinned", "needs_input");
@@ -87,6 +88,7 @@ function projectionInput(options?: {
     collapsedProjectKeys: new Set<string>(),
     collapsedWorkspaceGroupKeys: new Set<string>(),
     t: i18n.t,
+    recentlyDoneSince: options?.recentlyDoneSince ?? null,
   };
 }
 
