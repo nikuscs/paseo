@@ -227,8 +227,10 @@ export function SidebarDisplayPreferencesMenu(): ReactElement {
   );
 
   const showHostFilter = hosts.length > 1;
-  // Only the status grouping draws status groups, so in project mode the row would configure
-  // something the sidebar is not showing.
+  // Grouping picks which of the next two rows there is anything to decide. Project mode is the
+  // only one that orders a flat list, and status mode is the only one that draws status groups,
+  // so each row would otherwise configure something the sidebar is not showing.
+  const showSorting = preferences.grouping === "project";
   const showRecentlyDone = preferences.grouping === "status";
   // One project is the whole sidebar, so filtering to it is a no-op with a menu row attached.
   const showProjectFilter = allProjects.length > 1;
@@ -250,20 +252,6 @@ export function SidebarDisplayPreferencesMenu(): ReactElement {
             selectedValue={preferences.grouping}
             onSelect={preferences.setGrouping}
             testIDPrefix="sidebar-grouping"
-          />
-        ),
-      },
-      {
-        id: "sorting",
-        title: t("sidebar.display.sorting.label"),
-        content: (
-          <OptionList
-            values={SORTING_MODES}
-            icons={SORTING_ICONS}
-            labelKeys={SORTING_LABEL_KEYS}
-            selectedValue={preferences.sorting}
-            onSelect={preferences.setSorting}
-            testIDPrefix="sidebar-sort"
           />
         ),
       },
@@ -316,6 +304,22 @@ export function SidebarDisplayPreferencesMenu(): ReactElement {
       },
     ];
 
+    if (showSorting) {
+      definitions.push({
+        id: "sorting",
+        title: t("sidebar.display.sorting.label"),
+        content: (
+          <OptionList
+            values={SORTING_MODES}
+            icons={SORTING_ICONS}
+            labelKeys={SORTING_LABEL_KEYS}
+            selectedValue={preferences.sorting}
+            onSelect={preferences.setSorting}
+            testIDPrefix="sidebar-sort"
+          />
+        ),
+      });
+    }
     if (showRecentlyDone) {
       definitions.push({
         id: "recentlyDone",
@@ -359,6 +363,7 @@ export function SidebarDisplayPreferencesMenu(): ReactElement {
     hosts,
     showHostFilter,
     showProjectFilter,
+    showSorting,
     showRecentlyDone,
     allProjects,
     resolvedProjectFilters,
@@ -392,13 +397,24 @@ export function SidebarDisplayPreferencesMenu(): ReactElement {
           >
             {t("sidebar.display.grouping.label")}
           </MenuSubTrigger>
-          {preferences.grouping === "project" ? (
+          {showSorting ? (
             <MenuSubTrigger
               id="sorting"
               value={t(SORTING_LABEL_KEYS[preferences.sorting])}
               testID="sidebar-display-sorting"
             >
               {t("sidebar.display.sorting.label")}
+            </MenuSubTrigger>
+          ) : null}
+          {showRecentlyDone ? (
+            <MenuSubTrigger
+              id="recentlyDone"
+              value={t(recentlyDoneLabelKey(preferences.recentlyDoneWindowMinutes), {
+                count: preferences.recentlyDoneWindowMinutes,
+              })}
+              testID="sidebar-display-recently-done"
+            >
+              {t("sidebar.display.recentlyDone.label")}
             </MenuSubTrigger>
           ) : null}
           <MenuSubTrigger
@@ -418,17 +434,6 @@ export function SidebarDisplayPreferencesMenu(): ReactElement {
           <MenuSubTrigger id="show" testID="sidebar-display-show">
             {t("sidebar.display.show.label")}
           </MenuSubTrigger>
-          {showRecentlyDone ? (
-            <MenuSubTrigger
-              id="recentlyDone"
-              value={t(recentlyDoneLabelKey(preferences.recentlyDoneWindowMinutes), {
-                count: preferences.recentlyDoneWindowMinutes,
-              })}
-              testID="sidebar-display-recently-done"
-            >
-              {t("sidebar.display.recentlyDone.label")}
-            </MenuSubTrigger>
-          ) : null}
           {showHostFilter ? (
             <>
               <MenuSeparator />
