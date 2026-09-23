@@ -62,7 +62,8 @@ test("opening the same search match again recenters the file", async ({ page }) 
   });
   await expect.poll(() => scroller.evaluate((element) => element.scrollTop)).toBe(0);
 
-  await page.getByTestId("files-search-toggle").filter({ visible: true }).click();
+  // Search mode persists now that the explorer pane stays mounted across opening a file,
+  // so the results are still on screen; re-filling re-runs the same query.
   await page.getByTestId("files-search-input").filter({ visible: true }).fill("uniqueSearchNeedle");
   await expect(match).toBeVisible({ timeout: 30_000 });
   await match.click();
