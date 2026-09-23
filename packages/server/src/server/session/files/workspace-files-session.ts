@@ -14,6 +14,7 @@ import type {
   FileEntryDuplicateRequest,
   FileEntryRenameRequest,
   FileExplorerRequest,
+  FileSearchRequest,
   FileUploadRequest,
   FileSubscribeRequest,
   FileUnsubscribeRequest,
@@ -36,6 +37,9 @@ import {
 } from "../../file-explorer/service.js";
 import { workspaceFileObserver, type FileObserver } from "../../file-explorer/observer.js";
 import { getProjectIcon } from "../../../utils/project-icon.js";
+import { searchWorkspaceFiles, WorkspaceFileSearchError } from "../../file-search/service.js";
+
+export type WorkspaceFileSearch = typeof searchWorkspaceFiles;
 
 /**
  * What a workspace file-access request reaches outside its own domain: the
@@ -55,6 +59,7 @@ export interface WorkspaceFilesSessionOptions {
   paseoHome: string;
   logger: pino.Logger;
   fileObserver?: FileObserver;
+  searchFiles?: WorkspaceFileSearch;
 }
 
 /**
@@ -70,6 +75,8 @@ export class WorkspaceFilesSession {
   private readonly logger: pino.Logger;
   private readonly fileUploads: FileUploadStore;
   private readonly fileObserver: FileObserver;
+  private readonly searchFiles: WorkspaceFileSearch;
+  private activeSearch: AbortController | null = null;
 
   constructor(options: WorkspaceFilesSessionOptions) {
     this.host = options.host;
@@ -77,6 +84,7 @@ export class WorkspaceFilesSession {
     this.logger = options.logger;
     this.fileUploads = new FileUploadStore({ paseoHome: options.paseoHome });
     this.fileObserver = options.fileObserver ?? workspaceFileObserver;
+    this.searchFiles = options.searchFiles ?? searchWorkspaceFiles;
   }
 
   async handleFileSubscribeRequest(
@@ -169,6 +177,45 @@ export class WorkspaceFilesSession {
     });
   }
 
+  async handleFileSearchRequest(request: FileSearchRequest, source?: object): Promise<void> {
+    this.activeSearch?.abort();
+    const controller = new AbortController();
+    this.activeSearch = controller;
+    try {
+      const result = await this.searchFiles({ ...request, signal: controller.signal });
+      this.host.emit(
+        {
+          type: "fs.search.response",
+          payload: {
+            cwd: request.cwd,
+            ...result,
+            requestId: request.requestId,
+          },
+        },
+        source,
+      );
+    } catch (error) {
+      const searchError =
+        error instanceof WorkspaceFileSearchError
+          ? error
+          : new WorkspaceFileSearchError("command_failed", getErrorMessage(error));
+      this.host.emit(
+        {
+          type: "rpc_error",
+          payload: {
+            requestId: request.requestId,
+            requestType: request.type,
+            error: searchError.message,
+            code: `search_${searchError.code}`,
+          },
+        },
+        source,
+      );
+    } finally {
+      if (this.activeSearch === controller) this.activeSearch = null;
+    }
+  }
+
   async handleFileEntryCreateRequest(request: FileEntryCreateRequest): Promise<void> {
     const result = await createExplorerEntry({
       root: request.cwd,
@@ -241,6 +288,11 @@ export class WorkspaceFilesSession {
         requestId: request.requestId,
       },
     });
+  }
+
+  dispose(): void {
+    this.activeSearch?.abort();
+    this.activeSearch = null;
   }
 
   async handleFileExplorerRequest(request: FileExplorerRequest, source?: object): Promise<void> {

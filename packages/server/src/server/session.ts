@@ -2942,6 +2942,8 @@ export class Session {
         return this.workspaceFilesSession.handleFileUnsubscribeRequest(msg, this.delivery);
       case "fs.file.write.request":
         return this.workspaceFilesSession.handleFileWriteRequest(msg);
+      case "fs.search.request":
+        return this.workspaceFilesSession.handleFileSearchRequest(msg, source);
       case "fs.entry.create.request":
         return this.workspaceFilesSession.handleFileEntryCreateRequest(msg);
       case "fs.entry.rename.request":
@@ -8433,6 +8435,7 @@ export class Session {
     this.checkoutSession.cleanup();
 
     this.workspaceGitObserver.dispose();
+    this.workspaceFilesSession.dispose();
   }
 }
 
