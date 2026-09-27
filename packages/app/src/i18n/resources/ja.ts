@@ -640,6 +640,7 @@ export const ja: TranslationResources = {
         closeLeft: "左のタブを閉じる",
         closeRight: "右のタブを閉じる",
         closeOthers: "他のタブを閉じる",
+        closeEditorTabs: "エディタータブを閉じる",
         moveToMain: "メインパネルへ移動",
         reloadAgent: "エージェントを再読み込み",
         reloadAgentTooltip:
@@ -704,6 +705,7 @@ export const ja: TranslationResources = {
         closeTabsLeftTitle: "左のタブを閉じますか？",
         closeTabsRightTitle: "右のタブを閉じますか？",
         closeOtherTabsTitle: "他のタブを閉じますか？",
+        closeEditorTabsTitle: "エディタータブを閉じますか？",
         bulk: {
           all: "{{agents}}件のエージェントをアーカイブし、{{terminals}}件のターミナルを閉じ、{{tabs}}件のタブを閉じます。閉じたターミナルで実行中のプロセスはすぐに停止されます。",
           agentsAndTerminals:
@@ -1107,10 +1109,27 @@ export const ja: TranslationResources = {
         status: "ステータス",
         labels: "ラベル",
       },
+      sorting: {
+        label: "並び順",
+        manual: "手動",
+        name: "名前",
+        activity: "最近のアクティビティ",
+      },
       titleSource: {
         label: "タイトル",
         title: "タイトル",
         branch: "ブランチ名",
+      },
+      density: {
+        label: "行の高さ",
+        comfortable: "標準",
+        compact: "コンパクト",
+      },
+      recentlyDone: {
+        label: "最近完了",
+        off: "オフ",
+        minutes: "{{count}}分",
+        hour: "1時間",
       },
       show: {
         label: "表示項目",

@@ -8,8 +8,15 @@ import {
   useSidebarViewStore,
   type SidebarGroupMode,
   type SidebarLabelFilter,
+  type SidebarSortMode,
 } from "@/stores/sidebar-view-store";
 import { DEFAULT_SIDEBAR_CHECKS_DISPLAY, type SidebarChecksDisplay } from "./checks-display";
+import {
+  recentlyDoneWindowMs,
+  resolveRecentlyDoneTickMs,
+  type SidebarRecentlyDoneWindowMinutes,
+} from "./recently-done";
+import { DEFAULT_SIDEBAR_ROW_DENSITY, type SidebarRowDensity } from "./row-density";
 import { DEFAULT_SIDEBAR_ROW_ITEMS, type SidebarRowItem, type SidebarRowItems } from "./row-items";
 
 /** The trailing slot holds one thing, so these are a choice rather than toggles. */
@@ -18,12 +25,18 @@ export type SidebarTrailingChoice = Exclude<SidebarWorkspaceTrailing, "none">;
 export interface SidebarDisplayPreferences {
   grouping: SidebarGroupMode;
   setGrouping: (mode: SidebarGroupMode) => void;
+  sorting: SidebarSortMode;
+  setSorting: (mode: SidebarSortMode) => void;
   titleSource: WorkspaceTitleSource;
   setTitleSource: (source: WorkspaceTitleSource) => void;
   rowItems: SidebarRowItems;
   toggleRowItem: (item: SidebarRowItem) => void;
   checksDisplay: SidebarChecksDisplay;
   setChecksDisplay: (display: SidebarChecksDisplay) => void;
+  rowDensity: SidebarRowDensity;
+  setRowDensity: (density: SidebarRowDensity) => void;
+  recentlyDoneWindowMinutes: SidebarRecentlyDoneWindowMinutes;
+  setRecentlyDoneWindowMinutes: (minutes: SidebarRecentlyDoneWindowMinutes) => void;
   trailing: SidebarWorkspaceTrailing;
   /** Picking the choice that is already showing clears the slot. */
   toggleTrailing: (choice: SidebarTrailingChoice) => void;
@@ -50,6 +63,8 @@ export interface SidebarDisplayPreferences {
 export function useSidebarDisplayPreferences(): SidebarDisplayPreferences {
   const grouping = useSidebarViewStore((state) => state.groupMode);
   const setGrouping = useSidebarViewStore((state) => state.setGroupMode);
+  const sorting = useSidebarViewStore((state) => state.sortMode);
+  const setSorting = useSidebarViewStore((state) => state.setSortMode);
   const hostFilters = useSidebarViewStore((state) => state.hostFilters);
   const toggleHostFilter = useSidebarViewStore((state) => state.toggleHostFilter);
   const clearHostFilters = useSidebarViewStore((state) => state.clearHostFilters);
@@ -66,6 +81,8 @@ export function useSidebarDisplayPreferences(): SidebarDisplayPreferences {
       sidebarWorkspaceTrailing,
       sidebarRowItems,
       sidebarChecksDisplay,
+      sidebarRowDensity,
+      sidebarRecentlyDoneWindowMinutes,
     },
     updateSettings,
   } = useAppSettings();
@@ -93,6 +110,20 @@ export function useSidebarDisplayPreferences(): SidebarDisplayPreferences {
     [updateSettings],
   );
 
+  const setRowDensity = useCallback(
+    (density: SidebarRowDensity) => {
+      void updateSettings({ sidebarRowDensity: density });
+    },
+    [updateSettings],
+  );
+
+  const setRecentlyDoneWindowMinutes = useCallback(
+    (minutes: SidebarRecentlyDoneWindowMinutes) => {
+      void updateSettings({ sidebarRecentlyDoneWindowMinutes: minutes });
+    },
+    [updateSettings],
+  );
+
   const toggleTrailing = useCallback(
     (choice: SidebarTrailingChoice) => {
       void updateSettings({
@@ -106,12 +137,18 @@ export function useSidebarDisplayPreferences(): SidebarDisplayPreferences {
     () => ({
       grouping,
       setGrouping,
+      sorting,
+      setSorting,
       titleSource: workspaceTitleSource,
       setTitleSource,
       rowItems: sidebarRowItems,
       toggleRowItem,
       checksDisplay: sidebarChecksDisplay,
       setChecksDisplay,
+      rowDensity: sidebarRowDensity,
+      setRowDensity,
+      recentlyDoneWindowMinutes: sidebarRecentlyDoneWindowMinutes,
+      setRecentlyDoneWindowMinutes,
       trailing: sidebarWorkspaceTrailing,
       toggleTrailing,
       hostFilters,
@@ -127,12 +164,18 @@ export function useSidebarDisplayPreferences(): SidebarDisplayPreferences {
     [
       grouping,
       setGrouping,
+      sorting,
+      setSorting,
       workspaceTitleSource,
       setTitleSource,
       sidebarRowItems,
       toggleRowItem,
       sidebarChecksDisplay,
       setChecksDisplay,
+      sidebarRowDensity,
+      setRowDensity,
+      sidebarRecentlyDoneWindowMinutes,
+      setRecentlyDoneWindowMinutes,
       sidebarWorkspaceTrailing,
       toggleTrailing,
       hostFilters,
@@ -178,4 +221,34 @@ export function useSidebarMetaPreferences(): {
     }),
     [sidebarRowItems, sidebarChecksDisplay],
   );
+}
+
+/**
+ * Whether sidebar rows are drawn compact, for the row stylesheets.
+ *
+ * Its own hook rather than a field off the menu's interface for the reason `useSidebarRowItems`
+ * has one: every row in the sidebar reads this, so it subscribes to the one setting it uses.
+ */
+export function useCompactSidebarRows(): boolean {
+  const {
+    settings: { sidebarRowDensity },
+  } = useAppSettings();
+  return (sidebarRowDensity ?? DEFAULT_SIDEBAR_ROW_DENSITY) === "compact";
+}
+
+/**
+ * The "Recently done" window, resolved for the projection.
+ *
+ * `windowMs` is what the grouping needs and `tickIntervalMs` is what has to drive a timer so the
+ * group empties itself; both fall out of the same setting, so they are answered together rather
+ * than recomputed at each call site.
+ */
+export function useRecentlyDoneWindow(): { windowMs: number; tickIntervalMs: number | null } {
+  const {
+    settings: { sidebarRecentlyDoneWindowMinutes },
+  } = useAppSettings();
+  return useMemo(() => {
+    const windowMs = recentlyDoneWindowMs(sidebarRecentlyDoneWindowMinutes);
+    return { windowMs, tickIntervalMs: resolveRecentlyDoneTickMs(windowMs) };
+  }, [sidebarRecentlyDoneWindowMinutes]);
 }
