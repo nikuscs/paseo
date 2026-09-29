@@ -631,6 +631,7 @@ export const en = {
         closeLeft: "Close to the left",
         closeRight: "Close to the right",
         closeOthers: "Close other tabs",
+        closeEditorTabs: "Close editor tabs",
         moveToMain: "Move to main panel",
         reloadAgent: "Reload agent",
         reloadAgentTooltip: "Reload agent to update skills, MCPs or login status.",
@@ -695,6 +696,7 @@ export const en = {
         closeTabsLeftTitle: "Close tabs to the left?",
         closeTabsRightTitle: "Close tabs to the right?",
         closeOtherTabsTitle: "Close other tabs?",
+        closeEditorTabsTitle: "Close editor tabs?",
         bulk: {
           all: "This will archive {{agents}} agent(s), close {{terminals}} terminal(s), and close {{tabs}} tab(s). Any running process in a closed terminal will be stopped immediately.",
           agentsAndTerminals:
@@ -1102,10 +1104,27 @@ export const en = {
         status: "Status",
         labels: "Labels",
       },
+      sorting: {
+        label: "Sorting",
+        manual: "Manual",
+        name: "Name",
+        activity: "Recent activity",
+      },
       titleSource: {
         label: "Title",
         title: "Title",
         branch: "Branch name",
+      },
+      density: {
+        label: "Density",
+        comfortable: "Comfortable",
+        compact: "Compact",
+      },
+      recentlyDone: {
+        label: "Recently done",
+        off: "Off",
+        minutes: "{{count}} min",
+        hour: "1 hour",
       },
       show: {
         label: "Show",

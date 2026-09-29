@@ -1,7 +1,8 @@
 /**
  * @vitest-environment jsdom
  */
-import React from "react";
+import React, { type ReactNode } from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "@testing-library/react";
 import type { DaemonClient } from "@getpaseo/client/internal/daemon-client";
 import { createRoot, type Root } from "react-dom/client";
@@ -29,6 +30,7 @@ function workspaceDescriptor(input: {
   projectDisplayName?: string;
   status?: WorkspaceDescriptor["status"];
   statusEnteredAt?: Date | null;
+  activityAt?: Date | null;
 }): WorkspaceDescriptor {
   return {
     id: input.id,
@@ -42,6 +44,7 @@ function workspaceDescriptor(input: {
     status: input.status ?? "done",
     archivingAt: null,
     statusEnteredAt: input.statusEnteredAt ?? null,
+    activityAt: input.activityAt ?? null,
     diffStat: null,
     scripts: [],
   };
@@ -69,6 +72,20 @@ function setHostProfiles(hosts: HostProfile[]): void {
   ).setHostsAndSync(hosts);
 }
 
+/**
+ * The provider reads app settings for the "Recently done" window, so it needs a query client
+ * even though nothing here asserts on settings.
+ */
+function SidebarHarness({ children }: { children: ReactNode }) {
+  return (
+    <QueryClientProvider
+      client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+    >
+      <SidebarModelProvider>{children}</SidebarModelProvider>
+    </QueryClientProvider>
+  );
+}
+
 describe("WorkspaceShortcutTargetsSubscriber", () => {
   let root: Root | null = null;
   let container: HTMLElement | null = null;
@@ -90,6 +107,7 @@ describe("WorkspaceShortcutTargetsSubscriber", () => {
     });
     useSidebarViewStore.setState({
       groupMode: "project",
+      sortMode: "manual",
       hostFilters: [],
     });
 
@@ -127,9 +145,9 @@ describe("WorkspaceShortcutTargetsSubscriber", () => {
   it("publishes workspace shortcut targets without rendering the sidebar", async () => {
     await act(async () => {
       root?.render(
-        <SidebarModelProvider>
+        <SidebarHarness>
           <WorkspaceShortcutTargetsSubscriber enabled={true} />
-        </SidebarModelProvider>,
+        </SidebarHarness>,
       );
     });
 
@@ -137,6 +155,79 @@ describe("WorkspaceShortcutTargetsSubscriber", () => {
       { serverId: "srv", workspaceId: "ws-1" },
       { serverId: "srv", workspaceId: "ws-2" },
     ]);
+  });
+
+  it("reorders activity-sorted targets when activity changes without a status transition", async () => {
+    const unchangedStatusEnteredAt = new Date("2026-01-01T00:00:00.000Z");
+    act(() => {
+      useSidebarViewStore.getState().setSortMode("activity");
+      seedRuntimeWorkspaces(
+        "srv",
+        new Map([
+          [
+            "ws-1",
+            workspaceDescriptor({
+              id: "ws-1",
+              statusEnteredAt: unchangedStatusEnteredAt,
+              activityAt: new Date("2026-03-01T00:00:00.000Z"),
+            }),
+          ],
+          [
+            "ws-2",
+            workspaceDescriptor({
+              id: "ws-2",
+              statusEnteredAt: new Date("2026-02-01T00:00:00.000Z"),
+              activityAt: new Date("2026-04-01T00:00:00.000Z"),
+            }),
+          ],
+        ]),
+      );
+    });
+
+    await act(async () => {
+      root?.render(
+        <SidebarHarness>
+          <WorkspaceShortcutTargetsSubscriber enabled={true} />
+        </SidebarHarness>,
+      );
+    });
+
+    expect(useKeyboardShortcutsStore.getState().sidebarShortcutWorkspaceTargets).toEqual([
+      { serverId: "srv", workspaceId: "ws-2" },
+      { serverId: "srv", workspaceId: "ws-1" },
+    ]);
+
+    act(() => {
+      seedRuntimeWorkspaces(
+        "srv",
+        new Map([
+          [
+            "ws-1",
+            workspaceDescriptor({
+              id: "ws-1",
+              statusEnteredAt: unchangedStatusEnteredAt,
+              activityAt: new Date("2026-05-01T00:00:00.000Z"),
+            }),
+          ],
+          [
+            "ws-2",
+            workspaceDescriptor({
+              id: "ws-2",
+              statusEnteredAt: new Date("2026-02-01T00:00:00.000Z"),
+              activityAt: new Date("2026-04-01T00:00:00.000Z"),
+            }),
+          ],
+        ]),
+      );
+    });
+
+    expect(useKeyboardShortcutsStore.getState().sidebarShortcutWorkspaceTargets).toEqual([
+      { serverId: "srv", workspaceId: "ws-1" },
+      { serverId: "srv", workspaceId: "ws-2" },
+    ]);
+    expect(
+      useSessionStore.getState().sessions.srv?.workspaces.get("ws-1")?.statusEnteredAt,
+    ).toEqual(unchangedStatusEnteredAt);
   });
 
   it("publishes status-mode shortcut targets in visual status order", async () => {
@@ -195,9 +286,9 @@ describe("WorkspaceShortcutTargetsSubscriber", () => {
 
     await act(async () => {
       root?.render(
-        <SidebarModelProvider>
+        <SidebarHarness>
           <WorkspaceShortcutTargetsSubscriber enabled={true} />
-        </SidebarModelProvider>,
+        </SidebarHarness>,
       );
     });
 
@@ -229,9 +320,9 @@ describe("WorkspaceShortcutTargetsSubscriber", () => {
 
     await act(async () => {
       root?.render(
-        <SidebarModelProvider>
+        <SidebarHarness>
           <WorkspaceShortcutTargetsSubscriber enabled={true} />
-        </SidebarModelProvider>,
+        </SidebarHarness>,
       );
     });
 
@@ -251,17 +342,17 @@ describe("WorkspaceShortcutTargetsSubscriber", () => {
   it("clears targets when disabled", async () => {
     await act(async () => {
       root?.render(
-        <SidebarModelProvider>
+        <SidebarHarness>
           <WorkspaceShortcutTargetsSubscriber enabled={true} />
-        </SidebarModelProvider>,
+        </SidebarHarness>,
       );
     });
 
     await act(async () => {
       root?.render(
-        <SidebarModelProvider>
+        <SidebarHarness>
           <WorkspaceShortcutTargetsSubscriber enabled={false} />
-        </SidebarModelProvider>,
+        </SidebarHarness>,
       );
     });
 
