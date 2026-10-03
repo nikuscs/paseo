@@ -642,6 +642,8 @@ export const ko: TranslationResources = {
         closeRight: "오른쪽 탭 닫기",
         closeOthers: "다른 탭 닫기",
         closeEditorTabs: "편집기 탭 닫기",
+        pin: "탭 고정",
+        unpin: "탭 고정 해제",
         moveToMain: "기본 패널로 이동",
         reloadAgent: "에이전트 다시 로드",
         reloadAgentTooltip:

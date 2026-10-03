@@ -641,6 +641,8 @@ export const zhCN: TranslationResources = {
         closeRight: "关闭右侧标签",
         closeOthers: "关闭其他标签",
         closeEditorTabs: "关闭编辑器标签",
+        pin: "固定标签页",
+        unpin: "取消固定标签页",
         moveToMain: "移至主面板",
         reloadAgent: "重新加载 Agent",
         reloadAgentTooltip: "重新加载 Agent 以更新 skills、MCPs 或登录状态。",

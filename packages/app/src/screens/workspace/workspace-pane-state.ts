@@ -58,6 +58,7 @@ function normalizeWorkspaceTab(tab: WorkspaceTab): WorkspaceTab | null {
     tabId,
     target,
     createdAt: tab.createdAt,
+    ...(tab.pinned ? { pinned: true } : {}),
     state: tab.state,
   };
 }
@@ -100,6 +101,7 @@ function normalizeWorkspacePaneTabs(tabs: WorkspaceTab[]): NormalizeWorkspacePan
         kind: normalizedTab.target.kind,
         target: normalizedTab.target,
         state: normalizedTab.state,
+        ...(normalizedTab.pinned ? { pinned: true } : {}),
       },
     });
   }

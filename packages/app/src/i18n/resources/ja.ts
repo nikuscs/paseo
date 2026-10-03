@@ -647,6 +647,8 @@ export const ja: TranslationResources = {
         closeRight: "右のタブを閉じる",
         closeOthers: "他のタブを閉じる",
         closeEditorTabs: "エディタータブを閉じる",
+        pin: "タブを固定",
+        unpin: "タブの固定を解除",
         moveToMain: "メインパネルへ移動",
         reloadAgent: "エージェントを再読み込み",
         reloadAgentTooltip:

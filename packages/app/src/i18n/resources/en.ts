@@ -638,6 +638,8 @@ export const en = {
         closeRight: "Close to the right",
         closeOthers: "Close other tabs",
         closeEditorTabs: "Close editor tabs",
+        pin: "Pin tab",
+        unpin: "Unpin tab",
         moveToMain: "Move to main panel",
         reloadAgent: "Reload agent",
         reloadAgentTooltip: "Reload agent to update skills, MCPs or login status.",

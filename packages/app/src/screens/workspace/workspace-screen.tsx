@@ -181,6 +181,7 @@ import {
   classifyBulkClosableTabs,
   closeBulkWorkspaceTabs,
   selectWorkspaceEditorTabs,
+  selectBulkClosableTabs,
 } from "@/screens/workspace/workspace-bulk-close";
 import { resolveCloseAgentTabPolicy } from "@/subagents";
 import {
@@ -562,6 +563,8 @@ function MobileWorkspaceTabOption({
       copyTerminalId: t("workspace.tabs.menu.copyTerminalId"),
       copyFilePath: t("workspace.tabs.menu.copyFilePath"),
       rename: t("workspace.tabs.menu.rename"),
+      pin: t("workspace.tabs.menu.pin"),
+      unpin: t("workspace.tabs.menu.unpin"),
       closeAbove: t("workspace.tabs.menu.closeAbove"),
       closeBelow: t("workspace.tabs.menu.closeBelow"),
       closeLeft: t("workspace.tabs.menu.closeLeft"),
@@ -594,6 +597,13 @@ function MobileWorkspaceTabOption({
     onCloseEditorTabs,
     canCloseEditorTabs,
     labels: tabMenuLabels,
+    onTogglePin: (tabId) => {
+      const workspaceKey = buildWorkspaceTabPersistenceKey({
+        serverId: normalizedServerId,
+        workspaceId: normalizedWorkspaceId,
+      });
+      if (workspaceKey) useWorkspaceLayoutStore.getState().toggleTabPinned(workspaceKey, tabId);
+    },
   });
 
   const fallbackLabels = useMemo(
@@ -2330,6 +2340,7 @@ function WorkspaceScreenContent({
       tabId: tab.tabId,
       kind: tab.target.kind,
       target: tab.target,
+      pinned: tab.pinned,
     }));
 
     return {
@@ -2844,7 +2855,8 @@ function WorkspaceScreenContent({
       title: string;
       logLabel: string;
     }): Promise<boolean> => {
-      const { tabsToClose, title, logLabel } = input;
+      const { title, logLabel } = input;
+      const tabsToClose = selectBulkClosableTabs(input.tabsToClose);
       if (tabsToClose.length === 0) {
         return true;
       }
@@ -3014,7 +3026,7 @@ function WorkspaceScreenContent({
         title: t("workspace.tabs.confirmations.closePaneTitle"),
         logLabel: "from pane close",
       });
-      if (!closed) {
+      if (!closed || tabsToClose.some((tab) => tab.pinned)) {
         return;
       }
       closeWorkspacePane(persistenceKey, paneId);

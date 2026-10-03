@@ -646,6 +646,8 @@ export const ptBR: TranslationResources = {
         closeRight: "Fechar à direita",
         closeOthers: "Fechar outras abas",
         closeEditorTabs: "Fechar abas do editor",
+        pin: "Fixar aba",
+        unpin: "Desafixar aba",
         moveToMain: "Mover para o painel principal",
         reloadAgent: "Recarregar agente",
         reloadAgentTooltip: "Recarregue o agente para atualizar skills, MCPs ou status de login.",

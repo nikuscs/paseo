@@ -35,6 +35,22 @@ function makeFileTab(path: string): WorkspaceTabDescriptor {
 }
 
 describe("workspace bulk close helpers", () => {
+  it("excludes pinned agents, terminals, and editor tabs from bulk close", () => {
+    const ordinary = makeFileTab("/ordinary.ts");
+    const tabs = [
+      { ...makeAgentTab("pinned-agent"), pinned: true },
+      { ...makeTerminalTab("pinned-terminal"), pinned: true },
+      { ...makeFileTab("/pinned.ts"), pinned: true },
+      ordinary,
+    ];
+    expect(selectWorkspaceEditorTabs(tabs)).toEqual([ordinary]);
+    expect(classifyBulkClosableTabs(tabs)).toEqual({
+      archiveAgentTabs: [],
+      layoutOnlyAgentTabs: [],
+      terminalTabs: [],
+      otherTabs: [{ tabId: ordinary.tabId, target: ordinary.target }],
+    });
+  });
   it("selects file, diff, browser, and setup tabs as editor tabs", () => {
     const tabs: WorkspaceTabDescriptor[] = [
       makeAgentTab("a1"),

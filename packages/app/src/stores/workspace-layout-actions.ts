@@ -389,6 +389,7 @@ function normalizeWorkspaceTab(value: unknown): WorkspaceTab | null {
     tabId,
     target,
     createdAt: typeof tab.createdAt === "number" ? tab.createdAt : Date.now(),
+    ...(tab.pinned === true ? { pinned: true } : {}),
     ...(tab.state !== undefined ? { state: tab.state } : {}),
   };
 }
@@ -407,7 +408,7 @@ function normalizeWorkspaceTabs(input: unknown): WorkspaceTab[] {
     seen.add(tab.tabId);
     next.push(tab);
   }
-  return next;
+  return next.sort((left, right) => Number(right.pinned === true) - Number(left.pinned === true));
 }
 
 function normalizeSizes(input: NormalizeSizesInput): number[] {
@@ -910,6 +911,7 @@ function replaceTabInTree(
             tabId: input.nextTabId,
             target: input.target,
             createdAt: tab.createdAt,
+            ...(tab.pinned ? { pinned: true } : {}),
             ...(input.state !== undefined ? { state: input.state } : {}),
           };
         }),
@@ -1824,6 +1826,27 @@ function transferReplacedTabParent(input: {
       parentTabId === input.replacedTabId ? input.replacementTabId : parentTabId;
   }
   return Object.keys(renamed).length > 0 ? renamed : undefined;
+}
+
+export function toggleTabPinnedInLayout(input: {
+  layout: WorkspaceLayout;
+  tabId: string;
+}): WorkspaceLayout | null {
+  const layout = asInternalLayout(input.layout);
+  const pane = findPaneContainingTab(layout.root, input.tabId);
+  if (!pane) return null;
+  return {
+    ...layout,
+    root: updatePaneInTree(layout.root, {
+      paneId: pane.id,
+      updater: (current) => ({
+        ...current,
+        tabs: current.tabs.map((tab) =>
+          tab.tabId === input.tabId ? { ...tab, pinned: !tab.pinned } : tab,
+        ),
+      }),
+    }),
+  };
 }
 
 export function setTabStateInLayout(input: {
