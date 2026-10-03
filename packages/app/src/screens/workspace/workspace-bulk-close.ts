@@ -61,10 +61,14 @@ function isWorkspaceEditorTab(tab: WorkspaceTabDescriptor): boolean {
   }
 }
 
+export function selectBulkClosableTabs(tabs: WorkspaceTabDescriptor[]): WorkspaceTabDescriptor[] {
+  return tabs.filter((tab) => !tab.pinned);
+}
+
 export function selectWorkspaceEditorTabs(
   tabs: WorkspaceTabDescriptor[],
 ): WorkspaceTabDescriptor[] {
-  return tabs.filter(isWorkspaceEditorTab);
+  return selectBulkClosableTabs(tabs).filter(isWorkspaceEditorTab);
 }
 
 export function classifyBulkClosableTabs(
@@ -78,7 +82,7 @@ export function classifyBulkClosableTabs(
     otherTabs: [],
   };
 
-  for (const tab of tabs) {
+  for (const tab of selectBulkClosableTabs(tabs)) {
     if (tab.target.kind === "agent") {
       const agentTab = { tabId: tab.tabId, agentId: tab.target.agentId };
       if (resolveAgentCloseKind(tab.target.agentId) === "layout-only") {

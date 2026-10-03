@@ -194,6 +194,7 @@ import {
   classifyBulkClosableTabs,
   closeBulkWorkspaceTabs,
   selectWorkspaceEditorTabs,
+  selectBulkClosableTabs,
 } from "@/screens/workspace/workspace-bulk-close";
 import { resolveCloseAgentTabPolicy } from "@/subagents";
 import {
@@ -1772,6 +1773,7 @@ function WorkspaceScreenContent({
       tabId: tab.tabId,
       kind: tab.target.kind,
       target: tab.target,
+      pinned: tab.pinned,
     }));
 
     return {
@@ -2269,7 +2271,8 @@ function WorkspaceScreenContent({
       title: string;
       logLabel: string;
     }): Promise<boolean> => {
-      const { tabsToClose, title, logLabel } = input;
+      const { title, logLabel } = input;
+      const tabsToClose = selectBulkClosableTabs(input.tabsToClose);
       if (tabsToClose.length === 0) {
         return true;
       }
@@ -2439,7 +2442,7 @@ function WorkspaceScreenContent({
         title: t("workspace.tabs.confirmations.closePaneTitle"),
         logLabel: "from pane close",
       });
-      if (!closed) {
+      if (!closed || tabsToClose.some((tab) => tab.pinned)) {
         return;
       }
       closeWorkspacePane(persistenceKey, paneId);
