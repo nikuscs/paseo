@@ -3661,6 +3661,8 @@ function WorkspaceScreenContent({
         onCloseTabsToLeft={handleCloseTabsToLeftInPane}
         onCloseTabsToRight={handleCloseTabsToRightInPane}
         onCloseOtherTabs={handleCloseOtherTabsInPane}
+        onCloseEditorTabs={handleCloseEditorTabs}
+        canCloseEditorTabs={canCloseEditorTabs}
         onExitFocusMode={toggleFocusMode}
         onReorderTabsInPane={handleReorderTabsInPane}
         buildPaneContentModel={buildDesktopPaneContentModel}
@@ -3702,6 +3704,8 @@ function WorkspaceScreenContent({
     handleCloseTabsToLeftInPane,
     handleCloseTabsToRightInPane,
     handleCloseOtherTabsInPane,
+    handleCloseEditorTabs,
+    canCloseEditorTabs,
     toggleFocusMode,
     handleReorderTabsInPane,
     buildDesktopPaneContentModel,
