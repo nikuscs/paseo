@@ -16,6 +16,9 @@ import {
   ArrowRightToLine,
   Copy,
   Pencil,
+  Pin,
+  PinOff,
+  PanelTopClose,
   RotateCw,
   Columns2,
   Rows2,
@@ -86,6 +89,8 @@ import {
   useHorizontalScrollBoundary,
 } from "@/components/ui/horizontal-scroll-boundary";
 import { useSessionStore } from "@/stores/session-store";
+import { useWorkspaceLayoutStore } from "@/stores/workspace-layout-store";
+import { buildWorkspaceTabPersistenceKey } from "@/workspace-tabs/model";
 
 const DROPDOWN_WIDTH = 220;
 const DEFAULT_INLINE_ADD_BUTTON_RESERVED_WIDTH = 36;
@@ -109,6 +114,7 @@ const TAB_ICON_WIDTH = 14;
 const TAB_CONTENT_GAP = 4;
 const TAB_DROP_INDICATOR_WIDTH = 4;
 const TAB_MODIFIED_DOT_SIZE = 8;
+const TAB_PIN_ICON_SIZE = 12;
 const TAB_MIN_WIDTH = 64;
 const TAB_MAX_WIDTH = 160;
 const TAB_CLOSE_BUTTON_RESERVED_WIDTH = 0;
@@ -123,7 +129,10 @@ const ThemedRotateCw = withUnistyles(RotateCw);
 const ThemedArrowLeftToLine = withUnistyles(ArrowLeftToLine);
 const ThemedArrowRightToLine = withUnistyles(ArrowRightToLine);
 const ThemedCopyX = withUnistyles(CopyX);
+const ThemedPanelTopClose = withUnistyles(PanelTopClose);
 const ThemedPencil = withUnistyles(Pencil);
+const ThemedPin = withUnistyles(Pin);
+const ThemedPinOff = withUnistyles(PinOff);
 const ThemedPlus = withUnistyles(Plus);
 const ThemedColumns2 = withUnistyles(Columns2);
 const ThemedRows2 = withUnistyles(Rows2);
@@ -426,8 +435,14 @@ function TabContextMenuItem({
         return <ThemedArrowRightToLine size={16} uniProps={mutedColorMapping} />;
       case "copy-x":
         return <ThemedCopyX size={16} uniProps={mutedColorMapping} />;
+      case "panel-top-close":
+        return <ThemedPanelTopClose size={16} uniProps={mutedColorMapping} />;
       case "pencil":
         return <ThemedPencil size={16} uniProps={mutedColorMapping} />;
+      case "pin":
+        return <ThemedPin size={16} uniProps={mutedColorMapping} />;
+      case "pin-off":
+        return <ThemedPinOff size={16} uniProps={mutedColorMapping} />;
       case "x":
         return <ThemedX size={16} uniProps={mutedColorMapping} />;
       default:
@@ -472,6 +487,7 @@ interface WorkspaceTabLabel {
   key: string;
   label: string;
   modified: boolean;
+  pinned: boolean;
 }
 
 interface WorkspaceTabLabelMeasurement {
@@ -495,7 +511,7 @@ function completeWorkspaceTabLabelWidths(
   measurements: Map<string, WorkspaceTabLabelMeasurement>,
 ): number[] | null {
   const widths: number[] = [];
-  for (const { key, label, modified } of labels) {
+  for (const { key, label, modified, pinned } of labels) {
     const measurement = measurements.get(key);
     if (!measurement || measurement.label !== label || measurement.width <= 0) {
       return null;
@@ -503,7 +519,10 @@ function completeWorkspaceTabLabelWidths(
     // The modified dot sits in the content row, so a modified tab needs that much more width
     // before its label starts truncating.
     const modifiedAllowance = modified ? TAB_CONTENT_GAP + TAB_MODIFIED_DOT_SIZE : 0;
-    widths.push(measurement.width + TAB_LABEL_LAYOUT_ALLOWANCE + modifiedAllowance);
+    const pinnedAllowance = pinned ? TAB_CONTENT_GAP + TAB_PIN_ICON_SIZE : 0;
+    widths.push(
+      measurement.width + TAB_LABEL_LAYOUT_ALLOWANCE + modifiedAllowance + pinnedAllowance,
+    );
   }
   return widths;
 }
@@ -533,6 +552,8 @@ export interface WorkspaceDesktopTabsRowProps {
   onCloseTabsToLeft: (tabId: string) => Promise<void> | void;
   onCloseTabsToRight: (tabId: string) => Promise<void> | void;
   onCloseOtherTabs: (tabId: string) => Promise<void> | void;
+  onCloseEditorTabs: () => Promise<void> | void;
+  canCloseEditorTabs: boolean;
   onCreateNewTab: (input: { paneId?: string }) => void;
   onReorderTabs: (nextTabs: WorkspaceTabDescriptor[]) => void;
   externalDndContext?: boolean;
@@ -671,6 +692,7 @@ function resolveChipBackdrop({
 
 function TabHandleContent({
   presentation,
+  pinned,
   isHighlighted,
   showLabel,
   backdrop,
@@ -679,6 +701,7 @@ function TabHandleContent({
   modifiedTestId,
 }: {
   presentation: WorkspaceTabPresentation;
+  pinned: boolean;
   isHighlighted: boolean;
   showLabel: boolean;
   backdrop: SurfaceBackdrop;
@@ -697,6 +720,7 @@ function TabHandleContent({
       <View style={styles.tabIcon}>
         <WorkspaceTabIcon presentation={presentation} active={isHighlighted} backdrop={backdrop} />
       </View>
+      {pinned ? <ThemedPin size={TAB_PIN_ICON_SIZE} uniProps={mutedColorMapping} /> : null}
       {showLabel && presentation.titleState === "loading" ? (
         <View style={tabLabelSkeletonStyle} />
       ) : null}
@@ -867,6 +891,7 @@ function TabChip({
             >
               <TabHandleContent
                 presentation={presentation}
+                pinned={Boolean(tab.pinned)}
                 isHighlighted={isHighlighted}
                 showLabel={showLabel}
                 backdrop={chipBackdrop}
@@ -1031,6 +1056,8 @@ function ResolvedWorkspaceDesktopTabsRow({
   onCloseTabsToLeft,
   onCloseTabsToRight,
   onCloseOtherTabs,
+  onCloseEditorTabs,
+  canCloseEditorTabs,
   onCreateNewTab,
   onReorderTabs,
   externalDndContext = false,
@@ -1107,11 +1134,14 @@ function ResolvedWorkspaceDesktopTabsRow({
       copyTerminalId: t("workspace.tabs.menu.copyTerminalId"),
       copyFilePath: t("workspace.tabs.menu.copyFilePath"),
       rename: t("workspace.tabs.menu.rename"),
+      pin: t("workspace.tabs.menu.pin"),
+      unpin: t("workspace.tabs.menu.unpin"),
       closeAbove: t("workspace.tabs.menu.closeAbove"),
       closeBelow: t("workspace.tabs.menu.closeBelow"),
       closeLeft: t("workspace.tabs.menu.closeLeft"),
       closeRight: t("workspace.tabs.menu.closeRight"),
       closeOthers: t("workspace.tabs.menu.closeOthers"),
+      closeEditorTabs: t("workspace.tabs.menu.closeEditorTabs"),
       reloadAgent: t("workspace.tabs.menu.reloadAgent"),
       reloadAgentTooltip: t("workspace.tabs.menu.reloadAgentTooltip"),
       close: t("workspace.tabs.menu.close"),
@@ -1125,7 +1155,12 @@ function ResolvedWorkspaceDesktopTabsRow({
           tab.presentation.titleState === "loading"
             ? getFallbackTabLabel(tab.tab, fallbackTabLabels)
             : tab.presentation.label;
-        return { key: tab.tab.key, label, modified: tab.presentation.modified };
+        return {
+          key: tab.tab.key,
+          label,
+          modified: tab.presentation.modified,
+          pinned: Boolean(tab.tab.pinned),
+        };
       }),
     [fallbackTabLabels, tabs],
   );
@@ -1276,6 +1311,7 @@ function ResolvedWorkspaceDesktopTabsRow({
         <ResolvedDesktopTabChip
           key={`${item.tab.key}:${item.tab.kind}`}
           serverId={normalizedServerId}
+          workspaceId={normalizedWorkspaceId}
           item={item}
           isFocused={isFocused}
           isDragging={isActive}
@@ -1290,6 +1326,8 @@ function ResolvedWorkspaceDesktopTabsRow({
           onCloseTabsToLeft={onCloseTabsToLeft}
           onCloseTabsToRight={onCloseTabsToRight}
           onCloseOtherTabs={onCloseOtherTabs}
+          onCloseEditorTabs={onCloseEditorTabs}
+          canCloseEditorTabs={canCloseEditorTabs}
           resolvedTabWidth={resolvedTabWidth}
           showLabel={showLabel}
           showCloseButton={shouldShowCloseButton}
@@ -1309,7 +1347,10 @@ function ResolvedWorkspaceDesktopTabsRow({
       layout.closeButtonPolicy,
       layout.items,
       normalizedServerId,
+      normalizedWorkspaceId,
       onCloseOtherTabs,
+      onCloseEditorTabs,
+      canCloseEditorTabs,
       onCloseTab,
       onCloseTabsToLeft,
       onCloseTabsToRight,
@@ -1429,6 +1470,7 @@ function ResolvedWorkspaceDesktopTabsRow({
 }
 function ResolvedDesktopTabChip({
   serverId,
+  workspaceId,
   item,
   isFocused,
   isDragging,
@@ -1443,6 +1485,8 @@ function ResolvedDesktopTabChip({
   onCloseTabsToLeft,
   onCloseTabsToRight,
   onCloseOtherTabs,
+  onCloseEditorTabs,
+  canCloseEditorTabs,
   resolvedTabWidth,
   showLabel,
   showCloseButton,
@@ -1455,6 +1499,7 @@ function ResolvedDesktopTabChip({
   showDropIndicatorAfter,
 }: {
   serverId: string;
+  workspaceId: string;
   item: ResolvedWorkspaceDesktopTabRowItem;
   isFocused: boolean;
   isDragging: boolean;
@@ -1469,6 +1514,8 @@ function ResolvedDesktopTabChip({
   onCloseTabsToLeft: (tabId: string) => Promise<void> | void;
   onCloseTabsToRight: (tabId: string) => Promise<void> | void;
   onCloseOtherTabs: (tabId: string) => Promise<void> | void;
+  onCloseEditorTabs: () => Promise<void> | void;
+  canCloseEditorTabs: boolean;
   resolvedTabWidth: number;
   showLabel: boolean;
   showCloseButton: boolean;
@@ -1482,10 +1529,18 @@ function ResolvedDesktopTabChip({
 }) {
   const { t } = useTranslation();
   const presentation = item.presentation;
+  const onTogglePin = useCallback(
+    (tabId: string) => {
+      const workspaceKey = buildWorkspaceTabPersistenceKey({ serverId, workspaceId });
+      if (workspaceKey) useWorkspaceLayoutStore.getState().toggleTabPinned(workspaceKey, tabId);
+    },
+    [serverId, workspaceId],
+  );
   const resolvedTab = useMemo(
     () =>
       buildWorkspaceDesktopTabActions({
         tab: item.tab,
+        onTogglePin,
         index,
         tabCount,
         onCopyResumeCommand,
@@ -1498,12 +1553,17 @@ function ResolvedDesktopTabChip({
         onCloseTabsToLeft,
         onCloseTabsToRight,
         onCloseOtherTabs,
+        onCloseEditorTabs,
+        canCloseEditorTabs,
         labels,
       }),
     [
       index,
       item.tab,
+      onTogglePin,
       onCloseOtherTabs,
+      onCloseEditorTabs,
+      canCloseEditorTabs,
       onCloseTab,
       onCloseTabsToLeft,
       onCloseTabsToRight,

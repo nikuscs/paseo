@@ -637,6 +637,9 @@ export const ar: TranslationResources = {
         closeLeft: "بالقرب من اليسار",
         closeRight: "قريب من اليمين",
         closeOthers: "أغلق علامات التبويب الأخرى",
+        closeEditorTabs: "إغلاق علامات تبويب المحرر",
+        pin: "تثبيت علامة التبويب",
+        unpin: "إلغاء تثبيت علامة التبويب",
         moveToMain: "Move to main panel",
         reloadAgent: "إعادة تحميل الوكيل",
         reloadAgentTooltip: "قم بإعادة تحميل الوكيل لتحديث المهارات أو MCPs أو حالة تسجيل الدخول.",
@@ -702,6 +705,7 @@ export const ar: TranslationResources = {
         closeTabsLeftTitle: "هل تريد إغلاق علامات التبويب على اليسار؟",
         closeTabsRightTitle: "هل تريد إغلاق علامات التبويب على اليمين؟",
         closeOtherTabsTitle: "هل تريد إغلاق علامات التبويب الأخرى؟",
+        closeEditorTabsTitle: "هل تريد إغلاق علامات تبويب المحرر؟",
         bulk: {
           all: "سيؤدي هذا إلى أرشفة وكيل (وكلاء){{agents}}، وإغلاق محطة (محطات){{terminals}}، وإغلاق علامة (علامات) تبويب{{tabs}}. سيتم إيقاف أي عملية جارية في محطة مغلقة على الفور.",
           agentsAndTerminals:
@@ -1097,10 +1101,27 @@ export const ar: TranslationResources = {
         status: "الحالة",
         labels: "التسميات",
       },
+      sorting: {
+        label: "الترتيب",
+        manual: "يدوي",
+        name: "الاسم",
+        activity: "النشاط الأخير",
+      },
       titleSource: {
         label: "العنوان",
         title: "العنوان",
         branch: "اسم الفرع",
+      },
+      density: {
+        label: "الكثافة",
+        comfortable: "مريحة",
+        compact: "مضغوطة",
+      },
+      recentlyDone: {
+        label: "المكتملة حديثًا",
+        off: "إيقاف",
+        minutes: "{{count}} دقيقة",
+        hour: "ساعة واحدة",
       },
       show: {
         label: "إظهار",
