@@ -645,6 +645,8 @@ export const ru: TranslationResources = {
         closeRight: "Закрыть вкладки справа",
         closeOthers: "Закрыть другие вкладки",
         closeEditorTabs: "Закрыть вкладки редактора",
+        pin: "Закрепить вкладку",
+        unpin: "Открепить вкладку",
         moveToMain: "Переместить на основную панель",
         reloadAgent: "Перезагрузить агента",
         reloadAgentTooltip: "Перезагрузите агента, чтобы обновить навыки, MCP или статус входа.",

@@ -644,6 +644,8 @@ export const fr: TranslationResources = {
         closeRight: "Près de la droite",
         closeOthers: "Fermer les autres onglets",
         closeEditorTabs: "Fermer les onglets de l’éditeur",
+        pin: "Épingler l’onglet",
+        unpin: "Désépingler l’onglet",
         moveToMain: "Déplacer vers le panneau principal",
         reloadAgent: "Agent de rechargement",
         reloadAgentTooltip:

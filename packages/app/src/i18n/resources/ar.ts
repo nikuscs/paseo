@@ -638,6 +638,8 @@ export const ar: TranslationResources = {
         closeRight: "قريب من اليمين",
         closeOthers: "أغلق علامات التبويب الأخرى",
         closeEditorTabs: "إغلاق علامات تبويب المحرر",
+        pin: "تثبيت علامة التبويب",
+        unpin: "إلغاء تثبيت علامة التبويب",
         moveToMain: "Move to main panel",
         reloadAgent: "إعادة تحميل الوكيل",
         reloadAgentTooltip: "قم بإعادة تحميل الوكيل لتحديث المهارات أو MCPs أو حالة تسجيل الدخول.",

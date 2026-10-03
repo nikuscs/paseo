@@ -644,6 +644,8 @@ export const es: TranslationResources = {
         closeRight: "Cerrar pestañas a la derecha",
         closeOthers: "Cerrar otras pestañas",
         closeEditorTabs: "Cerrar pestañas del editor",
+        pin: "Fijar pestaña",
+        unpin: "Desfijar pestaña",
         moveToMain: "Mover al panel principal",
         reloadAgent: "Recargar agente",
         reloadAgentTooltip:
