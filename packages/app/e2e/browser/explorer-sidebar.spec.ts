@@ -182,6 +182,20 @@ test("Explorer keeps Files and Changes close actions in the context menu", async
       await expect(explorer.getByTestId("workspace-new-tab-panel")).toHaveCount(0);
     });
 
+    await test.step("Close editor tabs from Explorer leaves the main pane usable", async () => {
+      const files = explorer.getByTestId("workspace-tab-files");
+      await files.click({ button: "right", position: { x: 12, y: 13 } });
+      const confirmation = page.waitForEvent("dialog").then((dialog) => {
+        expect(dialog.message()).toContain("close 4 tab(s)");
+        return dialog.accept();
+      });
+      await page.getByRole("menuitem", { name: "Close editor tabs", exact: true }).click();
+      await confirmation;
+      await expect(explorer.getByTestId("workspace-tab-files")).toHaveCount(0);
+      await expect(explorer.getByTestId("workspace-tab-changes_tree")).toHaveCount(0);
+      await expect(main.getByTestId("workspace-new-tab-button")).toBeVisible();
+    });
+
     await testInfo.attach("shared-explorer-tabs", {
       body: await page.screenshot(),
       contentType: "image/png",

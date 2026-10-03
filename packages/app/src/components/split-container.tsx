@@ -731,6 +731,8 @@ export function SplitContainer({
                   onCloseTabsToLeft={onCloseTabsToLeft}
                   onCloseTabsToRight={onCloseTabsToRight}
                   onCloseOtherTabs={onCloseOtherTabs}
+                  onCloseEditorTabs={onCloseEditorTabs}
+                  canCloseEditorTabs={canCloseEditorTabs}
                   onExitFocusMode={onExitFocusMode}
                   buildPaneContentModel={buildPaneContentModel}
                   onReorderTabsInPane={onReorderTabsInPane}
