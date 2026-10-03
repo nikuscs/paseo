@@ -31,7 +31,7 @@ test("search stays available while the initial tree listing is errored and retri
   await chmod(workspace.repoPath, 0o000);
 
   const explorer = await ensureExplorerSidebar(page);
-  await explorer.getByTestId("explorer-sidebar-tab-files").click();
+  await explorer.getByTestId("workspace-tab-files").click();
 
   const searchToggle = explorer.getByTestId("files-search-toggle");
   await expect(searchToggle).toBeVisible({ timeout: 30_000 });
