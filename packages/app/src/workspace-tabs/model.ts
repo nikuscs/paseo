@@ -52,6 +52,8 @@ export interface WorkspaceTab {
   tabId: string;
   target: WorkspaceTabTarget;
   createdAt: number;
+  /** Tab ordering and bulk-close protection, separate from archived-agent visibility pins. */
+  pinned?: boolean;
   state?: JsonValue;
 }
 
