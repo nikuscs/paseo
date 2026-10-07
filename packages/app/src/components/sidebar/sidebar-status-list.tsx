@@ -73,8 +73,9 @@ import {
   SidebarWorkspaceContextMenu,
   SidebarWorkspaceMenu,
 } from "@/components/sidebar/sidebar-workspace-menu";
-import { useCompactSidebarRows } from "@/components/sidebar/display-preferences/model";
-import { compactSidebarRowMetrics } from "@/components/sidebar/sidebar-row-metrics";
+import { useSidebarRowDensity } from "@/components/sidebar/display-preferences/model";
+import type { SidebarRowDensity } from "@/components/sidebar/display-preferences/row-density";
+import { sidebarRowMetrics } from "@/components/sidebar/sidebar-row-metrics";
 import { PinnedSectionHeader } from "@/components/sidebar/pinned-section-header";
 import { SidebarGroupToggleRow } from "@/components/sidebar/sidebar-group-toggle-row";
 import { useLimitedSidebarGroup } from "@/components/sidebar/use-limited-sidebar-group";
@@ -337,6 +338,7 @@ function StatusGroupRows({
   supportsPinningByServerId: ReadonlyMap<string, boolean>;
   onToggleWorkspacePin: ToggleSidebarWorkspacePin;
 }) {
+  const rowDensity = useSidebarRowDensity();
   const {
     visibleItems: visibleWorkspaces,
     expanded: workspacesExpanded,
@@ -345,7 +347,7 @@ function StatusGroupRows({
   } = useLimitedSidebarGroup(group.rows);
 
   return (
-    <View style={collapsed ? undefined : styles.statusGroupBlockExpanded}>
+    <View style={collapsed ? undefined : styles.statusGroupBlockExpanded(rowDensity)}>
       <StatusGroupHeader group={group} collapsed={collapsed} />
       {!collapsed ? (
         <View
@@ -413,7 +415,7 @@ function StatusGroupHeader({
 }) {
   const { t } = useTranslation();
   const [isHovered, setIsHovered] = useState(false);
-  const compactRows = useCompactSidebarRows();
+  const rowDensity = useSidebarRowDensity();
   const toggleWorkspaceGroupCollapsed = useSidebarCollapsedSectionsStore(
     (state) => state.toggleWorkspaceGroupCollapsed,
   );
@@ -425,11 +427,11 @@ function StatusGroupHeader({
   const rowStyle = useCallback(
     ({ pressed }: PressableStateCallbackType) => [
       styles.statusGroupRow,
-      compactRows && styles.statusGroupRowCompact,
+      styles.statusGroupRowDensity(rowDensity),
       isHovered && styles.statusGroupRowHovered,
       pressed && styles.statusGroupRowPressed,
     ],
-    [compactRows, isHovered],
+    [rowDensity, isHovered],
   );
   const accessibilityState = useMemo(() => ({ expanded: !collapsed }), [collapsed]);
 
@@ -799,7 +801,7 @@ function StatusWorkspaceRowInnerContent({
   const isTouchPlatform = platformIsNative || isCompact;
   const [isPressed, setIsPressed] = useState(false);
   const trailing = useSidebarWorkspaceTrailing();
-  const compactRows = useCompactSidebarRows();
+  const rowDensity = useSidebarRowDensity();
   const {
     role: _dragRole,
     tabIndex: _dragTabIndex,
@@ -858,7 +860,7 @@ function StatusWorkspaceRowInnerContent({
           isHovered,
           inStatusGroup,
           isDragging,
-          compact: compactRows,
+          density: rowDensity,
         });
         const backdrop = getSidebarRowBackdrop({ isDragging, isPressed, selected, isHovered });
         return (
@@ -1029,18 +1031,18 @@ function getStatusWorkspaceRowStyle({
   isHovered,
   inStatusGroup,
   isDragging,
-  compact,
+  density,
 }: {
   isPressed: boolean;
   selected: boolean;
   isHovered: boolean;
   inStatusGroup: boolean;
   isDragging: boolean;
-  compact: boolean;
+  density: SidebarRowDensity;
 }) {
   return [
     styles.workspaceRow,
-    compact && styles.workspaceRowCompact,
+    styles.workspaceRowDensity(density),
     inStatusGroup && sidebarWorkspaceRowStyles.rowIndented,
     isHovered && styles.workspaceRowHovered,
     selected && styles.sidebarRowSelected,
@@ -1066,9 +1068,9 @@ const styles = StyleSheet.create((theme) => ({
     marginBottom: theme.spacing[1],
   },
   // Matches `projectBlockExpanded` in sidebar-workspace-list.tsx. See the note there.
-  statusGroupBlockExpanded: {
-    paddingBottom: theme.spacing[3],
-  },
+  statusGroupBlockExpanded: (density: SidebarRowDensity) => ({
+    paddingBottom: sidebarRowMetrics(theme, density).groupGap,
+  }),
   statusWorkspaceListContainer: {},
   statusGroupRow: {
     minHeight: 36,
@@ -1082,7 +1084,7 @@ const styles = StyleSheet.create((theme) => ({
     gap: theme.spacing[2],
     userSelect: "none",
   },
-  statusGroupRowCompact: compactSidebarRowMetrics(theme),
+  statusGroupRowDensity: (density: SidebarRowDensity) => sidebarRowMetrics(theme, density).row,
   statusGroupRowHovered: {
     backgroundColor: theme.colors.surfaceSidebarHover,
   },
@@ -1134,7 +1136,7 @@ const styles = StyleSheet.create((theme) => ({
     gap: theme.spacing[1],
     userSelect: "none",
   },
-  workspaceRowCompact: compactSidebarRowMetrics(theme),
+  workspaceRowDensity: (density: SidebarRowDensity) => sidebarRowMetrics(theme, density).stackedRow,
   workspaceRowHovered: {
     backgroundColor: theme.colors.surfaceSidebarHover,
   },

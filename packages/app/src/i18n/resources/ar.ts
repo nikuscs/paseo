@@ -1170,6 +1170,7 @@ export const ar: TranslationResources = {
         label: "الكثافة",
         comfortable: "مريحة",
         compact: "مضغوطة",
+        dense: "كثيفة",
       },
       recentlyDone: {
         label: "المكتملة حديثًا",

@@ -24,6 +24,7 @@ import {
   SIDEBAR_ROW_ITEMS,
 } from "@/components/sidebar/display-preferences/row-items";
 import { SIDEBAR_RECENTLY_DONE_WINDOWS } from "@/components/sidebar/display-preferences/recently-done";
+import { SIDEBAR_ROW_DENSITIES } from "@/components/sidebar/display-preferences/row-density";
 import { DEFAULT_CONTENT_MAX_WIDTH, THEME_OPTIONS } from "@/styles/theme";
 
 const LEGACY_SETTINGS_KEY = "@paseo:settings";
@@ -839,23 +840,23 @@ describe("appearance settings", () => {
     expect(result.sidebarRecentlyDoneWindowMinutes).toBe(0);
   });
 
-  it.each([["compact"], ["comfortable"]])("round-trips the %s row density", async (density) => {
+  it.each(SIDEBAR_ROW_DENSITIES)("round-trips the %s row density", async (density) => {
     const deps = makeDeps();
     const queryClient = new QueryClient();
 
     await saveAppSettings({
       queryClient,
-      updates: { sidebarRowDensity: density as "compact" | "comfortable" },
+      updates: { sidebarRowDensity: density },
       deps,
     });
 
     expect((await loadAppSettingsFromStorage(deps)).sidebarRowDensity).toBe(density);
   });
 
-  it("clears a stored row density that is not one of the two", async () => {
+  it("clears a stored row density that is not one of the known ones", async () => {
     const deps = makeDeps({
       storage: createInMemoryKeyValueStorage({
-        [APP_SETTINGS_KEY]: JSON.stringify({ sidebarRowDensity: "dense" }),
+        [APP_SETTINGS_KEY]: JSON.stringify({ sidebarRowDensity: "tight" }),
       }),
     });
 

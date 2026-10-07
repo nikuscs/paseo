@@ -1162,6 +1162,7 @@ export const zhCN: TranslationResources = {
         label: "行高",
         comfortable: "标准",
         compact: "紧凑",
+        dense: "密集",
       },
       recentlyDone: {
         label: "最近完成",

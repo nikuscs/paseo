@@ -1177,6 +1177,7 @@ export const ko: TranslationResources = {
         label: "행 높이",
         comfortable: "기본",
         compact: "좁게",
+        dense: "최소",
       },
       recentlyDone: {
         label: "최근 완료",

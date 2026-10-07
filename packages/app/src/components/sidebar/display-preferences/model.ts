@@ -224,16 +224,16 @@ export function useSidebarMetaPreferences(): {
 }
 
 /**
- * Whether sidebar rows are drawn compact, for the row stylesheets.
+ * How densely sidebar rows are drawn, for the row stylesheets.
  *
  * Its own hook rather than a field off the menu's interface for the reason `useSidebarRowItems`
  * has one: every row in the sidebar reads this, so it subscribes to the one setting it uses.
  */
-export function useCompactSidebarRows(): boolean {
+export function useSidebarRowDensity(): SidebarRowDensity {
   const {
     settings: { sidebarRowDensity },
   } = useAppSettings();
-  return (sidebarRowDensity ?? DEFAULT_SIDEBAR_ROW_DENSITY) === "compact";
+  return sidebarRowDensity ?? DEFAULT_SIDEBAR_ROW_DENSITY;
 }
 
 /**

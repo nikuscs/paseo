@@ -18,8 +18,9 @@ import { useWorkspaceReadState } from "@/hooks/use-workspace-read-state";
 import { redirectIfArchivingActiveWorkspace } from "@/utils/sidebar-workspace-archive-redirect";
 import { isNative as platformIsNative } from "@/constants/platform";
 import { useIsCompactFormFactor } from "@/constants/layout";
-import { useCompactSidebarRows } from "@/components/sidebar/display-preferences/model";
-import { compactSidebarRowMetrics } from "@/components/sidebar/sidebar-row-metrics";
+import { useSidebarRowDensity } from "@/components/sidebar/display-preferences/model";
+import type { SidebarRowDensity } from "@/components/sidebar/display-preferences/row-density";
+import { sidebarRowMetrics } from "@/components/sidebar/sidebar-row-metrics";
 import { useLongPressDragInteraction } from "@/components/sidebar/use-long-press-drag-interaction";
 import {
   SidebarWorkspaceContextMenu,
@@ -238,7 +239,7 @@ function WorkspaceRowBody({
   const isTouchPlatform = platformIsNative || isCompact;
   const [isPressed, setIsPressed] = useState(false);
   const trailing = useSidebarWorkspaceTrailing();
-  const compactRows = useCompactSidebarRows();
+  const rowDensity = useSidebarRowDensity();
   const draggable = Boolean(drag);
   const interaction = useLongPressDragInteraction({
     drag: drag ?? noop,
@@ -278,7 +279,7 @@ function WorkspaceRowBody({
         const isDesktop = !isTouchPlatform;
         const serviceSummary = isDesktop ? selectWorkspaceServiceSummary(workspace.scripts) : null;
         const workspaceRowStyle = getWorkspaceRowStyle({
-          compact: compactRows,
+          density: rowDensity,
           isDragging,
           isPressed,
           selected,
@@ -467,17 +468,17 @@ function getWorkspaceRowStyle({
   isPressed,
   selected,
   isHovered,
-  compact,
+  density,
 }: {
   isDragging: boolean;
   isPressed: boolean;
   selected: boolean;
   isHovered: boolean;
-  compact: boolean;
+  density: SidebarRowDensity;
 }) {
   return [
     styles.workspaceRow,
-    compact && styles.workspaceRowCompact,
+    styles.workspaceRowDensity(density),
     isHovered && styles.workspaceRowHovered,
     selected && styles.sidebarRowSelected,
     isDragging && styles.workspaceRowDragging,
@@ -504,7 +505,7 @@ const styles = StyleSheet.create((theme) => ({
     gap: theme.spacing[1],
     userSelect: "none",
   },
-  workspaceRowCompact: compactSidebarRowMetrics(theme),
+  workspaceRowDensity: (density: SidebarRowDensity) => sidebarRowMetrics(theme, density).stackedRow,
   workspaceRowHovered: {
     backgroundColor: theme.colors.surfaceSidebarHover,
   },

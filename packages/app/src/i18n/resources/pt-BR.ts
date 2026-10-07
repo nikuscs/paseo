@@ -1196,6 +1196,7 @@ export const ptBR: TranslationResources = {
         label: "Densidade",
         comfortable: "Confortável",
         compact: "Compacta",
+        dense: "Densa",
       },
       recentlyDone: {
         label: "Concluídos há pouco",

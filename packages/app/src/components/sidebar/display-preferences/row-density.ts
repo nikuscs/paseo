@@ -9,7 +9,7 @@
  * of the value list.
  */
 
-export const SIDEBAR_ROW_DENSITIES = ["comfortable", "compact"] as const;
+export const SIDEBAR_ROW_DENSITIES = ["comfortable", "compact", "dense"] as const;
 
 export type SidebarRowDensity = (typeof SIDEBAR_ROW_DENSITIES)[number];
 

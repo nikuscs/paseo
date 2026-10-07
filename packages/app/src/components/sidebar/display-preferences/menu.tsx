@@ -24,6 +24,7 @@ import {
   Globe,
   GripVertical,
   Hourglass,
+  Rows2,
   Rows3,
   Rows4,
   Server,
@@ -137,15 +138,17 @@ const TRAILING_ICONS: Record<SidebarTrailingChoice, OptionIcon> = {
   timestamp: withUnistyles(Clock),
 };
 
-// Rows of two thicknesses against rows of one: the mark is how many fit, not what a row is.
+// One more row per step down: the mark is how many fit, not what a row is.
 const ROW_DENSITY_ICONS: Record<SidebarRowDensity, OptionIcon> = {
-  comfortable: withUnistyles(Rows3),
-  compact: withUnistyles(Rows4),
+  comfortable: withUnistyles(Rows2),
+  compact: withUnistyles(Rows3),
+  dense: withUnistyles(Rows4),
 };
 
 const ROW_DENSITY_LABEL_KEYS: Record<SidebarRowDensity, string> = {
   comfortable: "sidebar.display.density.comfortable",
   compact: "sidebar.display.density.compact",
+  dense: "sidebar.display.density.dense",
 };
 
 const GROUPING_MODES: readonly SidebarGroupMode[] = ["project", "status"];
