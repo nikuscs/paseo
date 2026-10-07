@@ -1197,6 +1197,7 @@ export const ja: TranslationResources = {
         label: "行の高さ",
         comfortable: "標準",
         compact: "コンパクト",
+        dense: "最小",
       },
       recentlyDone: {
         label: "最近完了",

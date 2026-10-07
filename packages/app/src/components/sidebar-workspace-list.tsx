@@ -33,8 +33,9 @@ import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { density, densityIconBox } from "@/styles/density";
 import type { Theme } from "@/styles/theme";
 import type { SidebarSurfaceBackdrop } from "@/styles/surface-backdrop";
-import { useCompactSidebarRows } from "@/components/sidebar/display-preferences/model";
-import { compactSidebarRowMetrics } from "@/components/sidebar/sidebar-row-metrics";
+import { useSidebarRowDensity } from "@/components/sidebar/display-preferences/model";
+import type { SidebarRowDensity } from "@/components/sidebar/display-preferences/row-density";
+import { sidebarRowMetrics } from "@/components/sidebar/sidebar-row-metrics";
 import { getSidebarRowBackdrop } from "@/components/sidebar/sidebar-row-backdrop";
 import { type GestureType } from "react-native-gesture-handler";
 import { WorkspaceRenameModal } from "@/components/workspace-rename-modal";
@@ -356,28 +357,22 @@ export function PrBadge({ hint, style }: { hint: PrHint; style?: StyleProp<ViewS
   );
 }
 
-function projectKebabStyle({
-  hovered = false,
-}: PressableStateCallbackType & { hovered?: boolean }) {
-  return [styles.projectKebabButton, hovered && styles.projectKebabButtonHovered];
-}
-
 function getProjectWorkspaceRowStyle({
   isDragging,
   isPressed,
   selected,
   isHovered,
-  compact,
+  rowDensity,
 }: {
   isDragging: boolean;
   isPressed: boolean;
   selected: boolean;
   isHovered: boolean;
-  compact: boolean;
+  rowDensity: SidebarRowDensity;
 }) {
   return [
     styles.workspaceRow,
-    compact && styles.workspaceRowCompact,
+    styles.workspaceRowDensity(rowDensity),
     isHovered && styles.workspaceRowHovered,
     selected && styles.sidebarRowSelected,
     isDragging && styles.workspaceRowDragging,
@@ -491,11 +486,20 @@ function ProjectKebabMenu({
   removeProjectStatus: "idle" | "pending" | "success";
 }) {
   const { t } = useTranslation();
+  const rowDensity = useSidebarRowDensity();
+  const kebabStyle = useCallback(
+    ({ hovered = false }: PressableStateCallbackType & { hovered?: boolean }) => [
+      styles.projectKebabButton,
+      styles.projectControlDensity(rowDensity),
+      hovered && styles.projectKebabButtonHovered,
+    ],
+    [rowDensity],
+  );
   return (
     <DropdownMenu compactMode="sheet">
       <DropdownMenuTrigger
         hitSlop={8}
-        style={projectKebabStyle}
+        style={kebabStyle}
         accessibilityRole={platformIsWeb ? undefined : "button"}
         accessibilityLabel={t("sidebar.project.actions.menu")}
         testID={`sidebar-project-kebab-${projectViewKey}`}
@@ -726,14 +730,16 @@ function NewWorktreeButton({
 }) {
   const { t } = useTranslation();
   const newWorktreeKeys = useShortcutKeys("new-worktree");
+  const rowDensity = useSidebarRowDensity();
 
   const pressableStyle = useCallback(
     ({ hovered, pressed }: PressableStateCallbackType & { hovered?: boolean }) => [
       styles.projectIconActionButton,
+      styles.projectControlDensity(rowDensity),
       !visible && styles.projectIconActionButtonHidden,
       (Boolean(hovered) || pressed) && !loading && styles.projectIconActionButtonHovered,
     ],
-    [visible, loading],
+    [rowDensity, visible, loading],
   );
 
   const handlePress = useCallback(
@@ -745,7 +751,10 @@ function NewWorktreeButton({
   );
 
   return (
-    <View style={styles.projectTrailingControlSlot} pointerEvents={visible ? "auto" : "none"}>
+    <View
+      style={[styles.projectTrailingControlSlot, styles.projectControlDensity(rowDensity)]}
+      pointerEvents={visible ? "auto" : "none"}
+    >
       <Tooltip delayDuration={0} enabledOnDesktop enabledOnMobile={false}>
         <TooltipTrigger asChild disabled={!visible}>
           <Pressable
@@ -810,15 +819,15 @@ function NewWorkspaceGhostRow({
       }) as Href,
     );
   }, [displayName, onWorkspacePress, worktreeTarget]);
-  const compactRows = useCompactSidebarRows();
+  const rowDensity = useSidebarRowDensity();
   const rowStyle = useCallback(
     ({ hovered = false, pressed }: PressableStateCallbackType & { hovered?: boolean }) => [
       styles.newWorkspaceGhostRow,
-      compactRows && styles.newWorkspaceGhostRowCompact,
+      styles.newWorkspaceGhostRowDensity(rowDensity),
       hovered && !pressed && styles.newWorkspaceGhostRowHovered,
       pressed && styles.newWorkspaceGhostRowPressed,
     ],
-    [compactRows],
+    [rowDensity],
   );
 
   return (
@@ -937,17 +946,17 @@ function ProjectHeaderRow({
     interaction.handlePressOut();
   }, [interaction]);
 
-  const compactRows = useCompactSidebarRows();
+  const rowDensity = useSidebarRowDensity();
   const projectRowStyle = useCallback(
     ({ pressed }: PressableStateCallbackType) => [
       styles.projectRow,
-      compactRows && styles.projectRowCompact,
+      styles.projectRowDensity(rowDensity),
       isDragging && styles.projectRowDragging,
       selected && styles.sidebarRowSelected,
       isHovered && styles.projectRowHovered,
       pressed && styles.projectRowPressed,
     ],
-    [compactRows, isDragging, selected, isHovered],
+    [rowDensity, isDragging, selected, isHovered],
   );
 
   const rowChildren = (
@@ -982,7 +991,7 @@ function ProjectHeaderRow({
         removeProjectStatus={removeProjectStatus}
       />
       {showShortcutBadge && shortcutNumber !== null ? (
-        <View style={styles.projectShortcutBadgeOverlay} pointerEvents="none">
+        <View style={styles.projectShortcutBadgeOverlay(rowDensity)} pointerEvents="none">
           <SidebarWorkspaceShortcutBadge number={shortcutNumber} />
         </View>
       ) : null}
@@ -1087,7 +1096,7 @@ function WorkspaceRowInner({
   const isCompact = useIsCompactFormFactor();
   const [isPressed, setIsPressed] = useState(false);
   const isTouchPlatform = platformIsNative || isCompact;
-  const compactRows = useCompactSidebarRows();
+  const rowDensity = useSidebarRowDensity();
   const interaction = useLongPressDragInteraction({
     drag,
     menuController,
@@ -1126,7 +1135,7 @@ function WorkspaceRowInner({
         const isDesktop = !isTouchPlatform;
         const serviceSummary = isDesktop ? selectWorkspaceServiceSummary(workspace.scripts) : null;
         const workspaceRowStyle = getProjectWorkspaceRowStyle({
-          compact: compactRows,
+          rowDensity,
           isDragging,
           isPressed,
           selected,
@@ -1603,6 +1612,7 @@ function ProjectBlock({
   supportsPinningByServerId: ReadonlyMap<string, boolean>;
   onToggleWorkspacePin: ToggleSidebarWorkspacePin;
 }) {
+  const rowDensity = useSidebarRowDensity();
   const {
     visibleItems: visibleWorkspaces,
     expanded: workspacesExpanded,
@@ -1808,7 +1818,7 @@ function ProjectBlock({
     <View
       role="group"
       accessibilityLabel={displayName}
-      style={projectChildren ? styles.projectBlockExpanded : undefined}
+      style={projectChildren ? styles.projectBlockExpanded(rowDensity) : undefined}
     >
       <ProjectHeaderRow
         project={project}
@@ -2533,16 +2543,17 @@ const styles = StyleSheet.create((theme) => ({
   pinnedSection: {
     marginBottom: theme.spacing[1],
   },
-  // Three times the gap a row keeps from its neighbour, so the break between two groups reads as
-  // a break rather than as one more row of pitch. Kept equal to `statusGroupBlockExpanded` — the
-  // two groupings are the same list under a different heading and must not breathe differently.
+  // More than the gap a row keeps from its neighbour at every density, so the break between two
+  // groups reads as a break rather than as one more row of pitch. Kept equal to
+  // `statusGroupBlockExpanded` through `sidebarRowMetrics` — the two groupings are the same list
+  // under a different heading and must not breathe differently.
   //
   // Padding on the block rather than margin, and only while it has children: the gap belongs to
   // the rows underneath the header, so a collapsed project gives it back and a column of collapsed
   // headers closes up to the pitch of a list instead of staying spaced for content that is gone.
-  projectBlockExpanded: {
-    paddingBottom: theme.spacing[3],
-  },
+  projectBlockExpanded: (rowDensity: SidebarRowDensity) => ({
+    paddingBottom: sidebarRowMetrics(theme, rowDensity).groupGap,
+  }),
   workspaceListContainer: {},
   // Kept in step with `workspaceRow` above. It stands in a project's list where a workspace row
   // would be, so it takes that row's geometry and both of its fills.
@@ -2562,7 +2573,8 @@ const styles = StyleSheet.create((theme) => ({
     gap: theme.spacing[2],
     userSelect: "none",
   },
-  newWorkspaceGhostRowCompact: compactSidebarRowMetrics(theme),
+  newWorkspaceGhostRowDensity: (rowDensity: SidebarRowDensity) =>
+    sidebarRowMetrics(theme, rowDensity).row,
   newWorkspaceGhostRowHovered: {
     backgroundColor: theme.colors.surfaceSidebarHover,
   },
@@ -2603,7 +2615,7 @@ const styles = StyleSheet.create((theme) => ({
     gap: theme.spacing[2],
     userSelect: "none",
   },
-  projectRowCompact: compactSidebarRowMetrics(theme),
+  projectRowDensity: (rowDensity: SidebarRowDensity) => sidebarRowMetrics(theme, rowDensity).row,
   projectRowHovered: {
     backgroundColor: theme.colors.surfaceSidebarHover,
   },
@@ -2699,6 +2711,9 @@ const styles = StyleSheet.create((theme) => ({
     justifyContent: "center",
     flexShrink: 0,
   },
+  // Shared by the slot and both buttons in it: dense cuts their height to the title line.
+  projectControlDensity: (rowDensity: SidebarRowDensity) =>
+    sidebarRowMetrics(theme, rowDensity).control,
   projectActionTooltipRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -2709,11 +2724,13 @@ const styles = StyleSheet.create((theme) => ({
     fontSize: theme.fontSize.base,
   },
   projectActionTooltipShortcut: {},
-  projectShortcutBadgeOverlay: {
+  // One point under the row's padding, so the badge keeps its place on the title line at every
+  // density.
+  projectShortcutBadgeOverlay: (rowDensity: SidebarRowDensity) => ({
     position: "absolute",
-    top: theme.spacing[2] + 1,
+    top: sidebarRowMetrics(theme, rowDensity).paddingVertical + 1,
     right: theme.spacing[2],
-  },
+  }),
   workspaceRow: {
     minHeight: density.rowHeight,
     marginBottom: theme.spacing[0.5],
@@ -2727,7 +2744,8 @@ const styles = StyleSheet.create((theme) => ({
     gap: theme.spacing[1],
     userSelect: "none",
   },
-  workspaceRowCompact: compactSidebarRowMetrics(theme),
+  workspaceRowDensity: (rowDensity: SidebarRowDensity) =>
+    sidebarRowMetrics(theme, rowDensity).stackedRow,
   workspaceRowMain: {
     flexDirection: "row",
     alignItems: "center",
