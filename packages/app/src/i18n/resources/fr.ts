@@ -1204,6 +1204,7 @@ export const fr: TranslationResources = {
         label: "Densité",
         comfortable: "Confortable",
         compact: "Compacte",
+        dense: "Dense",
       },
       recentlyDone: {
         label: "Terminés récemment",

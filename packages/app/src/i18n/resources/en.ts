@@ -1185,6 +1185,7 @@ export const en = {
         label: "Density",
         comfortable: "Comfortable",
         compact: "Compact",
+        dense: "Dense",
       },
       recentlyDone: {
         label: "Recently done",

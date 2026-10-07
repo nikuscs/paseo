@@ -258,6 +258,7 @@ describe("sidebar view store", () => {
         hostFilters: [],
       }),
     ).toEqual({
+      showBackground: false,
       groupMode: "project",
       sortMode: "manual",
       hostFilters: [],

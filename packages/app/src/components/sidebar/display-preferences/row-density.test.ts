@@ -14,7 +14,7 @@ describe("parseSidebarRowDensity", () => {
     expect(parseSidebarRowDensity(density)).toBe(density);
   });
 
-  it.each([[null], [undefined], ["dense"], [true], [1], [["compact"]]])(
+  it.each([[null], [undefined], ["tight"], [true], [1], [["compact"]]])(
     "falls back to comfortable for %s",
     (value) => {
       expect(parseSidebarRowDensity(value)).toBe(DEFAULT_SIDEBAR_ROW_DENSITY);

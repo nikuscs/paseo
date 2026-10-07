@@ -1194,6 +1194,7 @@ export const ru: TranslationResources = {
         label: "Плотность",
         comfortable: "Обычная",
         compact: "Компактная",
+        dense: "Плотная",
       },
       recentlyDone: {
         label: "Недавно завершённые",
