@@ -42,6 +42,104 @@ import {
   type SplitPane,
 } from "@/stores/workspace-layout-store";
 
+it("keeps pinned tabs first after reordering and allows explicitly closing them", () => {
+  const store = createWorkspaceLayoutStore(workspaceLayoutIds);
+  const workspaceKey = "pin-test";
+  const ordinary = store.getState().openTab({
+    workspaceKey,
+    target: { kind: "file", path: "/ordinary.ts" },
+    intent: "reveal",
+  });
+  const pinned = store.getState().openTab({
+    workspaceKey,
+    target: { kind: "file", path: "/pinned.ts" },
+    intent: "reveal",
+  });
+  if (!ordinary || !pinned) throw new Error("Expected open tabs");
+  store.getState().toggleTabPinned(workspaceKey, pinned);
+  store.getState().reorderTabs(workspaceKey, [ordinary, pinned]);
+  expect(
+    store
+      .getState()
+      .getWorkspaceTabs(workspaceKey)
+      .map((tab) => tab.tabId),
+  ).toEqual([pinned, ordinary, "files", "changes_tree"]);
+  store.getState().setTabState(workspaceKey, pinned, { line: 12 });
+  expect(store.getState().getWorkspaceTabs(workspaceKey)[0]?.pinned).toBe(true);
+  store.getState().toggleTabPinned(workspaceKey, pinned);
+  store.getState().reorderTabs(workspaceKey, [ordinary, pinned]);
+  expect(
+    store
+      .getState()
+      .getWorkspaceTabs(workspaceKey)
+      .map((tab) => tab.tabId),
+  ).toEqual([ordinary, pinned, "files", "changes_tree"]);
+  store.getState().toggleTabPinned(workspaceKey, pinned);
+  store.getState().closeTab(workspaceKey, pinned);
+  expect(
+    store
+      .getState()
+      .getWorkspaceTabs(workspaceKey)
+      .map((tab) => tab.tabId),
+  ).toEqual([ordinary, "files", "changes_tree"]);
+});
+
+it("keeps a moved pinned tab first in its destination pane", () => {
+  const store = createWorkspaceLayoutStore(workspaceLayoutIds);
+  const workspaceKey = "moved-pin-test";
+  const first = store.getState().openTab({
+    workspaceKey,
+    target: { kind: "file", path: "/first.ts" },
+    intent: "reveal",
+  });
+  const pinned = store.getState().openTab({
+    workspaceKey,
+    target: { kind: "file", path: "/pinned.ts" },
+    intent: "reveal",
+  });
+  if (!first || !pinned) throw new Error("Expected open tabs");
+  const layout = store.getState().layoutByWorkspace[workspaceKey];
+  const source = findPaneContainingTab(layout.root, first);
+  if (!source) throw new Error("Expected source pane");
+  store.getState().toggleTabPinned(workspaceKey, pinned);
+  const destination = store.getState().splitPane(workspaceKey, {
+    tabId: first,
+    targetPaneId: source.id,
+    position: "right",
+  });
+  if (!destination) throw new Error("Expected split pane");
+  store.getState().moveTabToPane(workspaceKey, pinned, destination);
+  store.getState().reorderTabsInPane(workspaceKey, destination, [first, pinned]);
+  const movedLayout = store.getState().layoutByWorkspace[workspaceKey];
+  expect(findPaneById(movedLayout.root, destination)?.tabIds).toEqual([pinned, first]);
+});
+
+it("restores pinned tabs before ordinary tabs without changing focus", () => {
+  const layout = normalizeLayout({
+    root: {
+      kind: "pane",
+      pane: {
+        id: "main",
+        tabs: [
+          createTab("ordinary"),
+          { ...createTab("pinned-a"), pinned: true },
+          { ...createTab("pinned-b"), pinned: true },
+        ],
+        tabIds: ["ordinary", "pinned-a", "pinned-b"],
+        focusedTabId: "ordinary",
+      },
+    },
+    focusedPaneId: "main",
+  });
+  expect(collectAllTabs(layout.root).map((tab) => tab.tabId)).toEqual([
+    "pinned-a",
+    "pinned-b",
+    "ordinary",
+  ]);
+  expect(collectAllTabs(layout.root)[0]?.pinned).toBe(true);
+  expect(findPaneById(layout.root, "main")?.focusedTabId).toBe("ordinary");
+});
+
 const SERVER_ID = "server-1";
 const WORKSPACE_ID = "ws-main";
 
@@ -3846,6 +3944,28 @@ describe("workspace-layout-store actions", () => {
     });
 
     expect(contentTabs(workspaceLayoutStore.getState().getWorkspaceTabs(workspaceKey))).toEqual([]);
+  });
+
+  it("reconcileTabs converges layout identity when a standalone terminal is not known", () => {
+    const workspaceKey = createWorkspaceKey();
+    const snapshot = {
+      agentsHydrated: true,
+      terminalsHydrated: true,
+      activeAgentIds: [],
+      autoOpenAgentIds: [],
+      knownAgentIds: [],
+      knownTerminalIds: [],
+      standaloneTerminalIds: ["x1"],
+      hasActivePendingDraftCreate: false,
+    };
+
+    workspaceLayoutStore.getState().reconcileTabs(workspaceKey, snapshot);
+    const firstLayout = workspaceLayoutStore.getState().layoutByWorkspace[workspaceKey];
+
+    for (let pass = 0; pass < 5; pass += 1) {
+      workspaceLayoutStore.getState().reconcileTabs(workspaceKey, snapshot);
+      expect(workspaceLayoutStore.getState().layoutByWorkspace[workspaceKey]).toBe(firstLayout);
+    }
   });
 
   it("explicitly opening an agent tab clears hidden intent", () => {

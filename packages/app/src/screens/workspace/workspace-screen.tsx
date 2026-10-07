@@ -180,6 +180,8 @@ import {
   type BulkCloseConfirmationLabels,
   classifyBulkClosableTabs,
   closeBulkWorkspaceTabs,
+  selectWorkspaceEditorTabs,
+  selectBulkClosableTabs,
 } from "@/screens/workspace/workspace-bulk-close";
 import { resolveCloseAgentTabPolicy } from "@/subagents";
 import {
@@ -420,6 +422,8 @@ interface MobileWorkspaceTabSwitcherProps {
   onCloseTabsAbove: (tabId: string) => Promise<void> | void;
   onCloseTabsBelow: (tabId: string) => Promise<void> | void;
   onCloseOtherTabs: (tabId: string) => Promise<void> | void;
+  onCloseEditorTabs: () => Promise<void> | void;
+  canCloseEditorTabs: boolean;
 }
 
 function MobileActiveTabTrigger({
@@ -527,6 +531,8 @@ function MobileWorkspaceTabOption({
   onCloseTabsAbove,
   onCloseTabsBelow,
   onCloseOtherTabs,
+  onCloseEditorTabs,
+  canCloseEditorTabs,
 }: {
   tab: WorkspaceTabDescriptor;
   tabIndex: number;
@@ -546,6 +552,8 @@ function MobileWorkspaceTabOption({
   onCloseTabsAbove: (tabId: string) => Promise<void> | void;
   onCloseTabsBelow: (tabId: string) => Promise<void> | void;
   onCloseOtherTabs: (tabId: string) => Promise<void> | void;
+  onCloseEditorTabs: () => Promise<void> | void;
+  canCloseEditorTabs: boolean;
 }) {
   const { t } = useTranslation();
   const tabMenuLabels = useMemo<WorkspaceTabMenuLabels>(
@@ -555,11 +563,14 @@ function MobileWorkspaceTabOption({
       copyTerminalId: t("workspace.tabs.menu.copyTerminalId"),
       copyFilePath: t("workspace.tabs.menu.copyFilePath"),
       rename: t("workspace.tabs.menu.rename"),
+      pin: t("workspace.tabs.menu.pin"),
+      unpin: t("workspace.tabs.menu.unpin"),
       closeAbove: t("workspace.tabs.menu.closeAbove"),
       closeBelow: t("workspace.tabs.menu.closeBelow"),
       closeLeft: t("workspace.tabs.menu.closeLeft"),
       closeRight: t("workspace.tabs.menu.closeRight"),
       closeOthers: t("workspace.tabs.menu.closeOthers"),
+      closeEditorTabs: t("workspace.tabs.menu.closeEditorTabs"),
       reloadAgent: t("workspace.tabs.menu.reloadAgent"),
       reloadAgentTooltip: t("workspace.tabs.menu.reloadAgentTooltip"),
       close: t("workspace.tabs.menu.close"),
@@ -583,7 +594,16 @@ function MobileWorkspaceTabOption({
     onCloseTabsBefore: onCloseTabsAbove,
     onCloseTabsAfter: onCloseTabsBelow,
     onCloseOtherTabs,
+    onCloseEditorTabs,
+    canCloseEditorTabs,
     labels: tabMenuLabels,
+    onTogglePin: (tabId) => {
+      const workspaceKey = buildWorkspaceTabPersistenceKey({
+        serverId: normalizedServerId,
+        workspaceId: normalizedWorkspaceId,
+      });
+      if (workspaceKey) useWorkspaceLayoutStore.getState().toggleTabPinned(workspaceKey, tabId);
+    },
   });
 
   const fallbackLabels = useMemo(
@@ -655,6 +675,8 @@ const MobileWorkspaceTabSwitcher = memo(function MobileWorkspaceTabSwitcher({
   onCloseTabsAbove,
   onCloseTabsBelow,
   onCloseOtherTabs,
+  onCloseEditorTabs,
+  canCloseEditorTabs,
 }: MobileWorkspaceTabSwitcherProps) {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
@@ -712,6 +734,8 @@ const MobileWorkspaceTabSwitcher = memo(function MobileWorkspaceTabSwitcher({
           onCloseTabsAbove={onCloseTabsAbove}
           onCloseTabsBelow={onCloseTabsBelow}
           onCloseOtherTabs={onCloseOtherTabs}
+          onCloseEditorTabs={onCloseEditorTabs}
+          canCloseEditorTabs={canCloseEditorTabs}
         />
       );
     },
@@ -731,6 +755,8 @@ const MobileWorkspaceTabSwitcher = memo(function MobileWorkspaceTabSwitcher({
       onCloseTabsAbove,
       onCloseTabsBelow,
       onCloseOtherTabs,
+      onCloseEditorTabs,
+      canCloseEditorTabs,
     ],
   );
 
@@ -2308,18 +2334,21 @@ function WorkspaceScreenContent({
     return map;
   }, [tabs]);
 
-  const allTabDescriptorsById = useMemo(() => {
-    const map = new Map<string, WorkspaceTabDescriptor>();
-    for (const tab of uiTabs) {
-      map.set(tab.tabId, {
-        key: tab.tabId,
-        tabId: tab.tabId,
-        kind: tab.target.kind,
-        target: tab.target,
-      });
-    }
-    return map;
+  const { allTabDescriptorsById, editorTabs } = useMemo(() => {
+    const tabDescriptors: WorkspaceTabDescriptor[] = uiTabs.map((tab) => ({
+      key: tab.tabId,
+      tabId: tab.tabId,
+      kind: tab.target.kind,
+      target: tab.target,
+      pinned: tab.pinned,
+    }));
+
+    return {
+      allTabDescriptorsById: new Map(tabDescriptors.map((tab) => [tab.tabId, tab])),
+      editorTabs: selectWorkspaceEditorTabs(tabDescriptors),
+    };
   }, [uiTabs]);
+  const canCloseEditorTabs = editorTabs.length > 0;
   const bulkCloseConfirmationLabels = useMemo<BulkCloseConfirmationLabels>(
     () => ({
       newTab: t("workspace.tabs.actions.newTab"),
@@ -2826,7 +2855,8 @@ function WorkspaceScreenContent({
       title: string;
       logLabel: string;
     }): Promise<boolean> => {
-      const { tabsToClose, title, logLabel } = input;
+      const { title, logLabel } = input;
+      const tabsToClose = selectBulkClosableTabs(input.tabsToClose);
       if (tabsToClose.length === 0) {
         return true;
       }
@@ -2967,6 +2997,13 @@ function WorkspaceScreenContent({
     },
     [handleCloseOtherTabsInPane, tabs],
   );
+  const handleCloseEditorTabs = useCallback(async () => {
+    await handleBulkCloseTabs({
+      tabsToClose: editorTabs,
+      title: t("workspace.tabs.confirmations.closeEditorTabsTitle"),
+      logLabel: "from close editor tabs",
+    });
+  }, [editorTabs, handleBulkCloseTabs, t]);
 
   const handleClosePane = useCallback(
     async (paneId: string) => {
@@ -2989,7 +3026,7 @@ function WorkspaceScreenContent({
         title: t("workspace.tabs.confirmations.closePaneTitle"),
         logLabel: "from pane close",
       });
-      if (!closed) {
+      if (!closed || tabsToClose.some((tab) => tab.pinned)) {
         return;
       }
       closeWorkspacePane(persistenceKey, paneId);
@@ -3568,7 +3605,10 @@ function WorkspaceScreenContent({
           if (!persistenceKey) {
             return;
           }
-          replaceWorkspaceTabTarget(persistenceKey, input.tab.tabId, target);
+          const tabId = replaceWorkspaceTabTarget(persistenceKey, input.tab.tabId, target);
+          if (target.kind === "file" && tabId) {
+            requestFileNavigation(tabId);
+          }
         },
         onSetCurrentTabState: (state) => {
           if (persistenceKey) {
@@ -3979,6 +4019,8 @@ function WorkspaceScreenContent({
         onCloseTabsToLeft={handleCloseTabsToLeftInPane}
         onCloseTabsToRight={handleCloseTabsToRightInPane}
         onCloseOtherTabs={handleCloseOtherTabsInPane}
+        onCloseEditorTabs={handleCloseEditorTabs}
+        canCloseEditorTabs={canCloseEditorTabs}
         onCreateNewTab={handleCreateNewTab}
         buildPaneContentModel={buildDesktopPaneContentModel}
         onFocusPane={handleFocusPane}
@@ -4015,6 +4057,8 @@ function WorkspaceScreenContent({
     handleCloseTabsToLeftInPane,
     handleCloseTabsToRightInPane,
     handleCloseOtherTabsInPane,
+    handleCloseEditorTabs,
+    canCloseEditorTabs,
     handleCreateNewTab,
     buildDesktopPaneContentModel,
     handleFocusPane,
@@ -4059,6 +4103,8 @@ function WorkspaceScreenContent({
           onCloseTabsAbove={handleCloseTabsToLeft}
           onCloseTabsBelow={handleCloseTabsToRight}
           onCloseOtherTabs={handleCloseOtherTabs}
+          onCloseEditorTabs={handleCloseEditorTabs}
+          canCloseEditorTabs={canCloseEditorTabs}
         />
       ) : null}
 
@@ -4082,6 +4128,8 @@ function WorkspaceScreenContent({
             onCloseTabsToLeft={handleCloseTabsToLeft}
             onCloseTabsToRight={handleCloseTabsToRight}
             onCloseOtherTabs={handleCloseOtherTabs}
+            onCloseEditorTabs={handleCloseEditorTabs}
+            canCloseEditorTabs={canCloseEditorTabs}
             onCreateNewTab={handleCreateNewTab}
             onReorderTabs={handleReorderTabsInFocusedPane}
             focusModeEnabled={desktopFocusModeEnabled}

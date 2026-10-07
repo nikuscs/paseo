@@ -645,6 +645,9 @@ export const fr: TranslationResources = {
         closeLeft: "Fermer les onglets à gauche",
         closeRight: "Fermer les onglets à droite",
         closeOthers: "Fermer les autres onglets",
+        closeEditorTabs: "Fermer les onglets de l’éditeur",
+        pin: "Épingler l’onglet",
+        unpin: "Désépingler l’onglet",
         moveToMain: "Déplacer vers le panneau principal",
         reloadAgent: "Recharger l’agent",
         reloadAgentTooltip:
@@ -711,6 +714,7 @@ export const fr: TranslationResources = {
         closeTabsLeftTitle: "Fermer les onglets à gauche ?",
         closeTabsRightTitle: "Fermer les onglets à droite ?",
         closeOtherTabsTitle: "Fermer les autres onglets ?",
+        closeEditorTabsTitle: "Fermer les onglets de l’éditeur ?",
         bulk: {
           all: "Cette action archivera {{agents}} agent(s), fermera {{terminals}} terminal(s) et fermera {{tabs}} onglet(s). Tout processus en cours dans un terminal fermé sera arrêté immédiatement.",
           agentsAndTerminals:
@@ -1182,10 +1186,28 @@ export const fr: TranslationResources = {
         status: "Statut",
         labels: "Libellés",
       },
+      sorting: {
+        label: "Tri",
+        manual: "Manuel",
+        name: "Nom",
+        activity: "Activité récente",
+      },
       titleSource: {
         label: "Titre",
         title: "Titre",
         branch: "Nom de branche",
+      },
+      density: {
+        label: "Densité",
+        comfortable: "Confortable",
+        compact: "Compacte",
+        dense: "Dense",
+      },
+      recentlyDone: {
+        label: "Terminés récemment",
+        off: "Désactivé",
+        minutes: "{{count}} min",
+        hour: "1 heure",
       },
       show: {
         label: "Afficher",

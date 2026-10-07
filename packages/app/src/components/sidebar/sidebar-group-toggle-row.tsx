@@ -4,6 +4,9 @@ import { Pressable, Text, View, type PressableStateCallbackType } from "react-na
 import { ChevronDown, ChevronUp } from "lucide-react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { isWeb } from "@/constants/platform";
+import { useSidebarRowDensity } from "@/components/sidebar/display-preferences/model";
+import type { SidebarRowDensity } from "@/components/sidebar/display-preferences/row-density";
+import { sidebarRowMetrics } from "@/components/sidebar/sidebar-row-metrics";
 import { sidebarWorkspaceRowStyles } from "@/components/sidebar/sidebar-workspace-row-content";
 import type { Theme } from "@/styles/theme";
 
@@ -41,14 +44,16 @@ export function SidebarGroupToggleRow({
   const label = t(
     expanded ? "sidebar.workspace.actions.showLess" : "sidebar.workspace.actions.showMore",
   );
+  const rowDensity = useSidebarRowDensity();
   const rowStyle = useCallback(
     ({ hovered = false, pressed }: PressableStateCallbackType & { hovered?: boolean }) => [
       styles.row,
+      styles.rowDensity(rowDensity),
       indented && sidebarWorkspaceRowStyles.rowIndented,
       hovered && !pressed && styles.rowHovered,
       pressed && styles.rowPressed,
     ],
-    [indented],
+    [rowDensity, indented],
   );
 
   return (
@@ -84,7 +89,8 @@ export function SidebarGroupToggleRow({
 }
 
 const styles = StyleSheet.create((theme) => ({
-  // Kept in step with `workspaceRow` in sidebar-workspace-list.tsx and sidebar-status-list.tsx.
+  // Kept in step with `workspaceRow` in sidebar-workspace-list.tsx and sidebar-status-list.tsx,
+  // the compact and dense variants included.
   row: {
     minHeight: 36,
     marginBottom: theme.spacing[0.5],
@@ -97,6 +103,7 @@ const styles = StyleSheet.create((theme) => ({
     gap: theme.spacing[2],
     userSelect: "none",
   },
+  rowDensity: (density: SidebarRowDensity) => sidebarRowMetrics(theme, density).row,
   rowHovered: {
     backgroundColor: theme.colors.surfaceSidebarHover,
   },

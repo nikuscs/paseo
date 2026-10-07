@@ -645,6 +645,9 @@ export const ptBR: TranslationResources = {
         closeLeft: "Fechar à esquerda",
         closeRight: "Fechar à direita",
         closeOthers: "Fechar outras abas",
+        closeEditorTabs: "Fechar abas do editor",
+        pin: "Fixar aba",
+        unpin: "Desafixar aba",
         moveToMain: "Mover para o painel principal",
         reloadAgent: "Recarregar agente",
         reloadAgentTooltip: "Recarregue o agente para atualizar skills, MCPs ou status de login.",
@@ -710,6 +713,7 @@ export const ptBR: TranslationResources = {
         closeTabsLeftTitle: "Fechar abas à esquerda?",
         closeTabsRightTitle: "Fechar abas à direita?",
         closeOtherTabsTitle: "Fechar outras abas?",
+        closeEditorTabsTitle: "Fechar abas do editor?",
         bulk: {
           all: "Isso vai arquivar {{agents}} agente(s), fechar {{terminals}} terminal(ais) e fechar {{tabs}} aba(s). Qualquer processo em execução em um terminal fechado será interrompido imediatamente.",
           agentsAndTerminals:
@@ -1181,10 +1185,28 @@ export const ptBR: TranslationResources = {
         status: "Status",
         labels: "Etiquetas",
       },
+      sorting: {
+        label: "Ordenação",
+        manual: "Manual",
+        name: "Nome",
+        activity: "Atividade recente",
+      },
       titleSource: {
         label: "Título",
         title: "Título",
         branch: "Nome da branch",
+      },
+      density: {
+        label: "Densidade",
+        comfortable: "Confortável",
+        compact: "Compacta",
+        dense: "Densa",
+      },
+      recentlyDone: {
+        label: "Concluídos há pouco",
+        off: "Desativado",
+        minutes: "{{count}} min",
+        hour: "1 hora",
       },
       show: {
         label: "Mostrar",

@@ -39,6 +39,8 @@ import type {
   FileDownloadTokenResponse,
   FileUploadResponse,
   FileExplorerResponse,
+  FileSearchRequest,
+  FileSearchResponse,
   FileVersion,
   FileWriteResult,
   FetchAgentTimelineResponseMessage,
@@ -533,6 +535,8 @@ type WorkspaceCreatePayload = Extract<
   { type: "workspace.create.response" }
 >["payload"];
 type FileExplorerPayload = FileExplorerResponse["payload"];
+export type FileSearchInput = Omit<FileSearchRequest, "type" | "requestId">;
+export type FileSearchResult = FileSearchResponse["payload"];
 export type FileExplorerDirectoryPayload = NonNullable<FileExplorerPayload["directory"]>;
 type LegacyFileExplorerFilePayload = NonNullable<FileExplorerPayload["file"]>;
 export interface FileReadResult {
@@ -4771,6 +4775,17 @@ export class DaemonClient {
       { type: "fs.file.subscribe.request", cwd: input.cwd, path: input.path },
       { signal: input.signal },
     );
+  }
+
+  async searchFiles(input: FileSearchInput, requestId?: string): Promise<FileSearchResult> {
+    // COMPAT(fileContentSearch): added in v0.3.0, remove gate after 2027-02-10.
+    if (this.lastServerInfoMessage?.features?.fileContentSearch !== true) {
+      throw new Error("Workspace content search requires a newer Paseo host");
+    }
+    return this.sendNamespacedCorrelatedSessionRequest<"fs.search.response">({
+      requestId,
+      message: { type: "fs.search.request", ...input },
+    });
   }
 
   async subscribeFile(
