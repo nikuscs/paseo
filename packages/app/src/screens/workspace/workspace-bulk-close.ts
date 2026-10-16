@@ -49,6 +49,28 @@ interface CloseBulkWorkspaceTabsInput {
   warn?: (message: string, payload: object) => void;
 }
 
+function isWorkspaceEditorTab(tab: WorkspaceTabDescriptor): boolean {
+  switch (tab.target.kind) {
+    case "agent":
+    case "draft":
+    case "provider_subagent":
+    case "terminal":
+      return false;
+    default:
+      return true;
+  }
+}
+
+export function selectBulkClosableTabs(tabs: WorkspaceTabDescriptor[]): WorkspaceTabDescriptor[] {
+  return tabs.filter((tab) => !tab.pinned);
+}
+
+export function selectWorkspaceEditorTabs(
+  tabs: WorkspaceTabDescriptor[],
+): WorkspaceTabDescriptor[] {
+  return selectBulkClosableTabs(tabs).filter(isWorkspaceEditorTab);
+}
+
 export function classifyBulkClosableTabs(
   tabs: WorkspaceTabDescriptor[],
   resolveAgentCloseKind: (agentId: string) => "archive" | "layout-only" = () => "archive",
@@ -60,7 +82,7 @@ export function classifyBulkClosableTabs(
     otherTabs: [],
   };
 
-  for (const tab of tabs) {
+  for (const tab of selectBulkClosableTabs(tabs)) {
     if (tab.target.kind === "agent") {
       const agentTab = { tabId: tab.tabId, agentId: tab.target.agentId };
       if (resolveAgentCloseKind(tab.target.agentId) === "layout-only") {

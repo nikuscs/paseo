@@ -182,6 +182,8 @@ import {
   type BulkCloseConfirmationLabels,
   classifyBulkClosableTabs,
   closeBulkWorkspaceTabs,
+  selectWorkspaceEditorTabs,
+  selectBulkClosableTabs,
 } from "@/screens/workspace/workspace-bulk-close";
 import { resolveCloseAgentTabPolicy } from "@/subagents";
 import {
@@ -1775,18 +1777,21 @@ function WorkspaceScreenContent({
       terminalsQueryKey,
     });
 
-  const allTabDescriptorsById = useMemo(() => {
-    const map = new Map<string, WorkspaceTabDescriptor>();
-    for (const tab of uiTabs) {
-      map.set(tab.tabId, {
-        key: tab.tabId,
-        tabId: tab.tabId,
-        kind: tab.target.kind,
-        target: tab.target,
-      });
-    }
-    return map;
+  const { allTabDescriptorsById, editorTabs } = useMemo(() => {
+    const tabDescriptors: WorkspaceTabDescriptor[] = uiTabs.map((tab) => ({
+      key: tab.tabId,
+      tabId: tab.tabId,
+      kind: tab.target.kind,
+      target: tab.target,
+      pinned: tab.pinned,
+    }));
+
+    return {
+      allTabDescriptorsById: new Map(tabDescriptors.map((tab) => [tab.tabId, tab])),
+      editorTabs: selectWorkspaceEditorTabs(tabDescriptors),
+    };
   }, [uiTabs]);
+  const canCloseEditorTabs = editorTabs.length > 0;
   const bulkCloseConfirmationLabels = useMemo<BulkCloseConfirmationLabels>(
     () => ({
       newTab: t("workspace.tabs.actions.newTab"),
@@ -2276,7 +2281,8 @@ function WorkspaceScreenContent({
       title: string;
       logLabel: string;
     }): Promise<boolean> => {
-      const { tabsToClose, title, logLabel } = input;
+      const { title, logLabel } = input;
+      const tabsToClose = selectBulkClosableTabs(input.tabsToClose);
       if (tabsToClose.length === 0) {
         return true;
       }
@@ -2417,6 +2423,13 @@ function WorkspaceScreenContent({
     },
     [handleCloseOtherTabsInPane, tabs],
   );
+  const handleCloseEditorTabs = useCallback(async () => {
+    await handleBulkCloseTabs({
+      tabsToClose: editorTabs,
+      title: t("workspace.tabs.confirmations.closeEditorTabsTitle"),
+      logLabel: "from close editor tabs",
+    });
+  }, [editorTabs, handleBulkCloseTabs, t]);
 
   const handleClosePane = useCallback(
     async (paneId: string) => {
@@ -2439,7 +2452,7 @@ function WorkspaceScreenContent({
         title: t("workspace.tabs.confirmations.closePaneTitle"),
         logLabel: "from pane close",
       });
-      if (!closed) {
+      if (!closed || tabsToClose.some((tab) => tab.pinned)) {
         return;
       }
       closeWorkspacePane(persistenceKey, paneId);
@@ -3019,7 +3032,10 @@ function WorkspaceScreenContent({
           if (!persistenceKey) {
             return;
           }
-          replaceWorkspaceTabTarget(persistenceKey, input.tab.tabId, target);
+          const tabId = replaceWorkspaceTabTarget(persistenceKey, input.tab.tabId, target);
+          if (target.kind === "file" && tabId) {
+            requestFileNavigation(tabId);
+          }
         },
         onSetCurrentTabState: (state) => {
           if (persistenceKey) {
@@ -3405,6 +3421,8 @@ function WorkspaceScreenContent({
             onCloseTabsAbove={handleCloseTabsToLeft}
             onCloseTabsBelow={handleCloseTabsToRight}
             onCloseOtherTabs={handleCloseOtherTabs}
+            onCloseEditorTabs={handleCloseEditorTabs}
+            canCloseEditorTabs={canCloseEditorTabs}
           />
           <WorkspaceHeaderMenuMobile
             normalizedServerId={normalizedServerId}
@@ -3430,6 +3448,8 @@ function WorkspaceScreenContent({
       currentBranchName,
       explorerSidebarToggleAccessibilityState,
       explorerSidebarToggleLabel,
+      handleCloseEditorTabs,
+      canCloseEditorTabs,
       handleCloseOtherTabs,
       handleCloseTabById,
       handleCloseTabsToLeft,
@@ -3493,6 +3513,8 @@ function WorkspaceScreenContent({
         onCloseTabsToLeft={handleCloseTabsToLeftInPane}
         onCloseTabsToRight={handleCloseTabsToRightInPane}
         onCloseOtherTabs={handleCloseOtherTabsInPane}
+        onCloseEditorTabs={handleCloseEditorTabs}
+        canCloseEditorTabs={canCloseEditorTabs}
         onCreateNewTab={handleCreateNewTab}
         buildPaneContentModel={buildDesktopPaneContentModel}
         onFocusPane={handleFocusPane}
@@ -3529,6 +3551,8 @@ function WorkspaceScreenContent({
     handleCloseTabsToLeftInPane,
     handleCloseTabsToRightInPane,
     handleCloseOtherTabsInPane,
+    handleCloseEditorTabs,
+    canCloseEditorTabs,
     handleCreateNewTab,
     buildDesktopPaneContentModel,
     handleFocusPane,
@@ -3606,6 +3630,8 @@ function WorkspaceScreenContent({
             onCloseTabsToLeft={handleCloseTabsToLeft}
             onCloseTabsToRight={handleCloseTabsToRight}
             onCloseOtherTabs={handleCloseOtherTabs}
+            onCloseEditorTabs={handleCloseEditorTabs}
+            canCloseEditorTabs={canCloseEditorTabs}
             onCreateNewTab={handleCreateNewTab}
             onReorderTabs={handleReorderTabsInFocusedPane}
             focusModeEnabled={desktopFocusModeEnabled}

@@ -1,3 +1,4 @@
+import assert from "node:assert/strict";
 import { describe, expect, it, vi } from "vitest";
 import {
   buildWorkspaceDesktopTabActions,
@@ -15,6 +16,45 @@ function createAgentTab(): WorkspaceTabDescriptor {
 }
 
 describe("buildWorkspaceTabMenuEntries", () => {
+  it.each([false, true])(
+    "offers pin/unpin and keeps explicit Close available (pinned=%s)",
+    (pinned) => {
+      const selected: string[] = [];
+      const entries = buildWorkspaceTabMenuEntries({
+        surface: "desktop",
+        tab: { ...createAgentTab(), pinned },
+        index: 0,
+        tabCount: 1,
+        menuTestIDBase: "pin-test",
+        onCopyResumeCommand() {},
+        onCopyAgentId() {},
+        onCopyTerminalId() {},
+        onCopyFilePath() {},
+        onReloadAgent() {},
+        onRenameTab() {},
+        onCloseTabsBefore() {},
+        onCloseTabsAfter() {},
+        onCloseOtherTabs() {},
+        onCloseEditorTabs() {},
+        canCloseEditorTabs: false,
+        onTogglePin(tabId) {
+          selected.push(`pin:${tabId}`);
+        },
+        onCloseTab(tabId) {
+          selected.push(`close:${tabId}`);
+        },
+      });
+      const toggle = entries.find((entry) => entry.key === "toggle-pin");
+      const close = entries.find((entry) => entry.key === "close");
+      assert(toggle?.kind === "item" && close?.kind === "item");
+      expect(toggle.label).toBe(pinned ? "Unpin tab" : "Pin tab");
+      expect(close.disabled).not.toBe(true);
+      toggle.onSelect();
+      close.onSelect();
+      expect(selected).toEqual(["pin:agent_123", "close:agent_123"]);
+    },
+  );
+
   it("uses desktop tab ordering labels for desktop menus", () => {
     const onCopyResumeCommand = vi.fn();
     const onCopyAgentId = vi.fn();
@@ -25,6 +65,7 @@ describe("buildWorkspaceTabMenuEntries", () => {
     const onCloseTabsBefore = vi.fn();
     const onCloseTabsAfter = vi.fn();
     const onCloseOtherTabs = vi.fn();
+    const onCloseEditorTabs = vi.fn();
 
     const entries = buildWorkspaceTabMenuEntries({
       surface: "desktop",
@@ -34,6 +75,7 @@ describe("buildWorkspaceTabMenuEntries", () => {
       menuTestIDBase: "workspace-tab-context-agent_123",
       onCopyResumeCommand,
       onCopyAgentId,
+      onTogglePin: vi.fn(),
       onCopyTerminalId: vi.fn(),
       onCopyFilePath,
       onReloadAgent,
@@ -42,23 +84,67 @@ describe("buildWorkspaceTabMenuEntries", () => {
       onCloseTabsBefore,
       onCloseTabsAfter,
       onCloseOtherTabs,
+      onCloseEditorTabs,
+      canCloseEditorTabs: true,
     });
 
     expect(entries.filter((entry) => entry.kind === "item").map((entry) => entry.label)).toEqual([
       "Copy resume command",
       "Copy agent id",
       "Rename",
+      "Pin tab",
       "Close to the left",
       "Close to the right",
       "Close other tabs",
+      "Close editor tabs",
       "Reload agent",
       "Close",
     ]);
+
+    const closeEditorTabsEntry = entries.find(
+      (entry) => entry.kind === "item" && entry.key === "close-editor-tabs",
+    );
+    assert(closeEditorTabsEntry?.kind === "item", "Close editor tabs entry missing");
+    expect(closeEditorTabsEntry.disabled).toBe(false);
+    closeEditorTabsEntry.onSelect();
+    expect(onCloseEditorTabs).toHaveBeenCalledTimes(1);
+  });
+
+  it("disables close editor tabs when the workspace has no editor tabs", () => {
+    const entries = buildWorkspaceTabMenuEntries({
+      surface: "desktop",
+      tab: createAgentTab(),
+      index: 0,
+      tabCount: 1,
+      menuTestIDBase: "workspace-tab-context-agent_123",
+      onCopyResumeCommand: vi.fn(),
+      onCopyAgentId: vi.fn(),
+      onCopyTerminalId: vi.fn(),
+      onCopyFilePath: vi.fn(),
+      onReloadAgent: vi.fn(),
+      onRenameTab: vi.fn(),
+      onCloseTab: vi.fn(),
+      onCloseTabsBefore: vi.fn(),
+      onCloseTabsAfter: vi.fn(),
+      onCloseOtherTabs: vi.fn(),
+      onCloseEditorTabs: vi.fn(),
+      canCloseEditorTabs: false,
+      onTogglePin: vi.fn(),
+    });
+
+    expect(entries).toContainEqual(
+      expect.objectContaining({
+        kind: "item",
+        key: "close-editor-tabs",
+        disabled: true,
+      }),
+    );
   });
 
   it("uses stacked ordering labels for mobile menus", () => {
     const entries = buildWorkspaceTabMenuEntries({
       surface: "mobile",
+      onTogglePin: vi.fn(),
       tab: createAgentTab(),
       index: 1,
       tabCount: 3,
@@ -73,15 +159,19 @@ describe("buildWorkspaceTabMenuEntries", () => {
       onCloseTabsBefore: vi.fn(),
       onCloseTabsAfter: vi.fn(),
       onCloseOtherTabs: vi.fn(),
+      onCloseEditorTabs: vi.fn(),
+      canCloseEditorTabs: true,
     });
 
     expect(entries.filter((entry) => entry.kind === "item").map((entry) => entry.label)).toEqual([
       "Copy resume command",
       "Copy agent id",
       "Rename",
+      "Pin tab",
       "Close tabs above",
       "Close tabs below",
       "Close other tabs",
+      "Close editor tabs",
       "Reload agent",
       "Close",
     ]);
@@ -99,6 +189,7 @@ describe("buildWorkspaceTabMenuEntries", () => {
       index: 0,
       tabCount: 1,
       menuTestIDBase: "workspace-tab-menu-draft_123",
+      onTogglePin: vi.fn(),
       onCopyResumeCommand: vi.fn(),
       onCopyAgentId: vi.fn(),
       onCopyTerminalId: vi.fn(),
@@ -109,6 +200,8 @@ describe("buildWorkspaceTabMenuEntries", () => {
       onCloseTabsBefore: vi.fn(),
       onCloseTabsAfter: vi.fn(),
       onCloseOtherTabs: vi.fn(),
+      onCloseEditorTabs: vi.fn(),
+      canCloseEditorTabs: true,
     });
 
     expect(entries.some((entry) => entry.kind === "item" && entry.label === "Copy agent id")).toBe(
@@ -123,6 +216,7 @@ describe("buildWorkspaceTabMenuEntries", () => {
 
   it("adds reload tooltip copy for agent tabs", () => {
     const entries = buildWorkspaceTabMenuEntries({
+      onTogglePin: vi.fn(),
       surface: "desktop",
       tab: createAgentTab(),
       index: 0,
@@ -138,6 +232,8 @@ describe("buildWorkspaceTabMenuEntries", () => {
       onCloseTabsBefore: vi.fn(),
       onCloseTabsAfter: vi.fn(),
       onCloseOtherTabs: vi.fn(),
+      onCloseEditorTabs: vi.fn(),
+      canCloseEditorTabs: true,
     });
 
     expect(entries).toContainEqual(
@@ -154,6 +250,7 @@ describe("buildWorkspaceTabMenuEntries", () => {
     const tab = createAgentTab();
     const entries = buildWorkspaceTabMenuEntries({
       surface: "desktop",
+      onTogglePin: vi.fn(),
       tab,
       index: 0,
       tabCount: 1,
@@ -168,6 +265,8 @@ describe("buildWorkspaceTabMenuEntries", () => {
       onCloseTabsBefore: vi.fn(),
       onCloseTabsAfter: vi.fn(),
       onCloseOtherTabs: vi.fn(),
+      onCloseEditorTabs: vi.fn(),
+      canCloseEditorTabs: true,
     });
 
     const renameEntry = entries.find((entry) => entry.kind === "item" && entry.label === "Rename");
@@ -194,6 +293,7 @@ describe("buildWorkspaceTabMenuEntries", () => {
       index: 0,
       tabCount: 1,
       menuTestIDBase: "workspace-tab-context-terminal_abc",
+      onTogglePin: vi.fn(),
       onCopyResumeCommand: vi.fn(),
       onCopyAgentId: vi.fn(),
       onCopyTerminalId,
@@ -204,6 +304,8 @@ describe("buildWorkspaceTabMenuEntries", () => {
       onCloseTabsBefore: vi.fn(),
       onCloseTabsAfter: vi.fn(),
       onCloseOtherTabs: vi.fn(),
+      onCloseEditorTabs: vi.fn(),
+      canCloseEditorTabs: true,
     });
 
     const labels = entries.filter((entry) => entry.kind === "item").map((entry) => entry.label);
@@ -245,6 +347,7 @@ describe("buildWorkspaceTabMenuEntries", () => {
       index: 0,
       tabCount: 1,
       menuTestIDBase: "workspace-tab-context-file_abc",
+      onTogglePin: vi.fn(),
       onCopyResumeCommand: vi.fn(),
       onCopyAgentId: vi.fn(),
       onCopyTerminalId: vi.fn(),
@@ -255,6 +358,8 @@ describe("buildWorkspaceTabMenuEntries", () => {
       onCloseTabsBefore: vi.fn(),
       onCloseTabsAfter: vi.fn(),
       onCloseOtherTabs: vi.fn(),
+      onCloseEditorTabs: vi.fn(),
+      canCloseEditorTabs: true,
     });
 
     const labels = entries.filter((entry) => entry.kind === "item").map((entry) => entry.label);
@@ -276,6 +381,7 @@ describe("buildWorkspaceTabMenuEntries", () => {
 
   it("uses a Changes close id for the working diff tab", () => {
     const actions = buildWorkspaceDesktopTabActions({
+      onTogglePin: vi.fn(),
       tab: {
         key: "working_diff_abc",
         tabId: "working_diff_abc",
@@ -298,6 +404,8 @@ describe("buildWorkspaceTabMenuEntries", () => {
       onCloseTabsToLeft: vi.fn(),
       onCloseTabsToRight: vi.fn(),
       onCloseOtherTabs: vi.fn(),
+      onCloseEditorTabs: vi.fn(),
+      canCloseEditorTabs: true,
     });
 
     expect(actions.closeButtonTestId).toMatch(/^workspace-working-diff-close-/);
@@ -316,6 +424,7 @@ describe("buildWorkspaceTabMenuEntries", () => {
     const menuTestIDBase = "workspace-tab-context";
     const sharedInput = {
       surface: "desktop" as const,
+      onTogglePin: vi.fn(),
       index: 0,
       tabCount: 1,
       menuTestIDBase,
@@ -329,6 +438,8 @@ describe("buildWorkspaceTabMenuEntries", () => {
       onCloseTabsBefore: vi.fn(),
       onCloseTabsAfter: vi.fn(),
       onCloseOtherTabs: vi.fn(),
+      onCloseEditorTabs: vi.fn(),
+      canCloseEditorTabs: true,
     };
 
     const agentEntries = buildWorkspaceTabMenuEntries({ ...sharedInput, tab: createAgentTab() });

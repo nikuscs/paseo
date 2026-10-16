@@ -33,6 +33,9 @@ import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { density, densityIconBox } from "@/styles/density";
 import type { Theme } from "@/styles/theme";
 import type { SidebarSurfaceBackdrop } from "@/styles/surface-backdrop";
+import { useSidebarRowDensity } from "@/components/sidebar/display-preferences/model";
+import type { SidebarRowDensity } from "@/components/sidebar/display-preferences/row-density";
+import { sidebarRowMetrics } from "@/components/sidebar/sidebar-row-metrics";
 import { getSidebarRowBackdrop } from "@/components/sidebar/sidebar-row-backdrop";
 import { type GestureType } from "react-native-gesture-handler";
 import { WorkspaceRenameModal } from "@/components/workspace-rename-modal";
@@ -242,7 +245,6 @@ interface ProjectHeaderRowProps {
   iconDataUri: string | null;
   statusBucket: SidebarStateBucket | null;
   selected?: boolean;
-  chevron: "expand" | "collapse" | null;
   onPress: () => void;
   worktreeTarget: SidebarProjectHostTarget | null;
   isProjectActive?: boolean;
@@ -351,25 +353,22 @@ export function PrBadge({ hint, style }: { hint: PrHint; style?: StyleProp<ViewS
   );
 }
 
-function projectKebabStyle({
-  hovered = false,
-}: PressableStateCallbackType & { hovered?: boolean }) {
-  return [styles.projectKebabButton, hovered && styles.projectKebabButtonHovered];
-}
-
 function getProjectWorkspaceRowStyle({
   isDragging,
   isPressed,
   selected,
   isHovered,
+  rowDensity,
 }: {
   isDragging: boolean;
   isPressed: boolean;
   selected: boolean;
   isHovered: boolean;
+  rowDensity: SidebarRowDensity;
 }) {
   return [
     styles.workspaceRow,
+    styles.workspaceRowDensity(rowDensity),
     isHovered && styles.workspaceRowHovered,
     selected && styles.sidebarRowSelected,
     isDragging && styles.workspaceRowDragging,
@@ -483,11 +482,20 @@ function ProjectKebabMenu({
   removeProjectStatus: "idle" | "pending" | "success";
 }) {
   const { t } = useTranslation();
+  const rowDensity = useSidebarRowDensity();
+  const kebabStyle = useCallback(
+    ({ hovered = false }: PressableStateCallbackType & { hovered?: boolean }) => [
+      styles.projectKebabButton,
+      styles.projectControlDensity(rowDensity),
+      hovered && styles.projectKebabButtonHovered,
+    ],
+    [rowDensity],
+  );
   return (
     <DropdownMenu compactMode="sheet">
       <DropdownMenuTrigger
         hitSlop={8}
-        style={projectKebabStyle}
+        style={kebabStyle}
         accessibilityRole={platformIsWeb ? undefined : "button"}
         accessibilityLabel={t("sidebar.project.actions.menu")}
         testID={`sidebar-project-kebab-${projectViewKey}`}
@@ -718,14 +726,16 @@ function NewWorktreeButton({
 }) {
   const { t } = useTranslation();
   const newWorktreeKeys = useShortcutKeys("new-worktree");
+  const rowDensity = useSidebarRowDensity();
 
   const pressableStyle = useCallback(
     ({ hovered, pressed }: PressableStateCallbackType & { hovered?: boolean }) => [
       styles.projectIconActionButton,
+      styles.projectControlDensity(rowDensity),
       !visible && styles.projectIconActionButtonHidden,
       (Boolean(hovered) || pressed) && !loading && styles.projectIconActionButtonHovered,
     ],
-    [visible, loading],
+    [rowDensity, visible, loading],
   );
 
   const handlePress = useCallback(
@@ -737,7 +747,10 @@ function NewWorktreeButton({
   );
 
   return (
-    <View style={styles.projectTrailingControlSlot} pointerEvents={visible ? "auto" : "none"}>
+    <View
+      style={[styles.projectTrailingControlSlot, styles.projectControlDensity(rowDensity)]}
+      pointerEvents={visible ? "auto" : "none"}
+    >
       <Tooltip delayDuration={0} enabledOnDesktop enabledOnMobile={false}>
         <TooltipTrigger asChild disabled={!visible}>
           <Pressable
@@ -802,13 +815,15 @@ function NewWorkspaceGhostRow({
       }) as Href,
     );
   }, [displayName, onWorkspacePress, worktreeTarget]);
+  const rowDensity = useSidebarRowDensity();
   const rowStyle = useCallback(
     ({ hovered = false, pressed }: PressableStateCallbackType & { hovered?: boolean }) => [
       styles.newWorkspaceGhostRow,
+      styles.newWorkspaceGhostRowDensity(rowDensity),
       hovered && !pressed && styles.newWorkspaceGhostRowHovered,
       pressed && styles.newWorkspaceGhostRowPressed,
     ],
-    [],
+    [rowDensity],
   );
 
   return (
@@ -852,7 +867,6 @@ function ProjectHeaderRow({
   iconDataUri,
   statusBucket,
   selected = false,
-  chevron,
   onPress,
   worktreeTarget,
   isProjectActive = false,
@@ -928,15 +942,17 @@ function ProjectHeaderRow({
     interaction.handlePressOut();
   }, [interaction]);
 
+  const rowDensity = useSidebarRowDensity();
   const projectRowStyle = useCallback(
     ({ pressed }: PressableStateCallbackType) => [
       styles.projectRow,
+      styles.projectRowDensity(rowDensity),
       isDragging && styles.projectRowDragging,
       selected && styles.sidebarRowSelected,
       isHovered && styles.projectRowHovered,
       pressed && styles.projectRowPressed,
     ],
-    [isDragging, selected, isHovered],
+    [rowDensity, isDragging, selected, isHovered],
   );
 
   const rowChildren = (
@@ -948,8 +964,6 @@ function ProjectHeaderRow({
           statusBucket={statusBucket}
           projectViewKey={project.viewKey}
           backdrop={getSidebarRowBackdrop({ isDragging, isPressed, selected, isHovered })}
-          chevron={chevron}
-          showChevron={isHovered && chevron !== null}
           isArchiving={isArchiving}
         />
 
@@ -973,7 +987,7 @@ function ProjectHeaderRow({
         removeProjectStatus={removeProjectStatus}
       />
       {showShortcutBadge && shortcutNumber !== null ? (
-        <View style={styles.projectShortcutBadgeOverlay} pointerEvents="none">
+        <View style={styles.projectShortcutBadgeOverlay(rowDensity)} pointerEvents="none">
           <SidebarWorkspaceShortcutBadge number={shortcutNumber} />
         </View>
       ) : null}
@@ -1078,6 +1092,7 @@ function WorkspaceRowInner({
   const isCompact = useIsCompactFormFactor();
   const [isPressed, setIsPressed] = useState(false);
   const isTouchPlatform = platformIsNative || isCompact;
+  const rowDensity = useSidebarRowDensity();
   const interaction = useLongPressDragInteraction({
     drag,
     menuController,
@@ -1116,6 +1131,7 @@ function WorkspaceRowInner({
         const isDesktop = !isTouchPlatform;
         const serviceSummary = isDesktop ? selectWorkspaceServiceSummary(workspace.scripts) : null;
         const workspaceRowStyle = getProjectWorkspaceRowStyle({
+          rowDensity,
           isDragging,
           isPressed,
           selected,
@@ -1552,6 +1568,7 @@ function ProjectBlock({
   onToggleCollapsed,
   onWorkspacePress,
   onWorkspaceReorder,
+  reorderEnabled,
   onWorktreeCreated,
   drag,
   isDragging,
@@ -1577,6 +1594,7 @@ function ProjectBlock({
   onToggleCollapsed: (projectViewKey: string) => void;
   onWorkspacePress?: () => void;
   onWorkspaceReorder: (projectViewKey: string, workspaces: SidebarWorkspacePlacement[]) => void;
+  reorderEnabled: boolean;
   onWorktreeCreated?: (workspaceId: string) => void;
   drag: () => void;
   isDragging: boolean;
@@ -1590,6 +1608,7 @@ function ProjectBlock({
   supportsPinningByServerId: ReadonlyMap<string, boolean>;
   onToggleWorkspacePin: ToggleSidebarWorkspacePin;
 }) {
+  const rowDensity = useSidebarRowDensity();
   const {
     visibleItems: visibleWorkspaces,
     expanded: workspacesExpanded,
@@ -1760,6 +1779,7 @@ function ProjectBlock({
             extraData={activeWorkspaceSelectionKey(activeWorkspaceSelection)}
             scrollEnabled={false}
             useDragHandle
+            enabled={reorderEnabled}
             nestable={useNestable}
             simultaneousGestureRef={parentGestureRef}
             gestureHostPresented={dragGestureHostActive}
@@ -1790,7 +1810,7 @@ function ProjectBlock({
     <View
       role="group"
       accessibilityLabel={displayName}
-      style={projectChildren ? styles.projectBlockExpanded : undefined}
+      style={projectChildren ? styles.projectBlockExpanded(rowDensity) : undefined}
     >
       <ProjectHeaderRow
         project={project}
@@ -1798,7 +1818,6 @@ function ProjectBlock({
         iconDataUri={iconDataUri}
         statusBucket={aggregateStatusBucket}
         selected={false}
-        chevron={rowModel.chevron}
         onPress={handleToggleCollapsed}
         worktreeTarget={
           rowModel.trailingAction.kind === "new_workspace" ? rowModel.trailingAction.target : null
@@ -1841,6 +1860,7 @@ function areProjectBlockPropsEqual(previous: ProjectBlockProps, next: ProjectBlo
     previous.onToggleCollapsed === next.onToggleCollapsed &&
     previous.onWorkspacePress === next.onWorkspacePress &&
     previous.onWorkspaceReorder === next.onWorkspaceReorder &&
+    previous.reorderEnabled === next.reorderEnabled &&
     previous.onWorktreeCreated === next.onWorktreeCreated &&
     previous.drag === next.drag &&
     previous.isDragging === next.isDragging &&
@@ -2116,6 +2136,7 @@ function ProjectModeList({
 }) {
   const { t } = useTranslation();
   const hasActiveHostFilter = useSidebarViewStore((state) => state.hostFilters.length > 0);
+  const reorderEnabled = useSidebarViewStore((state) => state.sortMode === "manual");
   const [creatingWorkspaceIds, setCreatingWorkspaceIds] = useState<Set<string>>(() => new Set());
   const creatingWorkspaceTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(
     new Map(),
@@ -2301,6 +2322,7 @@ function ProjectModeList({
           onToggleCollapsed={onToggleProjectCollapsed}
           onWorkspacePress={onWorkspacePress}
           onWorkspaceReorder={handleWorkspaceReorder}
+          reorderEnabled={reorderEnabled}
           onWorktreeCreated={handleWorktreeCreated}
           drag={dragState.drag}
           isDragging={dragState.isDragging}
@@ -2327,6 +2349,7 @@ function ProjectModeList({
       onToggleWorkspacePin,
       onWorkspacePress,
       onToggleProjectCollapsed,
+      reorderEnabled,
       parentGestureRef,
       dragGestureHostActive,
       projectIconByProjectViewKey,
@@ -2403,6 +2426,7 @@ function ProjectModeList({
         extraData={activeWorkspaceSelectionKey(activeWorkspaceSelection)}
         scrollEnabled={false}
         useDragHandle
+        enabled={reorderEnabled}
         nestable={platformIsNative}
         simultaneousGestureRef={parentGestureRef}
         gestureHostPresented={dragGestureHostActive}
@@ -2510,16 +2534,17 @@ const styles = StyleSheet.create((theme) => ({
   pinnedSection: {
     marginBottom: theme.spacing[1],
   },
-  // Three times the gap a row keeps from its neighbour, so the break between two groups reads as
-  // a break rather than as one more row of pitch. Kept equal to `statusGroupBlockExpanded` — the
-  // two groupings are the same list under a different heading and must not breathe differently.
+  // More than the gap a row keeps from its neighbour at every density, so the break between two
+  // groups reads as a break rather than as one more row of pitch. Kept equal to
+  // `statusGroupBlockExpanded` through `sidebarRowMetrics` — the two groupings are the same list
+  // under a different heading and must not breathe differently.
   //
   // Padding on the block rather than margin, and only while it has children: the gap belongs to
   // the rows underneath the header, so a collapsed project gives it back and a column of collapsed
   // headers closes up to the pitch of a list instead of staying spaced for content that is gone.
-  projectBlockExpanded: {
-    paddingBottom: theme.spacing[3],
-  },
+  projectBlockExpanded: (rowDensity: SidebarRowDensity) => ({
+    paddingBottom: sidebarRowMetrics(theme, rowDensity).groupGap,
+  }),
   workspaceListContainer: {},
   // Kept in step with `workspaceRow` above. It stands in a project's list where a workspace row
   // would be, so it takes that row's geometry and both of its fills.
@@ -2539,6 +2564,8 @@ const styles = StyleSheet.create((theme) => ({
     gap: theme.spacing[2],
     userSelect: "none",
   },
+  newWorkspaceGhostRowDensity: (rowDensity: SidebarRowDensity) =>
+    sidebarRowMetrics(theme, rowDensity).row,
   newWorkspaceGhostRowHovered: {
     backgroundColor: theme.colors.surfaceSidebarHover,
   },
@@ -2572,13 +2599,14 @@ const styles = StyleSheet.create((theme) => ({
     paddingVertical: theme.spacing[2],
     paddingHorizontal: theme.spacing[2],
     borderRadius: theme.borderRadius.lg,
-    marginBottom: theme.spacing[1],
+    marginBottom: theme.spacing[0.5],
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     gap: theme.spacing[2],
     userSelect: "none",
   },
+  projectRowDensity: (rowDensity: SidebarRowDensity) => sidebarRowMetrics(theme, rowDensity).row,
   projectRowHovered: {
     backgroundColor: theme.colors.surfaceSidebarHover,
   },
@@ -2674,6 +2702,9 @@ const styles = StyleSheet.create((theme) => ({
     justifyContent: "center",
     flexShrink: 0,
   },
+  // Shared by the slot and both buttons in it: dense cuts their height to the title line.
+  projectControlDensity: (rowDensity: SidebarRowDensity) =>
+    sidebarRowMetrics(theme, rowDensity).control,
   projectActionTooltipRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -2684,11 +2715,13 @@ const styles = StyleSheet.create((theme) => ({
     fontSize: theme.fontSize.base,
   },
   projectActionTooltipShortcut: {},
-  projectShortcutBadgeOverlay: {
+  // One point under the row's padding, so the badge keeps its place on the title line at every
+  // density.
+  projectShortcutBadgeOverlay: (rowDensity: SidebarRowDensity) => ({
     position: "absolute",
-    top: theme.spacing[2] + 1,
+    top: sidebarRowMetrics(theme, rowDensity).paddingVertical + 1,
     right: theme.spacing[2],
-  },
+  }),
   workspaceRow: {
     minHeight: density.rowHeight,
     marginBottom: theme.spacing[0.5],
@@ -2702,6 +2735,8 @@ const styles = StyleSheet.create((theme) => ({
     gap: theme.spacing[1],
     userSelect: "none",
   },
+  workspaceRowDensity: (rowDensity: SidebarRowDensity) =>
+    sidebarRowMetrics(theme, rowDensity).stackedRow,
   workspaceRowMain: {
     flexDirection: "row",
     alignItems: "center",

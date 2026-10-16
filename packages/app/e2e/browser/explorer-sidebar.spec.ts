@@ -70,6 +70,53 @@ test.describe("Explorer sidebar", () => {
   });
 });
 
+test("pinned tabs stay first after reload, survive bulk close, and close explicitly", async ({
+  page,
+}, testInfo) => {
+  const workspace = await seedWorkspace({ repoPrefix: "pinned-tabs-" });
+  try {
+    await gotoWorkspace(page, workspace.workspaceId);
+    await waitForWorkspaceTabsVisible(page);
+    const explorer = await ensureExplorerSidebar(page);
+    const changes = explorer.getByTestId("workspace-tab-changes_tree");
+    const files = explorer.getByTestId("workspace-tab-files");
+    const tabs = explorer.getByTestId(/^workspace-tab-(files|changes_tree)$/);
+
+    await changes.click({ button: "right", position: { x: 12, y: 13 } });
+    await page.getByRole("menuitem", { name: "Pin tab", exact: true }).click();
+    await expect(tabs.first()).toHaveAttribute("data-testid", "workspace-tab-changes_tree");
+    await page.reload();
+    await waitForWorkspaceTabsVisible(page);
+    await ensureExplorerSidebar(page);
+    await expect(tabs.first()).toHaveAttribute("data-testid", "workspace-tab-changes_tree");
+    await changes.click({ button: "right", position: { x: 12, y: 13 } });
+    await expect(page.getByRole("menuitem", { name: "Unpin tab", exact: true })).toBeVisible();
+    await page.keyboard.press("Escape");
+
+    await files.click({ button: "right", position: { x: 12, y: 13 } });
+    await page.getByRole("menuitem", { name: "Close other tabs", exact: true }).click();
+    await expect(changes).toBeVisible();
+    await expect(files).toBeVisible();
+
+    await files.click({ button: "right", position: { x: 12, y: 13 } });
+    const confirmation = page.waitForEvent("dialog").then((dialog) => dialog.accept());
+    await page.getByRole("menuitem", { name: "Close editor tabs", exact: true }).click();
+    await confirmation;
+    await expect(files).toHaveCount(0);
+    await expect(changes).toBeVisible();
+    await testInfo.attach("pinned-tab-survives-bulk-close", {
+      body: await page.screenshot(),
+      contentType: "image/png",
+    });
+
+    await changes.click({ button: "right", position: { x: 12, y: 13 } });
+    await page.getByRole("menuitem", { name: "Close", exact: true }).click();
+    await expect(changes).toHaveCount(0);
+  } finally {
+    await workspace.cleanup();
+  }
+});
+
 async function launchExplorerPanel(
   page: Parameters<typeof ensureExplorerSidebar>[0],
   name: string,
@@ -180,6 +227,20 @@ test("Explorer keeps Files and Changes close actions in the context menu", async
         main.getByTestId("workspace-new-tab-panel").filter({ visible: true }),
       ).toBeVisible();
       await expect(explorer.getByTestId("workspace-new-tab-panel")).toHaveCount(0);
+    });
+
+    await test.step("Close editor tabs from Explorer leaves the main pane usable", async () => {
+      const files = explorer.getByTestId("workspace-tab-files");
+      await files.click({ button: "right", position: { x: 12, y: 13 } });
+      const confirmation = page.waitForEvent("dialog").then((dialog) => {
+        expect(dialog.message()).toContain("close 4 tab(s)");
+        return dialog.accept();
+      });
+      await page.getByRole("menuitem", { name: "Close editor tabs", exact: true }).click();
+      await confirmation;
+      await expect(explorer.getByTestId("workspace-tab-files")).toHaveCount(0);
+      await expect(explorer.getByTestId("workspace-tab-changes_tree")).toHaveCount(0);
+      await expect(main.getByTestId("workspace-new-tab-button")).toBeVisible();
     });
 
     await testInfo.attach("shared-explorer-tabs", {

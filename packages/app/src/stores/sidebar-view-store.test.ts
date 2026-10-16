@@ -34,6 +34,7 @@ describe("sidebar view store", () => {
     useSidebarViewStore.setState({
       showBackground: false,
       groupMode: "project",
+      sortMode: "manual",
       hostFilters: [],
       projectFilters: [],
       labelFilter: { labels: [] },
@@ -87,6 +88,7 @@ describe("sidebar view store", () => {
     ).toEqual({
       showBackground: false,
       groupMode: "status",
+      sortMode: "manual",
       hostFilters: [],
       projectFilters: [],
       labelFilter: { labels: [] },
@@ -102,6 +104,7 @@ describe("sidebar view store", () => {
     ).toEqual({
       showBackground: false,
       groupMode: "status",
+      sortMode: "manual",
       hostFilters: ["host-a"],
       projectFilters: [],
       labelFilter: { labels: [] },
@@ -112,11 +115,13 @@ describe("sidebar view store", () => {
     expect(
       migrateSidebarViewState({
         groupMode: "status",
+        sortMode: "activity",
         hostFilters: ["host-a", "host-b"],
       }),
     ).toEqual({
       showBackground: false,
       groupMode: "status",
+      sortMode: "activity",
       hostFilters: ["host-a", "host-b"],
       projectFilters: [],
       labelFilter: { labels: [] },
@@ -228,6 +233,7 @@ describe("sidebar view store", () => {
     ).toEqual({
       showBackground: false,
       groupMode: "project",
+      sortMode: "manual",
       hostFilters: ["host-a"],
       projectFilters: ["project-a", "project-b"],
       labelFilter: { labels: [] },
@@ -238,10 +244,35 @@ describe("sidebar view store", () => {
     expect(migrateSidebarViewState({ projectFilters: "project-a" })).toEqual({
       showBackground: false,
       groupMode: "project",
+      sortMode: "manual",
       hostFilters: [],
       projectFilters: [],
       labelFilter: { labels: [] },
     });
+  });
+
+  it("defaults sortMode to manual when persisted state predates the sort feature", () => {
+    expect(
+      migrateSidebarViewState({
+        groupMode: "project",
+        hostFilters: [],
+      }),
+    ).toEqual({
+      showBackground: false,
+      groupMode: "project",
+      sortMode: "manual",
+      hostFilters: [],
+      projectFilters: [],
+      labelFilter: { labels: [] },
+    });
+  });
+
+  it("sets the sort mode", () => {
+    useSidebarViewStore.getState().setSortMode("activity");
+    expect(useSidebarViewStore.getState().sortMode).toBe("activity");
+
+    useSidebarViewStore.getState().setSortMode("name");
+    expect(useSidebarViewStore.getState().sortMode).toBe("name");
   });
 
   it("falls back to the legacy storage key when the new key is empty", async () => {

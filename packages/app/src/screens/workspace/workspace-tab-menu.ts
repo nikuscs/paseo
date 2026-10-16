@@ -11,11 +11,14 @@ export interface WorkspaceTabMenuLabels {
   copyTerminalId: string;
   copyFilePath: string;
   rename: string;
+  pin: string;
+  unpin: string;
   closeAbove: string;
   closeBelow: string;
   closeLeft: string;
   closeRight: string;
   closeOthers: string;
+  closeEditorTabs: string;
   reloadAgent: string;
   reloadAgentTooltip: string;
   close: string;
@@ -27,11 +30,14 @@ export const DEFAULT_WORKSPACE_TAB_MENU_LABELS: WorkspaceTabMenuLabels = {
   copyTerminalId: i18n.t("workspace.tabs.menu.copyTerminalId"),
   copyFilePath: i18n.t("workspace.tabs.menu.copyFilePath"),
   rename: i18n.t("workspace.tabs.menu.rename"),
+  pin: i18n.t("workspace.tabs.menu.pin"),
+  unpin: i18n.t("workspace.tabs.menu.unpin"),
   closeAbove: i18n.t("workspace.tabs.menu.closeAbove"),
   closeBelow: i18n.t("workspace.tabs.menu.closeBelow"),
   closeLeft: i18n.t("workspace.tabs.menu.closeLeft"),
   closeRight: i18n.t("workspace.tabs.menu.closeRight"),
   closeOthers: i18n.t("workspace.tabs.menu.closeOthers"),
+  closeEditorTabs: i18n.t("workspace.tabs.menu.closeEditorTabs"),
   reloadAgent: i18n.t("workspace.tabs.menu.reloadAgent"),
   reloadAgentTooltip: i18n.t("workspace.tabs.menu.reloadAgentTooltip"),
   close: i18n.t("workspace.tabs.menu.close"),
@@ -48,7 +54,10 @@ export type WorkspaceTabMenuEntry =
         | "arrow-left-to-line"
         | "arrow-right-to-line"
         | "copy-x"
+        | "panel-top-close"
         | "pencil"
+        | "pin"
+        | "pin-off"
         | "x";
       hint?: string;
       tooltip?: string;
@@ -75,9 +84,12 @@ interface BuildWorkspaceTabMenuEntriesInput {
   onReloadAgent: (agentId: string) => Promise<void> | void;
   onRenameTab: (tab: WorkspaceTabDescriptor) => void;
   onCloseTab: (tabId: string) => Promise<void> | void;
+  onTogglePin: (tabId: string) => void;
   onCloseTabsBefore: (tabId: string) => Promise<void> | void;
   onCloseTabsAfter: (tabId: string) => Promise<void> | void;
   onCloseOtherTabs: (tabId: string) => Promise<void> | void;
+  onCloseEditorTabs: () => Promise<void> | void;
+  canCloseEditorTabs: boolean;
   labels?: WorkspaceTabMenuLabels;
 }
 
@@ -92,9 +104,12 @@ interface BuildWorkspaceDesktopTabActionsInput {
   onReloadAgent: (agentId: string) => Promise<void> | void;
   onRenameTab: (tab: WorkspaceTabDescriptor) => void;
   onCloseTab: (tabId: string) => Promise<void> | void;
+  onTogglePin: (tabId: string) => void;
   onCloseTabsToLeft: (tabId: string) => Promise<void> | void;
   onCloseTabsToRight: (tabId: string) => Promise<void> | void;
   onCloseOtherTabs: (tabId: string) => Promise<void> | void;
+  onCloseEditorTabs: () => Promise<void> | void;
+  canCloseEditorTabs: boolean;
   labels?: WorkspaceTabMenuLabels;
 }
 
@@ -182,6 +197,8 @@ export function buildWorkspaceTabMenuEntries(
     onCloseTabsBefore,
     onCloseTabsAfter,
     onCloseOtherTabs,
+    onCloseEditorTabs,
+    canCloseEditorTabs,
   } = input;
   const labels = input.labels ?? DEFAULT_WORKSPACE_TAB_MENU_LABELS;
   const isFirstTab = index === 0;
@@ -262,6 +279,15 @@ export function buildWorkspaceTabMenuEntries(
 
   entries.push({
     kind: "item",
+    key: "toggle-pin",
+    label: tab.pinned ? labels.unpin : labels.pin,
+    icon: tab.pinned ? "pin-off" : "pin",
+    testID: `${menuTestIDBase}-toggle-pin`,
+    onSelect: () => input.onTogglePin(tab.tabId),
+  });
+
+  entries.push({
+    kind: "item",
     key: "close-before",
     label: buildCloseBeforeLabel(surface, labels),
     icon: "arrow-left-to-line",
@@ -291,6 +317,17 @@ export function buildWorkspaceTabMenuEntries(
     testID: `${menuTestIDBase}-close-others`,
     onSelect: () => {
       void onCloseOtherTabs(tab.tabId);
+    },
+  });
+  entries.push({
+    kind: "item",
+    key: "close-editor-tabs",
+    label: labels.closeEditorTabs,
+    icon: "panel-top-close",
+    disabled: !canCloseEditorTabs,
+    testID: `${menuTestIDBase}-close-editor-tabs`,
+    onSelect: () => {
+      void onCloseEditorTabs();
     },
   });
   if (tab.target.kind === "agent") {
@@ -339,10 +376,13 @@ export function buildWorkspaceDesktopTabActions(
       onCopyFilePath: input.onCopyFilePath,
       onReloadAgent: input.onReloadAgent,
       onRenameTab: input.onRenameTab,
+      onTogglePin: input.onTogglePin,
       onCloseTab: input.onCloseTab,
       onCloseTabsBefore: input.onCloseTabsToLeft,
       onCloseTabsAfter: input.onCloseTabsToRight,
       onCloseOtherTabs: input.onCloseOtherTabs,
+      onCloseEditorTabs: input.onCloseEditorTabs,
+      canCloseEditorTabs: input.canCloseEditorTabs,
       labels: input.labels,
     }),
     closeButtonTestId: getCloseButtonTestId(input.tab),

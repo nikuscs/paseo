@@ -36,6 +36,8 @@ vi.mock("lucide-react-native", () => {
     CopyX: StubIcon,
     Ellipsis: StubIcon,
     Pencil: StubIcon,
+    Pin: StubIcon,
+    PinOff: StubIcon,
     RotateCw: StubIcon,
     X: StubIcon,
   };
@@ -146,10 +148,13 @@ function renderAccessory(
     onCopyFilePath: vi.fn(),
     onReloadAgent: vi.fn(),
     onRenameTab,
+    onTogglePin: vi.fn(),
     onCloseTab: vi.fn(),
     onCloseTabsBefore: vi.fn(),
     onCloseTabsAfter: vi.fn(),
     onCloseOtherTabs: vi.fn(),
+    onCloseEditorTabs: vi.fn(),
+    canCloseEditorTabs: true,
   });
 
   const container = document.createElement("div");
