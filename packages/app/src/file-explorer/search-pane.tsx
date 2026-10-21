@@ -10,7 +10,6 @@ import {
 import type { DaemonClient } from "@getpaseo/client/internal/daemon-client";
 import {
   FlatList,
-  Pressable,
   Text,
   View,
   type ListRenderItemInfo,
@@ -38,6 +37,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { SearchField } from "@/components/ui/search-field";
+import { PressHighlight } from "@/components/ui/press-highlight";
 import type { Theme } from "@/styles/theme";
 import { ICON_SIZE } from "@/styles/theme";
 import {
@@ -420,7 +420,7 @@ function FileSearchFileRow({ row, collapsed, onToggleFile }: FileSearchFileRowPr
   const handlePress = useCallback(() => onToggleFile(row.path), [onToggleFile, row.path]);
   const accessibilityState = useMemo(() => ({ expanded: !collapsed }), [collapsed]);
   return (
-    <Pressable
+    <PressHighlight
       onPress={handlePress}
       style={fileRowStyle}
       accessibilityRole="button"
@@ -434,7 +434,7 @@ function FileSearchFileRow({ row, collapsed, onToggleFile }: FileSearchFileRowPr
         {row.path}
       </Text>
       <Text style={styles.matchCount}>{row.matchCount}</Text>
-    </Pressable>
+    </PressHighlight>
   );
 }
 
@@ -449,7 +449,7 @@ function FileSearchMatchRow({ row, onOpenMatch }: FileSearchMatchRowProps) {
   );
   const content = splitFileSearchMatchContent(row.match);
   return (
-    <Pressable
+    <PressHighlight
       onPress={handlePress}
       style={matchRowStyle}
       accessibilityRole="button"
@@ -462,7 +462,7 @@ function FileSearchMatchRow({ row, onOpenMatch }: FileSearchMatchRowProps) {
         <Text style={styles.matchHighlight}>{content.match}</Text>
         {content.suffix}
       </Text>
-    </Pressable>
+    </PressHighlight>
   );
 }
 
