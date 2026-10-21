@@ -21,7 +21,6 @@ import type { GestureType } from "react-native-gesture-handler";
 import { navigateToWorkspace } from "@/stores/navigation-active-workspace-store";
 import { useActiveWorkspaceSelection } from "@/stores/navigation-active-workspace-store";
 import { type SidebarWorkspaceEntry } from "@/hooks/use-sidebar-workspaces-list";
-import type { StatusBucket } from "@/hooks/sidebar-status-view-model";
 import type { SidebarWorkspaceGroup } from "@/components/sidebar/sidebar-labels";
 import { SidebarFilterEmptyState } from "@/components/sidebar/empty-states";
 import type { HostBadgeModel } from "@/hosts/appearance";
@@ -38,6 +37,7 @@ import {
   CircleCheck,
   CircleDot,
   CircleX,
+  Hourglass,
 } from "lucide-react-native";
 import { useToast } from "@/contexts/toast-context";
 import { WorkspaceRenameModal } from "@/components/workspace-rename-modal";
@@ -74,6 +74,9 @@ import {
   SidebarWorkspaceMenu,
 } from "@/components/sidebar/sidebar-workspace-menu";
 import { SidebarSectionHeader } from "@/components/sidebar/sidebar-section-header";
+import { useSidebarRowDensity } from "@/components/sidebar/display-preferences/model";
+import type { SidebarRowDensity } from "@/components/sidebar/display-preferences/row-density";
+import { sidebarRowMetrics } from "@/components/sidebar/sidebar-row-metrics";
 import { SidebarGroupToggleRow } from "@/components/sidebar/sidebar-group-toggle-row";
 import { useLimitedSidebarGroup } from "@/components/sidebar/use-limited-sidebar-group";
 import type { ToggleSidebarWorkspacePin } from "@/hooks/use-sidebar-workspace-pin";
@@ -106,6 +109,7 @@ const ThemedCircleAlert = withUnistyles(CircleAlert);
 const ThemedCircleCheck = withUnistyles(CircleCheck);
 const ThemedCircleDot = withUnistyles(CircleDot);
 const ThemedCircleX = withUnistyles(CircleX);
+const ThemedHourglass = withUnistyles(Hourglass);
 const EMPTY_SHORTCUT_INDEX = new Map<string, number>();
 
 function statusWorkspaceKeyExtractor(workspace: SidebarWorkspaceEntry): string {
@@ -340,6 +344,7 @@ function StatusGroupRows({
   supportsPinningByServerId: ReadonlyMap<string, boolean>;
   onToggleWorkspacePin: ToggleSidebarWorkspacePin;
 }) {
+  const rowDensity = useSidebarRowDensity();
   const {
     visibleItems: visibleWorkspaces,
     expanded: workspacesExpanded,
@@ -348,7 +353,7 @@ function StatusGroupRows({
   } = useLimitedSidebarGroup(group.rows);
 
   return (
-    <View style={collapsed ? undefined : styles.statusGroupBlockExpanded}>
+    <View style={collapsed ? undefined : styles.statusGroupBlockExpanded(rowDensity)}>
       <StatusGroupHeader group={group} collapsed={collapsed} />
       {!collapsed ? (
         <View
@@ -416,6 +421,7 @@ function StatusGroupHeader({
 }) {
   const { t } = useTranslation();
   const [isHovered, setIsHovered] = useState(false);
+  const rowDensity = useSidebarRowDensity();
   const toggleWorkspaceGroupCollapsed = useSidebarCollapsedSectionsStore(
     (state) => state.toggleWorkspaceGroupCollapsed,
   );
@@ -427,10 +433,11 @@ function StatusGroupHeader({
   const rowStyle = useCallback(
     ({ pressed }: PressableStateCallbackType) => [
       styles.statusGroupRow,
+      styles.statusGroupRowDensity(rowDensity),
       isHovered && styles.statusGroupRowHovered,
       pressed && styles.statusGroupRowPressed,
     ],
-    [isHovered],
+    [rowDensity, isHovered],
   );
   const accessibilityState = useMemo(() => ({ expanded: !collapsed }), [collapsed]);
 
@@ -481,7 +488,7 @@ function StatusGroupLeadingVisual({
   return <ThemedChevronDown uniProps={mutedGroupIconProps} />;
 }
 
-function StatusGroupIcon({ bucket }: { bucket: StatusBucket }) {
+function StatusGroupIcon({ bucket }: { bucket: SidebarWorkspaceGroup["leading"]["bucket"] }) {
   switch (bucket) {
     case "needs_input":
       return <ThemedCircleAlert uniProps={needsInputGroupIconProps} />;
@@ -491,6 +498,9 @@ function StatusGroupIcon({ bucket }: { bucket: StatusBucket }) {
       return <ThemedCircleCheck uniProps={attentionGroupIconProps} />;
     case "running":
       return <ThemedCircleDot uniProps={runningGroupIconProps} />;
+    // Muted like Done, because it is Done — the glass says only that it is still draining.
+    case "recently_done":
+      return <ThemedHourglass uniProps={mutedGroupIconProps} />;
     case "done":
       return <ThemedCircleCheck uniProps={mutedGroupIconProps} />;
   }
@@ -797,6 +807,7 @@ function StatusWorkspaceRowInnerContent({
   const isTouchPlatform = platformIsNative || isCompact;
   const [isPressed, setIsPressed] = useState(false);
   const trailing = useSidebarWorkspaceTrailing();
+  const rowDensity = useSidebarRowDensity();
   const {
     role: _dragRole,
     tabIndex: _dragTabIndex,
@@ -855,6 +866,7 @@ function StatusWorkspaceRowInnerContent({
           isHovered,
           inStatusGroup,
           isDragging,
+          rowDensity,
         });
         const backdrop = getSidebarRowBackdrop({ isDragging, isPressed, selected, isHovered });
         return (
@@ -1025,15 +1037,18 @@ function getStatusWorkspaceRowStyle({
   isHovered,
   inStatusGroup,
   isDragging,
+  rowDensity,
 }: {
   isPressed: boolean;
   selected: boolean;
   isHovered: boolean;
   inStatusGroup: boolean;
   isDragging: boolean;
+  rowDensity: SidebarRowDensity;
 }) {
   return [
     styles.workspaceRow,
+    styles.workspaceRowDensity(rowDensity),
     inStatusGroup && sidebarWorkspaceRowStyles.rowIndented,
     isHovered && styles.workspaceRowHovered,
     selected && styles.sidebarRowSelected,
@@ -1059,9 +1074,9 @@ const styles = StyleSheet.create((theme) => ({
     marginBottom: theme.spacing[1],
   },
   // Matches `projectBlockExpanded` in sidebar-workspace-list.tsx. See the note there.
-  statusGroupBlockExpanded: {
-    paddingBottom: theme.spacing[3],
-  },
+  statusGroupBlockExpanded: (rowDensity: SidebarRowDensity) => ({
+    paddingBottom: sidebarRowMetrics(theme, rowDensity).groupGap,
+  }),
   statusWorkspaceListContainer: {},
   statusGroupRow: {
     minHeight: density.rowHeight,
@@ -1075,6 +1090,8 @@ const styles = StyleSheet.create((theme) => ({
     gap: theme.spacing[2],
     userSelect: "none",
   },
+  statusGroupRowDensity: (rowDensity: SidebarRowDensity) =>
+    sidebarRowMetrics(theme, rowDensity).row,
   statusGroupRowHovered: {
     backgroundColor: theme.colors.surfaceSidebarHover,
   },
@@ -1126,6 +1143,8 @@ const styles = StyleSheet.create((theme) => ({
     gap: theme.spacing[1],
     userSelect: "none",
   },
+  workspaceRowDensity: (rowDensity: SidebarRowDensity) =>
+    sidebarRowMetrics(theme, rowDensity).stackedRow,
   workspaceRowHovered: {
     backgroundColor: theme.colors.surfaceSidebarHover,
   },

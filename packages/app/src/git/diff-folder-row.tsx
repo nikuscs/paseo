@@ -1,11 +1,13 @@
 import { useCallback, useMemo, useState } from "react";
 import { View, Text, type LayoutChangeEvent, type PressableStateCallbackType } from "react-native";
-import { StyleSheet } from "react-native-unistyles";
+import { StyleSheet, withUnistyles } from "react-native-unistyles";
+import { Folder } from "lucide-react-native";
 import { DiffStat } from "@/components/diff-stat";
 import {
   TreeChevron,
   treeRowPaddingLeft,
   workspaceTreeRowStyles,
+  WORKSPACE_TREE_FOLDER_ICON_SIZE,
   WORKSPACE_TREE_ICON_LABEL_GAP,
   WORKSPACE_TREE_ICON_SIZE,
 } from "@/components/tree-primitives";
@@ -14,6 +16,11 @@ import { inlineUnistylesStyle } from "@/styles/unistyles-inline-style";
 import { ContextMenu, ContextMenuTrigger } from "@/components/ui/context-menu";
 import { FileActionsContextMenuContent } from "@/components/file-actions-menu";
 import { isWeb } from "@/constants/platform";
+
+const ThemedFolder = withUnistyles(Folder);
+const foregroundMutedColorMapping = (theme: Theme) => ({
+  color: theme.colors.foregroundMuted,
+});
 
 interface DiffFolderRowProps {
   /** full uncompressed directory path — the collapse identity */
@@ -154,6 +161,12 @@ export function DiffFolderRow({
             <View style={styles.chevronSlot}>
               <TreeChevron expanded={!collapsed} />
             </View>
+            <View style={styles.folderIcon}>
+              <ThemedFolder
+                size={WORKSPACE_TREE_FOLDER_ICON_SIZE}
+                uniProps={foregroundMutedColorMapping}
+              />
+            </View>
             <Text
               style={[
                 styles.folderName,
@@ -206,6 +219,13 @@ const styles = StyleSheet.create((theme: Theme) => ({
     height: WORKSPACE_TREE_ICON_SIZE,
     alignItems: "center",
     justifyContent: "center",
+  },
+  folderIcon: {
+    width: WORKSPACE_TREE_ICON_SIZE,
+    height: WORKSPACE_TREE_ICON_SIZE,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
   },
   right: {
     flexDirection: "row",

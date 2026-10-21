@@ -18,40 +18,87 @@ export function getStatusBucketLabel(bucket: StatusBucket, t: TFunction): string
   return t(STATUS_BUCKET_LABEL_KEYS[bucket]);
 }
 
+/**
+ * A status bucket, plus the one group the sidebar makes that no bucket stands for: workspaces
+ * that finished inside the user's "Recently done" window. It is a slice of `done` rather than a
+ * bucket of its own because nothing upstream of the sidebar knows about the window.
+ */
+export type StatusGroupKey = StatusBucket | "recently_done";
+
+export const STATUS_GROUP_ORDER: readonly StatusGroupKey[] = [
+  "needs_input",
+  "failed",
+  "attention",
+  "running",
+  "recently_done",
+  "done",
+] as const;
+
+function getStatusGroupLabel(key: StatusGroupKey, t: TFunction): string {
+  return key === "recently_done"
+    ? t("sidebar.display.recentlyDone.label")
+    : getStatusBucketLabel(key, t);
+}
+
 export interface StatusGroup {
-  bucket: StatusBucket;
+  key: StatusGroupKey;
   label: string;
   rows: SidebarWorkspaceEntry[];
 }
 
+/**
+ * `recentlyDoneSince` is the wall-clock instant a workspace must have finished after to keep its
+ * own group; `null` is the window switched off. A single timestamp rather than a duration plus a
+ * clock, so the caller owns the one thing that has to change over time and this stays pure.
+ */
 export function buildStatusGroups(
   workspaces: SidebarWorkspaceEntry[],
   projectNamesByViewKey: Map<string, string>,
   t: TFunction,
+  recentlyDoneSince: number | null = null,
 ): StatusGroup[] {
-  const bucketRows = new Map<StatusBucket, SidebarWorkspaceEntry[]>();
+  const rowsByKey = new Map<StatusGroupKey, SidebarWorkspaceEntry[]>();
 
   for (const ws of workspaces) {
-    const bucket: StatusBucket = ws.statusBucket;
-    let rows = bucketRows.get(bucket);
+    const key = resolveStatusGroupKey(ws, recentlyDoneSince);
+    let rows = rowsByKey.get(key);
     if (!rows) {
       rows = [];
-      bucketRows.set(bucket, rows);
+      rowsByKey.set(key, rows);
     }
     rows.push(ws);
   }
 
   const groups: StatusGroup[] = [];
 
-  for (const bucket of STATUS_BUCKET_ORDER) {
-    const rows = bucketRows.get(bucket);
+  for (const key of STATUS_GROUP_ORDER) {
+    const rows = rowsByKey.get(key);
     if (!rows || rows.length === 0) continue;
 
     rows.sort((a, b) => compareStatusRows(a, b, projectNamesByViewKey));
-    groups.push({ bucket, label: getStatusBucketLabel(bucket, t), rows });
+    groups.push({ key, label: getStatusGroupLabel(key, t), rows });
   }
 
   return groups;
+}
+
+/**
+ * `statusEnteredAt` is the host's clock and `recentlyDoneSince` is this device's, so a host
+ * running ahead can hand back a finish time in the future. That reads as "just now", which is
+ * why the test has no upper bound: skew moves a row into the group early rather than keeping it
+ * out for the length of the skew. A host running behind ages rows out sooner, which is the
+ * grouping the sidebar already has today.
+ */
+function resolveStatusGroupKey(
+  workspace: SidebarWorkspaceEntry,
+  recentlyDoneSince: number | null,
+): StatusGroupKey {
+  if (workspace.statusBucket !== "done" || recentlyDoneSince === null) {
+    return workspace.statusBucket;
+  }
+  const enteredAt = workspace.statusEnteredAt?.getTime();
+  if (enteredAt === undefined) return "done";
+  return enteredAt >= recentlyDoneSince ? "recently_done" : "done";
 }
 
 function compareStatusRows(
